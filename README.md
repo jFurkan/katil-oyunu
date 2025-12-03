@@ -1,91 +1,58 @@
-# 🔍 Katil Kim? - Dedektif Oyunu
+# Katil Kim? 🔍
 
-Gerçek zamanlı çok oyunculu katil bulma oyunu. Node.js + Express + Socket.io ile yapıldı.
+Gerçek zamanlı çok oyunculu dedektif oyunu.
 
-## 🚀 Kurulum
+## Render.com'da Ücretsiz Yayınlama
 
-1. **Node.js'in yüklü olduğundan emin olun** (https://nodejs.org)
+### Adım 1: GitHub'a Yükle
+1. GitHub.com'da yeni repo oluştur (örn: `katil-oyunu`)
+2. Bu dosyaları repo'ya yükle
 
-2. **Proje klasörüne gidin:**
-   ```bash
-   cd katil-oyunu
-   ```
+### Adım 2: Render.com'da Deploy Et
+1. [render.com](https://render.com) adresine git
+2. GitHub ile giriş yap
+3. "New" > "Web Service" tıkla
+4. GitHub repo'nu seç
+5. Ayarlar:
+   - **Name:** katil-oyunu (veya istediğin isim)
+   - **Region:** Frankfurt (EU Central)
+   - **Branch:** main
+   - **Build Command:** `npm install`
+   - **Start Command:** `npm start`
+   - **Instance Type:** Free
 
-3. **Bağımlılıkları yükleyin:**
-   ```bash
-   npm install
-   ```
+6. Environment Variables (isteğe bağlı):
+   - `ADMIN_PASSWORD` = senin şifren (varsayılan: 260678)
 
-4. **Sunucuyu başlatın:**
-   ```bash
-   npm start
-   ```
+7. "Create Web Service" tıkla
 
-5. **Tarayıcıda açın:**
-   ```
-   http://localhost:3000
-   ```
+### Adım 3: Bekle
+- Deploy 2-3 dakika sürer
+- Tamamlanınca URL alırsın: `https://katil-oyunu.onrender.com`
 
-## 📱 Kullanım
+## Önemli Notlar
 
-### Oyuncular için:
-- Ana sayfadan **"Yeni Takım Oluştur"** ile takım kurabilirler
-- Veya **"Takıma Giriş Yap"** ile mevcut takıma katılabilirler
-- Takım sayfasında sadece **ipucu girebilirler**
-- Puanları göremezler (sadece admin görür)
+⚠️ **Ücretsiz plan sınırlamaları:**
+- 15 dakika işlem yoksa uyku moduna geçer
+- İlk açılışta 30-50 saniye bekleyebilir
+- Ayda 750 saat çalışma limiti
 
-### Yönetici için:
-- **"Yönetici Paneli"** butonuna tıklayın
-- Şifre: **260678**
-- Tüm takımları ve puanları görürsünüz
-- **+10, +5, -5, -10** butonları ile puan verin
-- **✕ Sil** ile takım silin
-- **"TÜM TAKIMLARI SİL"** ile oyunu sıfırlayın
+💡 **Uyanık tutmak için:**
+- UptimeRobot.com'da ücretsiz hesap aç
+- Her 14 dakikada bir site URL'ine ping at
 
-## ✨ Özellikler
+## Yerel Çalıştırma
 
-- ✅ Gerçek zamanlı senkronizasyon (Socket.io)
-- ✅ Tüm cihazlar anında güncellenir
-- ✅ Şifreli yönetici paneli
-- ✅ Mobil uyumlu tasarım
-- ✅ Takımlar puan eklenince otomatik sıralanır
-- ✅ İpuçları zaman damgalı kaydedilir
-
-## 📁 Dosya Yapısı
-
-```
-katil-oyunu/
-├── server.js          # Ana sunucu dosyası
-├── package.json       # Proje ayarları
-├── README.md          # Bu dosya
-└── public/
-    └── index.html     # Frontend (HTML + CSS + JS)
-```
-
-## 🌐 Ağda Paylaşım
-
-Aynı WiFi ağındaki diğer cihazların bağlanması için:
-
-1. Bilgisayarınızın IP adresini öğrenin:
-   - Windows: `ipconfig` komutu
-   - Mac/Linux: `ifconfig` komutu
-
-2. Diğer cihazlardan şu adrese bağlanın:
-   ```
-   http://BILGISAYAR_IP:3000
-   ```
-   Örnek: `http://192.168.1.100:3000`
-
-## 🔧 Sorun Giderme
-
-**Port 3000 kullanılıyorsa:**
 ```bash
-PORT=3001 npm start
+npm install
+npm start
 ```
 
-**Bağlantı sorunu:**
-- Firewall ayarlarını kontrol edin
-- Aynı ağda olduğunuzdan emin olun
+Tarayıcıda: http://localhost:3000
 
----
-Eğlenceli oyunlar! 🎭
+## Admin Şifresi
+
+Varsayılan: `260678`
+
+Değiştirmek için Render'da Environment Variable ekle:
+`ADMIN_PASSWORD` = yeni_şifre
