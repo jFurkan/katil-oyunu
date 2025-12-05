@@ -330,6 +330,27 @@
             var isProcessing = false;
             var notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
             var popupTimeout = null;
+            var audioInitialized = false;
+
+            // Mobil için ses başlatma (ilk kullanıcı etkileşiminde)
+            function initAudio() {
+                if (!audioInitialized) {
+                    var audio = document.getElementById('notificationSound');
+                    if (audio) {
+                        // Sessiz bir şekilde çal ve hemen durdur (iOS/Android için)
+                        audio.volume = 0;
+                        audio.play().then(function() {
+                            audio.pause();
+                            audio.currentTime = 0;
+                            audio.volume = 0.5;
+                            audioInitialized = true;
+                            console.log('Ses sistemi başlatıldı');
+                        }).catch(function(err) {
+                            console.log('Ses başlatılamadı:', err);
+                        });
+                    }
+                }
+            }
 
             // UI Yardımcıları
             function toast(msg, err) {
@@ -367,13 +388,15 @@
             };
 
             window.GAME = {
-                showCreateForm: function() { 
-                    document.getElementById('createForm').style.display = 'block'; 
+                showCreateForm: function() {
+                    initAudio(); // Ses sistemini başlat
+                    document.getElementById('createForm').style.display = 'block';
                     document.getElementById('joinForm').style.display = 'none';
                     document.getElementById('inpNewTeam').focus();
                 },
                 hideCreateForm: function() { document.getElementById('createForm').style.display = 'none'; },
                 showJoinForm: function() {
+                    initAudio(); // Ses sistemini başlat
                     document.getElementById('joinForm').style.display = 'block';
                     document.getElementById('createForm').style.display = 'none';
                     renderJoinList();
@@ -425,8 +448,9 @@
                     localStorage.removeItem('currentTeamId');
                     showPage('pgLobby');
                 },
-                showPassModal: function() { 
-                    document.getElementById('passModal').classList.add('show'); 
+                showPassModal: function() {
+                    initAudio(); // Ses sistemini başlat
+                    document.getElementById('passModal').classList.add('show');
                     document.getElementById('inpPass').value = '';
                     document.getElementById('inpPass').focus();
                 },
@@ -489,11 +513,25 @@
                 playSound: function() {
                     var audio = document.getElementById('notificationSound');
                     if (audio) {
+                        // Mobil cihazlar için ses başlatma gerekiyorsa otomatik başlat
+                        if (!audioInitialized) {
+                            initAudio();
+                        }
+
                         audio.currentTime = 0; // Başa sar
                         audio.volume = 0.5; // Ses seviyesi %50
-                        audio.play().catch(function(err) {
-                            console.log('Ses çalınamadı:', err);
-                        });
+
+                        // Promise ile hata yakalama
+                        var playPromise = audio.play();
+                        if (playPromise !== undefined) {
+                            playPromise.then(function() {
+                                console.log('Bildirim sesi çalındı');
+                            }).catch(function(err) {
+                                console.log('Ses çalınamadı (kullanıcı etkileşimi gerekebilir):', err);
+                                // Mobil için: Bir sonraki kullanıcı tıklamasında tekrar dene
+                                audioInitialized = false;
+                            });
+                        }
                     }
                 },
 
@@ -776,6 +814,10 @@
             // Init
             window.onload = function() {
                 NOTIF.updateBadge(); // Bildirim badge'ini güncelle
+
+                // İlk kullanıcı tıklamasında sesi etkinleştir (mobil için)
+                document.addEventListener('click', initAudio, { once: true });
+                document.addEventListener('touchstart', initAudio, { once: true });
 
                 if (currentTeamId) {
                     socket.emit('get-team', currentTeamId, function(t) {
