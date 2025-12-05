@@ -129,6 +129,14 @@ io.on('connection', (socket) => {
 
             io.emit('teams-update', teams);
             io.to(data.teamId).emit('team-update', team);
+
+            // Puan değişikliği bildirimi gönder
+            io.emit('score-changed', {
+                teamName: team.name,
+                amount: data.amount,
+                newScore: team.score
+            });
+
             console.log(`${team.name}: ${data.amount > 0 ? '+' : ''}${data.amount} puan`);
         } else {
             callback({ success: false, error: 'Takım bulunamadı!' });
@@ -162,6 +170,24 @@ io.on('connection', (socket) => {
         io.emit('teams-update', teams);
         io.emit('game-reset');
         console.log('Oyun sıfırlandı! ' + count + ' takım silindi.');
+    });
+
+    // Duyuru gönder (admin)
+    socket.on('send-announcement', (message, callback) => {
+        if (!message || message.trim() === '') {
+            callback({ success: false, error: 'Duyuru metni boş olamaz!' });
+            return;
+        }
+
+        // Tüm kullanıcılara bildirim gönder
+        io.emit('notification', {
+            title: 'Yönetici Duyurusu',
+            message: message.trim(),
+            type: 'announcement'
+        });
+
+        callback({ success: true });
+        console.log('Duyuru gönderildi:', message.trim());
     });
 
     // Bağlantı koptu
