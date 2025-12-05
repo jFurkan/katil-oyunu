@@ -3,83 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Katil Kim?</title>
+    <title>Katil Kim? - Yönetici Paneli</title>
     <script src="/socket.io/socket.io.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-color: #050505;
+            --card-bg: #111111;
+            --border-color: #222;
+            --accent: #8B0000; /* Kan Kırmızısı */
+            --gold: #D4AF37;
+            --text-main: #e0e0e0;
+            --text-muted: #888;
+            --success: #2d5a27;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Georgia, serif; background: #0a0a0a; color: #f0e6d3; min-height: 100vh; }
-        .container { max-width: 480px; margin: 0 auto; padding: 20px; }
-        header { text-align: center; padding: 30px 0; }
-        h1 { font-size: 36px; }
-        h1 span { color: #8B0000; }
-        .subtitle { color: #888; font-style: italic; margin-top: 10px; }
-        .page { display: none; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-color); color: var(--text-main); min-height: 100vh; font-size: 14px; }
+        
+        /* Genel Yapı */
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        
+        /* Header & Başlıklar */
+        header { text-align: center; padding: 40px 0; }
+        h1 { font-size: 42px; letter-spacing: -1px; margin-bottom: 10px; }
+        h1 span { color: var(--accent); }
+        .subtitle { color: var(--text-muted); font-style: italic; }
+
+        /* Sayfa Geçişleri */
+        .page { display: none; animation: fadeIn 0.3s ease; }
         .page.active { display: block; }
-        .btn { width: 100%; padding: 18px; background: #1a1a1a; border: 2px solid #2a2a2a; border-radius: 10px; color: #f0e6d3; font-size: 16px; cursor: pointer; margin-bottom: 10px; text-align: left; }
-        .btn:hover { border-color: #8B0000; }
-        .form-box { background: #141414; border: 1px solid #2a2a2a; border-radius: 10px; padding: 20px; margin-top: 20px; display: none; }
-        .form-box.show { display: block; }
-        .form-box input { width: 100%; padding: 12px; background: #0a0a0a; border: 2px solid #2a2a2a; border-radius: 6px; color: #f0e6d3; font-size: 16px; margin-bottom: 15px; }
-        .form-btns { display: flex; gap: 10px; }
-        .form-btns button { flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
-        .btn-cancel { background: #2a2a2a; color: #f0e6d3; }
-        .btn-ok { background: #8B0000; color: #f0e6d3; }
-        .team-list { max-height: 200px; overflow-y: auto; margin-bottom: 15px; }
-        .team-opt { padding: 12px; background: #0a0a0a; border: 2px solid #2a2a2a; border-radius: 6px; margin-bottom: 8px; cursor: pointer; }
-        .team-opt:hover, .team-opt.sel { border-color: #8B0000; }
-        .team-name-big { font-size: 26px; font-weight: bold; text-align: center; margin: 20px 0; }
-        .clue-box { background: #141414; border: 1px solid #2a2a2a; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
-        .clue-row { display: flex; gap: 10px; }
-        .clue-row input { flex: 1; padding: 12px; background: #0a0a0a; border: 2px solid #2a2a2a; border-radius: 6px; color: #f0e6d3; font-size: 16px; }
-        .clue-row button { padding: 12px 20px; background: #c9a227; border: none; border-radius: 6px; color: #000; font-weight: bold; cursor: pointer; }
-        .my-clues { max-height: 200px; overflow-y: auto; }
-        .clue-item { padding: 10px; background: #0a0a0a; border-left: 3px solid #c9a227; margin-bottom: 8px; border-radius: 4px; }
-        .exit-btn { width: 100%; padding: 14px; background: transparent; border: 2px solid #2a2a2a; border-radius: 8px; color: #888; cursor: pointer; }
-        .admin-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .back-btn { padding: 10px 16px; background: #2a2a2a; border: none; border-radius: 6px; color: #f0e6d3; cursor: pointer; }
-        .stats { display: flex; gap: 10px; margin-bottom: 20px; }
-        .stat { flex: 1; background: #141414; border: 1px solid #2a2a2a; border-radius: 10px; padding: 15px; text-align: center; }
-        .stat-val { font-size: 28px; font-weight: bold; }
-        .stat-lbl { font-size: 11px; color: #888; }
-        .admin-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px; padding: 15px; margin-bottom: 12px; }
-        .admin-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-        .rank { width: 32px; height: 32px; background: #2a2a2a; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .rank.g { background: gold; color: #000; }
-        .rank.s { background: silver; color: #000; }
-        .rank.b { background: #cd7f32; color: #000; }
-        .admin-info { flex: 1; }
-        .admin-name { font-weight: bold; }
-        .admin-clue-count { font-size: 12px; color: #888; }
-        .admin-score { font-size: 26px; font-weight: bold; color: #c9a227; }
-        .admin-btns { display: flex; gap: 6px; flex-wrap: wrap; }
-        .admin-btns button { padding: 10px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; }
-        .bp10 { background: #2d5a27; color: #fff; }
-        .bp5 { background: #4a7c42; color: #fff; }
-        .bm5 { background: #a85a00; color: #fff; }
-        .bm10 { background: #8B0000; color: #fff; }
-        .bdel { background: #333; color: #888; }
-        .reset-btn { width: 100%; padding: 14px; background: #8B0000; border: none; border-radius: 8px; color: #fff; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 30px; }
-        .score-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px; padding: 15px; margin-bottom: 12px; display: flex; align-items: center; gap: 15px; }
-        .score-card .rank { width: 40px; height: 40px; font-size: 18px; }
-        .score-card .info { flex: 1; }
-        .score-card .name { font-size: 18px; font-weight: bold; }
-        .score-card .pts { font-size: 32px; font-weight: bold; color: #c9a227; }
-        .admin2-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px; padding: 15px; margin-bottom: 15px; }
-        .admin2-card .team-header { font-size: 18px; font-weight: bold; color: #c9a227; margin-bottom: 10px; border-bottom: 1px solid #2a2a2a; padding-bottom: 10px; }
-        .admin2-card .clue-list { max-height: 300px; overflow-y: auto; }
-        .admin2-card .clue-entry { padding: 8px 10px; background: #0a0a0a; border-left: 3px solid #c9a227; margin-bottom: 6px; border-radius: 4px; font-size: 14px; }
-        .admin2-card .clue-time { font-size: 11px; color: #666; margin-left: 8px; }
-        .admin2-card .no-clues { color: #666; font-style: italic; font-size: 13px; }
-        .empty { text-align: center; padding: 40px; color: #888; }
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Butonlar (Global) */
+        .btn { width: 100%; padding: 16px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 15px; cursor: pointer; margin-bottom: 12px; transition: all 0.2s; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn:hover { border-color: var(--accent); background: #1a1a1a; transform: translateY(-2px); }
+        .btn-primary { background: var(--accent); border-color: var(--accent); color: white; }
+        .btn-primary:hover { background: #a00000; }
+        
+        /* Form Alanları */
+        .form-box { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; margin-top: 20px; max-width: 400px; margin-left: auto; margin-right: auto; }
+        input { width: 100%; padding: 14px; background: #000; border: 1px solid var(--border-color); border-radius: 6px; color: white; font-size: 16px; margin-bottom: 15px; outline: none; transition: border 0.2s; }
+        input:focus { border-color: var(--gold); }
+
+        /* --- YENİLENEN ADMIN PANEL TASARIMI --- */
+        
+        /* Admin Header */
+        .admin-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); }
+        .back-btn { padding: 8px 16px; background: #222; border: none; border-radius: 6px; color: #fff; cursor: pointer; font-size: 13px; }
+        .back-btn:hover { background: #333; }
+
+        /* Admin Grid - YANYANA KUTULAR İÇİN KRİTİK KISIM */
+        .admin-list { 
+            display: grid; 
+            /* En az 320px genişliğinde, ekrana sığdığı kadar yan yana dizersin */
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 40px;
+        }
+
+        /* Admin Kartı (Yenilenmiş UX) */
+        .admin-card { 
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color); 
+            border-radius: 12px; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+        .admin-card:hover { border-color: #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateY(-3px); }
+
+        /* Kart Üst Kısım */
+        .card-header { 
+            padding: 15px; 
+            background: linear-gradient(to bottom, #1a1a1a, #111); 
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .team-identity { display: flex; align-items: center; gap: 10px; }
+        .rank-badge { 
+            width: 28px; height: 28px; border-radius: 50%; 
+            background: #222; color: #888; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: bold; font-size: 12px;
+        }
+        .rank-badge.g { background: var(--gold); color: black; box-shadow: 0 0 10px rgba(212, 175, 55, 0.3); }
+        .rank-badge.s { background: #C0C0C0; color: black; }
+        .rank-badge.b { background: #cd7f32; color: black; }
+        
+        .team-name { font-weight: 600; font-size: 16px; color: #fff; }
+        .team-score { font-size: 24px; font-weight: 700; color: var(--gold); letter-spacing: -1px; }
+
+        /* Kart İçerik */
+        .card-body { padding: 15px; flex: 1; display: flex; flex-direction: column; gap: 15px; }
+
+        /* İpuçları Alanı */
+        .clues-section { flex: 1; min-height: 100px; max-height: 150px; overflow-y: auto; background: #080808; border-radius: 6px; padding: 8px; border: 1px solid #222; }
+        .clues-title { font-size: 11px; text-transform: uppercase; color: #666; margin-bottom: 6px; letter-spacing: 1px; font-weight: 600; }
+        .clue-item { font-size: 13px; padding: 6px 8px; border-left: 2px solid var(--gold); background: #111; margin-bottom: 4px; border-radius: 0 4px 4px 0; color: #ccc; }
+        .clue-time { float: right; font-size: 10px; color: #555; margin-top: 2px; }
+        .no-clues { color: #444; font-style: italic; text-align: center; padding-top: 30px; font-size: 12px; }
+
+        /* Kontrol Butonları (Grid Layout) */
+        .controls-section { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px; }
+        .ctrl-btn { 
+            padding: 8px 0; border: none; border-radius: 4px; 
+            font-weight: bold; font-size: 13px; cursor: pointer; color: white; transition: opacity 0.2s;
+        }
+        .ctrl-btn:hover { opacity: 0.8; }
+        .btn-p10 { background: #2d5a27; }
+        .btn-p5 { background: #3d6b36; }
+        .btn-m5 { background: #964B00; }
+        .btn-m10 { background: var(--accent); }
+        
+        .delete-btn { 
+            margin-top: 10px; width: 100%; background: transparent; border: 1px dashed #444; color: #666; 
+            padding: 8px; font-size: 11px; border-radius: 4px; cursor: pointer; 
+        }
+        .delete-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* İstatistikler Grafiği */
+        .stats-chart { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 25px; }
+        .chart-bar { display: flex; align-items: center; gap: 15px; margin-bottom: 12px; }
+        .chart-label { width: 100px; font-size: 13px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #aaa; }
+        .chart-track { flex: 1; height: 12px; background: #222; border-radius: 6px; overflow: hidden; }
+        .chart-fill { height: 100%; background: linear-gradient(90deg, #c9a227, #f0e6d3); border-radius: 6px; width: 0%; transition: width 0.5s cubic-bezier(0.1, 0.7, 1.0, 0.1); }
+        .chart-val { width: 30px; font-weight: bold; color: var(--gold); font-size: 13px; }
+
+        /* Diğer Sayfalar için Ufak Düzeltmeler */
+        .team-list { display: flex; flex-direction: column; gap: 8px; }
+        .team-opt { padding: 15px; background: #161616; border: 1px solid #333; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .team-opt:hover, .team-opt.sel { border-color: var(--accent); background: #1f1f1f; }
+        
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px); }
         .modal.show { display: flex; }
-        .modal-box { background: #141414; border: 2px solid #2a2a2a; border-radius: 12px; padding: 25px; width: 90%; max-width: 300px; text-align: center; }
-        .modal-box input { width: 100%; padding: 14px; background: #0a0a0a; border: 2px solid #2a2a2a; border-radius: 6px; color: #f0e6d3; font-size: 18px; text-align: center; letter-spacing: 5px; margin: 15px 0; }
-        .modal-btns { display: flex; gap: 10px; }
-        .modal-btns button { flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: #2d5a27; color: #fff; padding: 14px 20px; border-radius: 8px; opacity: 0; transition: all 0.3s; z-index: 9999; }
-        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-        #toast.err { background: #8B0000; }
+        .modal-box { background: #111; border: 1px solid #333; padding: 30px; border-radius: 16px; width: 90%; max-width: 350px; text-align: center; }
+
+        #toast { position: fixed; bottom: 30px; left: 50%; transform: translate(-50%, 50px); background: #333; color: #fff; padding: 12px 24px; border-radius: 50px; opacity: 0; transition: 0.3s; z-index: 9999; box-shadow: 0 5px 20px rgba(0,0,0,0.5); font-weight: 500; }
+        #toast.show { transform: translate(-50%, 0); opacity: 1; }
+        #toast.err { background: var(--accent); }
+
+        /* Bildirim Sistemi */
+        .notification-popup { position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #1a1a1a, #111); border: 1px solid var(--gold); border-radius: 12px; padding: 20px; min-width: 320px; max-width: 400px; box-shadow: 0 10px 40px rgba(212,175,55,0.3); z-index: 10000; transform: translateX(500px); opacity: 0; transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        .notification-popup.show { transform: translateX(0); opacity: 1; }
+        .notif-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #333; }
+        .notif-title { font-size: 14px; font-weight: 600; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; }
+        .notif-close { background: transparent; border: none; color: #666; font-size: 20px; cursor: pointer; padding: 0; width: 24px; height: 24px; }
+        .notif-close:hover { color: #fff; }
+        .notif-body { color: #ccc; font-size: 14px; line-height: 1.6; }
+        .notif-time { font-size: 11px; color: #555; margin-top: 10px; text-align: right; }
+        .notif-badge { position: fixed; top: 20px; right: 30px; background: var(--accent); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; z-index: 9998; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+
+        /* Bildirimler Sayfası */
+        .notif-list { display: flex; flex-direction: column; gap: 12px; }
+        .notif-item { background: var(--card-bg); border: 1px solid var(--border-color); border-left: 4px solid var(--gold); border-radius: 8px; padding: 15px; transition: 0.2s; }
+        .notif-item:hover { border-color: var(--gold); background: #161616; }
+        .notif-item.unread { background: rgba(212,175,55,0.05); }
+        .notif-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .notif-item-title { font-weight: 600; color: var(--gold); font-size: 13px; }
+        .notif-item-time { font-size: 11px; color: #666; }
+        .notif-item-body { color: #aaa; font-size: 13px; line-height: 1.5; }
+
+        /* Duyuru Formu */
+        .announcement-form { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .announcement-form textarea { width: 100%; min-height: 80px; background: #000; border: 1px solid var(--border-color); border-radius: 6px; color: white; padding: 12px; font-family: inherit; resize: vertical; margin-bottom: 10px; }
+        .announcement-form textarea:focus { outline: none; border-color: var(--gold); }
     </style>
 </head>
 <body>
@@ -87,90 +182,137 @@
         <div class="page active" id="pgLobby">
             <header>
                 <h1>Katil <span>Kim?</span></h1>
-                <p class="subtitle">"Herkes şüpheli, kimse masum değil..."</p>
+                <p class="subtitle">"Şüphe, gerçeğin gölgesidir..."</p>
             </header>
-            <button class="btn" onclick="GAME.showCreateForm()">🎭 Yeni Takım Oluştur</button>
-            <button class="btn" onclick="GAME.showJoinForm()">🔑 Takıma Giriş Yap</button>
-            <button class="btn" onclick="GAME.showScoreboard()">🏆 Takım Puanları</button>
-            <button class="btn" onclick="GAME.showPassModal()">🔒 Yönetici Paneli</button>
-            <button class="btn" onclick="GAME.showPassModal2()">📋 Yönetici Paneli 2</button>
-            <div class="form-box" id="createForm">
-                <h3 style="margin-bottom:15px;">Yeni Takım</h3>
+            <div style="max-width: 400px; margin: 0 auto;">
+                <button class="btn" onclick="GAME.showCreateForm()">🎭 Yeni Takım Oluştur</button>
+                <button class="btn" onclick="GAME.showJoinForm()">🔑 Takıma Giriş Yap</button>
+                <button class="btn" onclick="GAME.showScoreboard()">🏆 Skor Tablosu</button>
+                <button class="btn" onclick="GAME.showNotifications()">
+                    🔔 Bildirimler
+                    <span id="notifBadgeLobby" style="display:none; background:var(--accent); color:white; border-radius:50%; width:20px; height:20px; font-size:11px; margin-left:auto;"></span>
+                </button>
+                <button class="btn" style="margin-top: 30px; color: #666; border-color: transparent;" onclick="GAME.showPassModal()">🔒 Yönetici Paneli</button>
+            </div>
+
+            <div class="form-box" id="createForm" style="display:none;">
+                <h3 style="margin-bottom:15px; color:white;">Yeni Takım</h3>
                 <input type="text" id="inpNewTeam" placeholder="Takım adı..." maxlength="20">
-                <div class="form-btns">
-                    <button class="btn-cancel" onclick="GAME.hideCreateForm()">İptal</button>
-                    <button class="btn-ok" onclick="GAME.createTeam()">Oluştur</button>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn" onclick="GAME.hideCreateForm()">İptal</button>
+                    <button class="btn btn-primary" onclick="GAME.createTeam()">Oluştur</button>
                 </div>
             </div>
-            <div class="form-box" id="joinForm">
-                <h3 style="margin-bottom:15px;">Takım Seç</h3>
-                <div class="team-list" id="joinList"></div>
-                <div class="form-btns">
-                    <button class="btn-cancel" onclick="GAME.hideJoinForm()">İptal</button>
-                    <button class="btn-ok" onclick="GAME.joinTeam()">Giriş</button>
+
+            <div class="form-box" id="joinForm" style="display:none;">
+                <h3 style="margin-bottom:15px; color:white;">Takım Seç</h3>
+                <div class="team-list" id="joinList" style="max-height:200px; overflow-y:auto; margin-bottom:15px;"></div>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn" onclick="GAME.hideJoinForm()">İptal</button>
+                    <button class="btn btn-primary" onclick="GAME.joinTeam()">Giriş</button>
                 </div>
             </div>
         </div>
 
         <div class="page" id="pgTeam">
-            <div style="text-align:center;color:#888;font-size:12px;margin-top:20px;">🔍 Dedektif Takımı</div>
-            <div class="team-name-big" id="dispTeamName">-</div>
-            <div class="clue-box">
-                <h3 style="margin-bottom:12px;">🔎 Yeni İpucu Gir</h3>
-                <div class="clue-row">
-                    <input type="text" id="inpClue" placeholder="İpucunu yazın...">
-                    <button onclick="GAME.addClue()">Kaydet</button>
+            <header style="padding: 20px 0;">
+                <div style="color:#666; font-size:12px; letter-spacing: 2px; text-transform: uppercase;">Dedektif Paneli</div>
+                <h1 id="dispTeamName" style="font-size:32px; margin-top:5px;">-</h1>
+            </header>
+            
+            <div style="max-width:500px; margin: 0 auto;">
+                <div style="background:#111; padding:20px; border-radius:12px; border:1px solid #222; margin-bottom:20px;">
+                    <h3 style="margin-bottom:12px; color:var(--gold);">🔎 Yeni İpucu</h3>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="inpClue" placeholder="Bulduğunuz ipucunu yazın..." style="margin:0;">
+                        <button class="btn btn-primary" style="width:auto; margin:0;" onclick="GAME.addClue()">Gönder</button>
+                    </div>
                 </div>
+
+                <div style="background:#111; padding:20px; border-radius:12px; border:1px solid #222;">
+                    <h3 style="margin-bottom:12px; display:flex; justify-content:space-between;">
+                        📋 Kayıtlar <span id="clueCnt" style="color:#666; font-size:14px;">(0)</span>
+                    </h3>
+                    <div id="myClueList" style="max-height:300px; overflow-y:auto;"></div>
+                </div>
+                <button class="btn" style="margin-top:20px; border-color:#333;" onclick="GAME.exitTeam()">🚪 Çıkış Yap</button>
             </div>
-            <div class="clue-box">
-                <h3 style="margin-bottom:12px;">📋 İpuçlarınız <span id="clueCnt">(0)</span></h3>
-                <div class="my-clues" id="myClueList"></div>
-            </div>
-            <button class="exit-btn" onclick="GAME.exitTeam()">🚪 Çıkış Yap</button>
         </div>
 
         <div class="page" id="pgAdmin">
             <div class="admin-head">
-                <h2>👁️ Yönetici</h2>
-                <button class="back-btn" onclick="GAME.goLobby()">← Çıkış</button>
+                <div>
+                    <h2 style="font-size:24px;">👁️ Yönetici Paneli</h2>
+                    <div style="color:#666; font-size:12px; margin-top:4px;">
+                        <span id="statTeams">0</span> Takım • <span id="statClues">0</span> İpucu
+                    </div>
+                </div>
+                <button class="back-btn" onclick="GAME.goLobby()">Çıkış</button>
             </div>
-            <div class="stats">
-                <div class="stat"><div class="stat-val" id="statTeams">0</div><div class="stat-lbl">TAKIM</div></div>
-                <div class="stat"><div class="stat-val" id="statClues">0</div><div class="stat-lbl">İPUCU</div></div>
+            
+            <div class="announcement-form">
+                <h3 style="color:var(--gold); font-size:14px; margin-bottom:12px;">📢 Genel Duyuru Gönder</h3>
+                <textarea id="announcementText" placeholder="Tüm takımlara gönderilecek duyuruyu yazın..."></textarea>
+                <button class="btn btn-primary" style="width:auto; padding:10px 24px; margin:0;" onclick="ADMIN.sendAnnouncement()">Duyuruyu Gönder</button>
             </div>
-            <div id="adminList"></div>
-            <button class="reset-btn" onclick="GAME.resetGame()">⚠️ TÜM TAKIMLARI SİL</button>
+
+            <div class="stats-chart" id="statsChart">
+                <h3 style="color:#666; font-size:12px; text-transform:uppercase; margin-bottom:15px;">📊 Canlı Puan Durumu</h3>
+                <div id="chartContent"></div>
+            </div>
+
+            <div id="adminList" class="admin-list"></div>
+
+            <button class="btn" style="background:#300; color:#faa; border:1px solid #500; margin-top:30px;" onclick="GAME.resetGame()">⚠️ OYUNU SIFIRLA (Tüm Takımları Sil)</button>
         </div>
 
         <div class="page" id="pgScoreboard">
             <div class="admin-head">
-                <h2>🏆 Takım Puanları</h2>
-                <button class="back-btn" onclick="GAME.goLobby()">← Geri</button>
+                <h2>🏆 Liderlik Tablosu</h2>
+                <button class="back-btn" onclick="GAME.goLobby()">Geri</button>
             </div>
-            <div id="scoreboardList"></div>
+            <div id="scoreboardList" style="max-width:600px; margin:0 auto;"></div>
         </div>
 
-        <div class="page" id="pgAdmin2">
+        <div class="page" id="pgNotifications">
             <div class="admin-head">
-                <h2>📋 İpucu Takip</h2>
-                <button class="back-btn" onclick="GAME.goLobby()">← Geri</button>
+                <h2>🔔 Bildirimler</h2>
+                <button class="back-btn" onclick="GAME.goLobby()">Geri</button>
             </div>
-            <div id="admin2List"></div>
+            <div style="max-width:700px; margin:0 auto;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <div style="color:#888; font-size:13px;">
+                        Toplam <span id="notifCount">0</span> bildirim
+                    </div>
+                    <button class="btn" style="width:auto; padding:8px 16px; font-size:12px; margin:0;" onclick="NOTIF.markAllRead()">Tümünü Okundu İşaretle</button>
+                </div>
+                <div class="notif-list" id="notifList"></div>
+            </div>
         </div>
     </div>
 
     <div class="modal" id="passModal">
         <div class="modal-box">
-            <h3>🔒 Şifre Girin</h3>
-            <input type="password" id="inpPass" maxlength="6" placeholder="******">
-            <div class="modal-btns">
-                <button class="btn-cancel" onclick="GAME.hidePassModal()">İptal</button>
-                <button class="btn-ok" onclick="GAME.checkPass()">Giriş</button>
+            <h3 style="margin-bottom:10px; color:white;">Yönetici Girişi</h3>
+            <input type="password" id="inpPass" maxlength="6" placeholder="******" style="text-align:center; letter-spacing:5px; font-size:20px;">
+            <div style="display:flex; gap:10px;">
+                <button class="btn" onclick="GAME.hidePassModal()">İptal</button>
+                <button class="btn btn-primary" onclick="GAME.checkPass()">Giriş</button>
             </div>
         </div>
     </div>
 
     <div id="toast"></div>
+
+    <!-- Bildirim Popup -->
+    <div id="notificationPopup" class="notification-popup">
+        <div class="notif-header">
+            <div class="notif-title" id="popupTitle">Bildirim</div>
+            <button class="notif-close" onclick="NOTIF.closePopup()">×</button>
+        </div>
+        <div class="notif-body" id="popupBody"></div>
+        <div class="notif-time" id="popupTime"></div>
+    </div>
 
     <script>
         (function() {
@@ -178,9 +320,11 @@
             var teams = [];
             var currentTeamId = localStorage.getItem('currentTeamId');
             var selectedJoinId = null;
-            var isProcessing = false; // CLICK LOCK
-            var pendingAdmin = 1; // Hangi admin paneline gidilecek
+            var isProcessing = false;
+            var notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+            var popupTimeout = null;
 
+            // UI Yardımcıları
             function toast(msg, err) {
                 var t = document.getElementById('toast');
                 t.textContent = msg;
@@ -189,81 +333,55 @@
             }
 
             function showPage(id) {
-                document.getElementById('pgLobby').classList.remove('active');
-                document.getElementById('pgTeam').classList.remove('active');
-                document.getElementById('pgAdmin').classList.remove('active');
-                document.getElementById('pgScoreboard').classList.remove('active');
-                document.getElementById('pgAdmin2').classList.remove('active');
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
                 document.getElementById(id).classList.add('active');
             }
 
-            // ADMIN PUAN FONKSİYONU - GLOBAL, DEBOUNCED
+            // Global Fonksiyonlar (HTML onclick için)
             window.adminScore = function(teamId, amount) {
-                if (isProcessing) {
-                    console.log('BLOCKED - isProcessing');
-                    return;
-                }
+                if (isProcessing) return;
                 isProcessing = true;
-                
-                console.log('adminScore called:', teamId, amount);
-                
                 socket.emit('change-score', { teamId: teamId, amount: amount }, function(res) {
                     isProcessing = false;
-                    if (res.success) {
-                        var sign = amount > 0 ? '+' : '';
-                        toast(res.team.name + ' ' + sign + amount + ' puan');
-                    } else {
-                        toast(res.error, true);
-                    }
+                    if (!res.success) toast(res.error, true);
                 });
             };
 
-            // ADMIN SİL FONKSİYONU - GLOBAL
             window.adminDel = function(teamId, teamName) {
                 if (isProcessing) return;
-                
-                console.log('adminDel called:', teamId, teamName);
-                
-                if (confirm(teamName + ' silinsin mi?')) {
+                if (confirm(teamName + ' takımını silmek istiyor musunuz?')) {
                     isProcessing = true;
                     socket.emit('delete-team', teamId, function(res) {
                         isProcessing = false;
-                        if (res.success) {
-                            toast(teamName + ' silindi!');
-                        } else {
-                            toast(res.error, true);
-                        }
+                        if (res.success) toast('Takım silindi.');
+                        else toast(res.error, true);
                     });
                 }
             };
 
             window.GAME = {
-                showCreateForm: function() {
-                    document.getElementById('createForm').classList.add('show');
-                    document.getElementById('joinForm').classList.remove('show');
+                showCreateForm: function() { 
+                    document.getElementById('createForm').style.display = 'block'; 
+                    document.getElementById('joinForm').style.display = 'none';
+                    document.getElementById('inpNewTeam').focus();
                 },
-                hideCreateForm: function() {
-                    document.getElementById('createForm').classList.remove('show');
-                },
+                hideCreateForm: function() { document.getElementById('createForm').style.display = 'none'; },
                 showJoinForm: function() {
-                    document.getElementById('joinForm').classList.add('show');
-                    document.getElementById('createForm').classList.remove('show');
-                    selectedJoinId = null;
+                    document.getElementById('joinForm').style.display = 'block';
+                    document.getElementById('createForm').style.display = 'none';
                     renderJoinList();
                 },
-                hideJoinForm: function() {
-                    document.getElementById('joinForm').classList.remove('show');
-                },
+                hideJoinForm: function() { document.getElementById('joinForm').style.display = 'none'; },
+                
                 createTeam: function() {
                     var name = document.getElementById('inpNewTeam').value.trim();
-                    if (!name) { toast('Takım adı girin!', true); return; }
+                    if (!name) { toast('İsim giriniz', true); return; }
                     socket.emit('create-team', name, function(res) {
                         if (res.success) {
                             currentTeamId = res.team.id;
                             localStorage.setItem('currentTeamId', currentTeamId);
                             GAME.hideCreateForm();
                             document.getElementById('inpNewTeam').value = '';
-                            toast(name + ' oluşturuldu!');
                             showPage('pgTeam');
                             renderTeamPage(res.team);
                         } else { toast(res.error, true); }
@@ -271,18 +389,16 @@
                 },
                 selectJoin: function(el) {
                     selectedJoinId = el.getAttribute('data-id');
-                    var all = document.querySelectorAll('.team-opt');
-                    for (var i = 0; i < all.length; i++) all[i].classList.remove('sel');
+                    document.querySelectorAll('.team-opt').forEach(d => d.classList.remove('sel'));
                     el.classList.add('sel');
                 },
                 joinTeam: function() {
-                    if (!selectedJoinId) { toast('Takım seçin!', true); return; }
+                    if (!selectedJoinId) { toast('Takım seçiniz', true); return; }
                     socket.emit('join-team', selectedJoinId, function(res) {
                         if (res.success) {
                             currentTeamId = selectedJoinId;
                             localStorage.setItem('currentTeamId', currentTeamId);
                             GAME.hideJoinForm();
-                            toast(res.team.name + ' giriş yapıldı!');
                             showPage('pgTeam');
                             renderTeamPage(res.team);
                         } else { toast(res.error, true); }
@@ -291,9 +407,9 @@
                 addClue: function() {
                     var inp = document.getElementById('inpClue');
                     var txt = inp.value.trim();
-                    if (!txt) { toast('İpucu yazın!', true); return; }
+                    if (!txt) { toast('Boş ipucu gönderilemez', true); return; }
                     socket.emit('add-clue', { teamId: currentTeamId, clue: txt }, function(res) {
-                        if (res.success) { inp.value = ''; toast('İpucu kaydedildi!'); }
+                        if (res.success) { inp.value = ''; toast('İpucu iletildi'); }
                         else { toast(res.error, true); }
                     });
                 },
@@ -302,297 +418,320 @@
                     localStorage.removeItem('currentTeamId');
                     showPage('pgLobby');
                 },
-                showPassModal: function() {
-                    pendingAdmin = 1;
-                    document.getElementById('passModal').classList.add('show');
+                showPassModal: function() { 
+                    document.getElementById('passModal').classList.add('show'); 
                     document.getElementById('inpPass').value = '';
+                    document.getElementById('inpPass').focus();
                 },
-                hidePassModal: function() {
-                    document.getElementById('passModal').classList.remove('show');
-                },
+                hidePassModal: function() { document.getElementById('passModal').classList.remove('show'); },
                 checkPass: function() {
                     var pass = document.getElementById('inpPass').value;
                     socket.emit('admin-login', pass, function(res) {
                         if (res.success) {
                             GAME.hidePassModal();
-                            if (pendingAdmin === 2) {
-                                showPage('pgAdmin2');
-                                renderAdmin2();
-                            } else {
-                                showPage('pgAdmin');
-                                renderAdminList();
-                            }
-                        } else { toast('Yanlış şifre!', true); }
+                            showPage('pgAdmin');
+                            renderAdminList();
+                        } else { toast('Hatalı şifre', true); }
                     });
                 },
-                goLobby: function() {
-                    showPage('pgLobby');
-                },
-                showScoreboard: function() {
-                    showPage('pgScoreboard');
-                    renderScoreboard();
-                },
-                showPassModal2: function() {
-                    pendingAdmin = 2;
-                    document.getElementById('passModal').classList.add('show');
-                    document.getElementById('inpPass').value = '';
-                },
-                showAdmin2: function() {
-                    showPage('pgAdmin2');
-                    renderAdmin2();
-                },
+                goLobby: function() { showPage('pgLobby'); },
+                showScoreboard: function() { showPage('pgScoreboard'); renderScoreboard(); },
+                showNotifications: function() { showPage('pgNotifications'); NOTIF.render(); },
                 resetGame: function() {
-                    if (teams.length === 0) { toast('Silinecek takım yok!', true); return; }
-                    if (confirm(teams.length + ' takım silinecek. Emin misiniz?')) {
-                        socket.emit('reset-game', function(res) {
-                            if (res.success) { toast('Tüm takımlar silindi!'); }
+                    if (confirm('TÜM veriler silinecek. Emin misiniz?')) {
+                        socket.emit('reset-game', function(res) { toast('Oyun sıfırlandı'); });
+                    }
+                }
+            };
+
+            // BİLDİRİM SİSTEMİ
+            window.NOTIF = {
+                add: function(title, message, type) {
+                    var notif = {
+                        id: Date.now() + Math.random(),
+                        title: title,
+                        message: message,
+                        type: type || 'info', // 'score', 'announcement', 'info'
+                        time: new Date().toLocaleString('tr-TR'),
+                        unread: true
+                    };
+                    notifications.unshift(notif);
+                    if (notifications.length > 50) notifications = notifications.slice(0, 50); // Max 50 bildirim
+                    localStorage.setItem('notifications', JSON.stringify(notifications));
+                    this.updateBadge();
+                    this.showPopup(notif);
+                },
+
+                showPopup: function(notif) {
+                    document.getElementById('popupTitle').textContent = notif.title;
+                    document.getElementById('popupBody').textContent = notif.message;
+                    document.getElementById('popupTime').textContent = notif.time;
+
+                    var popup = document.getElementById('notificationPopup');
+                    popup.classList.add('show');
+
+                    if (popupTimeout) clearTimeout(popupTimeout);
+                    popupTimeout = setTimeout(function() {
+                        popup.classList.remove('show');
+                    }, 6000);
+                },
+
+                closePopup: function() {
+                    document.getElementById('notificationPopup').classList.remove('show');
+                    if (popupTimeout) clearTimeout(popupTimeout);
+                },
+
+                updateBadge: function() {
+                    var unreadCount = notifications.filter(n => n.unread).length;
+                    var badge = document.getElementById('notifBadgeLobby');
+                    if (unreadCount > 0) {
+                        badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                        badge.style.display = 'flex';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                },
+
+                markAllRead: function() {
+                    notifications.forEach(n => n.unread = false);
+                    localStorage.setItem('notifications', JSON.stringify(notifications));
+                    this.updateBadge();
+                    this.render();
+                },
+
+                render: function() {
+                    var container = document.getElementById('notifList');
+                    document.getElementById('notifCount').textContent = notifications.length;
+
+                    if (notifications.length === 0) {
+                        container.innerHTML = '<div style="text-align:center; padding:60px; color:#666;">Henüz bildirim yok</div>';
+                        return;
+                    }
+
+                    // Bildirimleri okundu işaretle (sayfa açıldığında)
+                    notifications.forEach(n => n.unread = false);
+                    localStorage.setItem('notifications', JSON.stringify(notifications));
+                    this.updateBadge();
+
+                    var html = '';
+                    notifications.forEach(n => {
+                        var icon = '📢';
+                        if (n.type === 'score') icon = '🎯';
+                        else if (n.type === 'announcement') icon = '📢';
+
+                        html += `
+                        <div class="notif-item ${n.unread ? 'unread' : ''}">
+                            <div class="notif-item-header">
+                                <div class="notif-item-title">${icon} ${n.title}</div>
+                                <div class="notif-item-time">${n.time}</div>
+                            </div>
+                            <div class="notif-item-body">${n.message}</div>
+                        </div>`;
+                    });
+                    container.innerHTML = html;
+                }
+            };
+
+            // YÖNETİCİ FONKSİYONLARI
+            window.ADMIN = {
+                sendAnnouncement: function() {
+                    var text = document.getElementById('announcementText').value.trim();
+                    if (!text) {
+                        toast('Duyuru metni giriniz', true);
+                        return;
+                    }
+                    if (confirm('Bu duyuru tüm takımlara gönderilecek. Emin misiniz?')) {
+                        socket.emit('send-announcement', text, function(res) {
+                            if (res.success) {
+                                document.getElementById('announcementText').value = '';
+                                toast('Duyuru gönderildi');
+                            } else {
+                                toast(res.error, true);
+                            }
                         });
                     }
                 }
             };
 
+            // RENDER FONKSİYONLARI
+
             function renderJoinList() {
                 var c = document.getElementById('joinList');
-                if (teams.length === 0) {
-                    c.innerHTML = '<div class="empty">Henüz takım yok</div>';
-                    return;
-                }
+                if (teams.length === 0) { c.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">Aktif takım yok</div>'; return; }
                 var html = '';
-                for (var i = 0; i < teams.length; i++) {
-                    var t = teams[i];
-                    html += '<div class="team-opt" data-id="' + t.id + '" onclick="GAME.selectJoin(this)">' + t.name + '</div>';
-                }
+                teams.forEach(t => {
+                    html += `<div class="team-opt" data-id="${t.id}" onclick="GAME.selectJoin(this)">
+                        <div style="font-weight:bold;color:#fff;">${t.name}</div>
+                        <div style="font-size:12px;color:#666;">Puan: ${t.score}</div>
+                    </div>`;
+                });
                 c.innerHTML = html;
             }
 
             function renderTeamPage(team) {
                 document.getElementById('dispTeamName').textContent = team.name;
                 document.getElementById('clueCnt').textContent = '(' + team.clues.length + ')';
-                var html = '';
+                var list = document.getElementById('myClueList');
                 if (team.clues.length === 0) {
-                    html = '<div style="color:#888;text-align:center;">Henüz ipucu yok</div>';
+                    list.innerHTML = '<div style="color:#444;text-align:center;padding:20px;">Henüz ipucu girilmedi.</div>';
                 } else {
+                    var html = '';
+                    // Tersten sırala (en yeni en üstte)
                     for (var i = team.clues.length - 1; i >= 0; i--) {
-                        html += '<div class="clue-item">' + team.clues[i].text + '</div>';
+                        html += `<div style="padding:10px; border-bottom:1px solid #222; color:#ccc;">${team.clues[i].text}</div>`;
                     }
+                    list.innerHTML = html;
                 }
-                document.getElementById('myClueList').innerHTML = html;
             }
 
+            // --- YENİLENMİŞ ADMIN KART RENDER ---
             function renderAdminList() {
+                // İstatistikleri güncelle
                 document.getElementById('statTeams').textContent = teams.length;
-                var totalClues = 0;
-                for (var i = 0; i < teams.length; i++) {
-                    totalClues += teams[i].clues.length;
-                }
+                var totalClues = teams.reduce((acc, t) => acc + t.clues.length, 0);
                 document.getElementById('statClues').textContent = totalClues;
 
                 var container = document.getElementById('adminList');
                 if (teams.length === 0) {
-                    container.innerHTML = '<div class="empty">Henüz takım yok</div>';
+                    container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:50px; color:#444;">Henüz takım yok.</div>';
+                    document.getElementById('chartContent').innerHTML = '';
                     return;
                 }
 
-                // Sıralama için kopyala
-                var sorted = teams.slice();
-                sorted.sort(function(a, b) { return b.score - a.score; });
+                // Sıralama
+                var sorted = teams.slice().sort((a, b) => b.score - a.score);
+                renderScoreChart(sorted);
 
                 var html = '';
-                for (var i = 0; i < sorted.length; i++) {
-                    var t = sorted[i];
-                    var rc = '';
-                    if (i === 0 && t.score > 0) rc = 'g';
-                    else if (i === 1 && t.score > 0) rc = 's';
-                    else if (i === 2 && t.score > 0) rc = 'b';
-
-                    // Escape team name for onclick
+                sorted.forEach((t, index) => {
                     var safeName = t.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    var rankClass = '';
+                    if (index === 0 && t.score > 0) rankClass = 'g';
+                    else if (index === 1 && t.score > 0) rankClass = 's';
+                    else if (index === 2 && t.score > 0) rankClass = 'b';
 
-                    html += '<div class="admin-card" id="card_' + t.id + '">';
-                    html += '<div class="admin-top">';
-                    html += '<div class="rank ' + rc + '">' + (i + 1) + '</div>';
-                    html += '<div class="admin-info">';
-                    html += '<div class="admin-name">' + t.name + '</div>';
-                    html += '<div class="admin-clue-count">' + t.clues.length + ' ipucu</div>';
-                    html += '</div>';
-                    html += '<div class="admin-score" id="score_' + t.id + '">' + t.score + '</div>';
-                    html += '</div>';
-                    html += '<div class="admin-btns">';
-                    // onclick doğrudan fonksiyon çağırıyor, parametre olarak string geçiyor
-                    html += '<button class="bp10" onclick="adminScore(\'' + t.id + '\', 10)">+10</button>';
-                    html += '<button class="bp5" onclick="adminScore(\'' + t.id + '\', 5)">+5</button>';
-                    html += '<button class="bm5" onclick="adminScore(\'' + t.id + '\', -5)">-5</button>';
-                    html += '<button class="bm10" onclick="adminScore(\'' + t.id + '\', -10)">-10</button>';
-                    html += '<button class="bdel" onclick="adminDel(\'' + t.id + '\', \'' + safeName + '\')">✕ Sil</button>';
-                    html += '</div>';
-                    html += '</div>';
-                }
+                    // Kart HTML Yapısı
+                    html += `
+                    <div class="admin-card" id="card_${t.id}">
+                        <div class="card-header">
+                            <div class="team-identity">
+                                <div class="rank-badge ${rankClass}">${index + 1}</div>
+                                <div class="team-name">${t.name}</div>
+                            </div>
+                            <div class="team-score" id="score_${t.id}">${t.score}</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="controls-section">
+                                <button class="ctrl-btn btn-p10" onclick="adminScore('${t.id}', 10)">+10</button>
+                                <button class="ctrl-btn btn-p5" onclick="adminScore('${t.id}', 5)">+5</button>
+                                <button class="ctrl-btn btn-m5" onclick="adminScore('${t.id}', -5)">-5</button>
+                                <button class="ctrl-btn btn-m10" onclick="adminScore('${t.id}', -10)">-10</button>
+                            </div>
+                            
+                            <div class="clues-section" id="clues_${t.id}">
+                                <div class="clues-title">İPUÇLARI (${t.clues.length})</div>
+                                ${ t.clues.length === 0 
+                                    ? '<div class="no-clues">İpucu yok</div>' 
+                                    : t.clues.map(c => 
+                                        `<div class="clue-item">${c.text}<div class="clue-time">${c.time}</div><div style="clear:both"></div></div>`
+                                      ).join('') 
+                                }
+                            </div>
+                            
+                            <button class="delete-btn" onclick="adminDel('${t.id}', '${safeName}')">Takımı Sil</button>
+                        </div>
+                    </div>`;
+                });
                 container.innerHTML = html;
             }
 
-            // Sadece puan güncelle, tüm listeyi yeniden render etme
-            function updateScoresOnly() {
-                for (var i = 0; i < teams.length; i++) {
-                    var t = teams[i];
-                    var scoreEl = document.getElementById('score_' + t.id);
-                    if (scoreEl) {
-                        scoreEl.textContent = t.score;
-                    }
-                }
+            function renderScoreChart(sortedTeams) {
+                var maxScore = Math.max(...sortedTeams.map(t => t.score));
+                if (maxScore <= 0) maxScore = 1;
+                
+                var html = '';
+                sortedTeams.forEach(t => {
+                    var pct = Math.max(0, (t.score / maxScore) * 100);
+                    html += `
+                    <div class="chart-bar">
+                        <div class="chart-label">${t.name}</div>
+                        <div class="chart-track">
+                            <div class="chart-fill" style="width: ${pct}%"></div>
+                        </div>
+                        <div class="chart-val">${t.score}</div>
+                    </div>`;
+                });
+                document.getElementById('chartContent').innerHTML = html;
             }
 
-            // Scoreboard render
             function renderScoreboard() {
-                var container = document.getElementById('scoreboardList');
-                if (teams.length === 0) {
-                    container.innerHTML = '<div class="empty">Henüz takım yok</div>';
-                    return;
-                }
-
-                var sorted = teams.slice();
-                sorted.sort(function(a, b) { return b.score - a.score; });
-
+                var c = document.getElementById('scoreboardList');
+                if (teams.length === 0) { c.innerHTML = '<div style="text-align:center; color:#666; padding:40px;">Veri yok</div>'; return; }
+                
+                var sorted = teams.slice().sort((a, b) => b.score - a.score);
                 var html = '';
-                for (var i = 0; i < sorted.length; i++) {
-                    var t = sorted[i];
-                    var rc = '';
-                    if (i === 0 && t.score > 0) rc = 'g';
-                    else if (i === 1 && t.score > 0) rc = 's';
-                    else if (i === 2 && t.score > 0) rc = 'b';
-
-                    html += '<div class="score-card" id="scard_' + t.id + '">';
-                    html += '<div class="rank ' + rc + '">' + (i + 1) + '</div>';
-                    html += '<div class="info"><div class="name">' + t.name + '</div></div>';
-                    html += '<div class="pts" id="spts_' + t.id + '">' + t.score + '</div>';
-                    html += '</div>';
-                }
-                container.innerHTML = html;
+                sorted.forEach((t, i) => {
+                    var bg = '#161616';
+                    var border = '#333';
+                    var color = '#fff';
+                    if (i===0) { border = '#D4AF37'; color='#D4AF37'; }
+                    
+                    html += `
+                    <div style="background:${bg}; border:1px solid ${border}; padding:20px; border-radius:10px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between;">
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <div style="font-size:20px; font-weight:bold; width:30px; text-align:center; color:#666;">${i+1}</div>
+                            <div style="font-size:18px; font-weight:600; color:#fff;">${t.name}</div>
+                        </div>
+                        <div style="font-size:24px; font-weight:bold; color:${color};">${t.score}</div>
+                    </div>`;
+                });
+                c.innerHTML = html;
             }
 
-            // Scoreboard puanlarını güncelle
-            function updateScoreboardOnly() {
-                for (var i = 0; i < teams.length; i++) {
-                    var t = teams[i];
-                    var ptsEl = document.getElementById('spts_' + t.id);
-                    if (ptsEl) {
-                        ptsEl.textContent = t.score;
-                    }
-                }
+            // Sadece skor değiştiğinde (performans için)
+            function updateScoresOnly() {
+                // Grafiği yeniden çiz
+                var sorted = teams.slice().sort((a, b) => b.score - a.score);
+                renderScoreChart(sorted);
+
+                // Kartlardaki sayıları güncelle
+                teams.forEach(t => {
+                    var el = document.getElementById('score_' + t.id);
+                    if (el) el.textContent = t.score;
+                });
             }
 
-            // Admin Panel 2 - İpucu Takip
-            function renderAdmin2() {
-                var container = document.getElementById('admin2List');
-                if (teams.length === 0) {
-                    container.innerHTML = '<div class="empty">Henüz takım yok</div>';
-                    return;
-                }
-
-                var html = '';
-                for (var i = 0; i < teams.length; i++) {
-                    var t = teams[i];
-                    html += '<div class="admin2-card" id="a2card_' + t.id + '">';
-                    html += '<div class="team-header">🔍 ' + t.name + '</div>';
-                    html += '<div class="clue-list" id="a2clues_' + t.id + '">';
-                    if (t.clues.length === 0) {
-                        html += '<div class="no-clues">Henüz ipucu yok</div>';
-                    } else {
-                        for (var j = 0; j < t.clues.length; j++) {
-                            html += '<div class="clue-entry">' + t.clues[j].text + '<span class="clue-time">' + t.clues[j].time + '</span></div>';
-                        }
-                    }
-                    html += '</div>';
-                    html += '</div>';
-                }
-                container.innerHTML = html;
-            }
-
-            // Admin2 ipuçlarını güncelle
-            function updateAdmin2Clues() {
-                for (var i = 0; i < teams.length; i++) {
-                    var t = teams[i];
-                    var clueContainer = document.getElementById('a2clues_' + t.id);
-                    if (clueContainer) {
-                        var html = '';
-                        if (t.clues.length === 0) {
-                            html = '<div class="no-clues">Henüz ipucu yok</div>';
-                        } else {
-                            for (var j = 0; j < t.clues.length; j++) {
-                                html += '<div class="clue-entry">' + t.clues[j].text + '<span class="clue-time">' + t.clues[j].time + '</span></div>';
-                            }
-                        }
-                        clueContainer.innerHTML = html;
-                    }
-                }
-            }
-
-            // SOCKET EVENTS
+            // Socket Listeners
             socket.on('teams-update', function(newTeams) {
-                var wasInAdmin = document.getElementById('pgAdmin').classList.contains('active');
-                var wasInScoreboard = document.getElementById('pgScoreboard').classList.contains('active');
-                var wasInAdmin2 = document.getElementById('pgAdmin2').classList.contains('active');
-                var oldLength = teams.length;
+                var oldLen = teams.length;
                 teams = newTeams;
-
-                // Join listesi açıksa güncelle
-                if (document.getElementById('joinForm').classList.contains('show')) {
-                    renderJoinList();
-                }
-
-                // Admin sayfasındaysa
-                if (wasInAdmin) {
-                    // Takım sayısı değiştiyse (ekleme/silme) yeniden render et
-                    if (oldLength !== teams.length) {
-                        renderAdminList();
-                    } else {
-                        // Sadece puanlar değiştiyse, DOM'da güncelle
-                        updateScoresOnly();
+                
+                if (document.getElementById('pgAdmin').classList.contains('active')) {
+                    // Takım sayısı değiştiyse full render, değişmediyse sadece skor güncelle (titremeyi önlemek için)
+                    if (oldLen !== teams.length) renderAdminList();
+                    else {
+                        // İpucu sayısı değişmiş mi kontrol et
+                        // Basitlik için full render yapabiliriz ama UX için ayrıştırmak iyidir.
+                        // Şimdilik temiz olması için full render yapalım, grid yapısı stabil zaten.
+                        renderAdminList(); 
                     }
                 }
-
-                // Scoreboard sayfasındaysa
-                if (wasInScoreboard) {
-                    if (oldLength !== teams.length) {
-                        renderScoreboard();
-                    } else {
-                        updateScoreboardOnly();
-                    }
-                }
-
-                // Admin2 sayfasındaysa
-                if (wasInAdmin2) {
-                    if (oldLength !== teams.length) {
-                        renderAdmin2();
-                    } else {
-                        updateAdmin2Clues();
-                    }
-                }
-
-                // Takım sayfasındaysa
+                
+                if (document.getElementById('pgScoreboard').classList.contains('active')) renderScoreboard();
+                if (document.getElementById('joinForm').style.display === 'block') renderJoinList();
+                
                 if (currentTeamId) {
-                    for (var i = 0; i < teams.length; i++) {
-                        if (teams[i].id === currentTeamId) {
-                            renderTeamPage(teams[i]);
-                            break;
-                        }
-                    }
+                    var myTeam = teams.find(t => t.id === currentTeamId);
+                    if (myTeam) renderTeamPage(myTeam);
                 }
-
-                // Stats güncelle
-                document.getElementById('statTeams').textContent = teams.length;
-                var totalClues = 0;
-                for (var j = 0; j < teams.length; j++) {
-                    totalClues += teams[j].clues.length;
-                }
-                document.getElementById('statClues').textContent = totalClues;
             });
 
-            socket.on('team-deleted', function(teamId) {
-                if (currentTeamId === teamId) {
+            socket.on('team-deleted', function(id) {
+                if (currentTeamId === id) {
                     currentTeamId = null;
                     localStorage.removeItem('currentTeamId');
                     showPage('pgLobby');
-                    toast('Takımınız silindi!', true);
+                    toast('Takım silindi', true);
                 }
             });
 
@@ -602,17 +741,25 @@
                 showPage('pgLobby');
             });
 
-            // SAYFA YÜKLENINCE
+            // Bildirim Eventi
+            socket.on('notification', function(data) {
+                NOTIF.add(data.title, data.message, data.type);
+            });
+
+            // Puan değişikliği bildirimi
+            socket.on('score-changed', function(data) {
+                var msg = data.teamName + ' takımı ' + (data.amount > 0 ? '+' : '') + data.amount + ' puan aldı. Yeni puan: ' + data.newScore;
+                NOTIF.add('Puan Değişikliği', msg, 'score');
+            });
+
+            // Init
             window.onload = function() {
+                NOTIF.updateBadge(); // Bildirim badge'ini güncelle
+
                 if (currentTeamId) {
-                    socket.emit('get-team', currentTeamId, function(team) {
-                        if (team) {
-                            showPage('pgTeam');
-                            renderTeamPage(team);
-                        } else {
-                            currentTeamId = null;
-                            localStorage.removeItem('currentTeamId');
-                        }
+                    socket.emit('get-team', currentTeamId, function(t) {
+                        if (t) { showPage('pgTeam'); renderTeamPage(t); }
+                        else { currentTeamId = null; localStorage.removeItem('currentTeamId'); }
                     });
                 }
             };
