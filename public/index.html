@@ -314,6 +314,13 @@
         <div class="notif-time" id="popupTime"></div>
     </div>
 
+    <!-- Bildirim Sesi -->
+    <audio id="notificationSound" preload="auto">
+        <source src="/notification.mp3" type="audio/mpeg">
+        <source src="/notification.ogg" type="audio/ogg">
+        <source src="/notification.wav" type="audio/wav">
+    </audio>
+
     <script>
         (function() {
             var socket = io();
@@ -470,10 +477,24 @@
                     var popup = document.getElementById('notificationPopup');
                     popup.classList.add('show');
 
+                    // Bildirim sesini çal
+                    this.playSound();
+
                     if (popupTimeout) clearTimeout(popupTimeout);
                     popupTimeout = setTimeout(function() {
                         popup.classList.remove('show');
                     }, 6000);
+                },
+
+                playSound: function() {
+                    var audio = document.getElementById('notificationSound');
+                    if (audio) {
+                        audio.currentTime = 0; // Başa sar
+                        audio.volume = 0.5; // Ses seviyesi %50
+                        audio.play().catch(function(err) {
+                            console.log('Ses çalınamadı:', err);
+                        });
+                    }
                 },
 
                 closePopup: function() {
