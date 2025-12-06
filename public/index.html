@@ -268,11 +268,19 @@
 
             <div class="form-box" id="joinForm" style="display:none;">
                 <h3 style="margin-bottom:15px; color:white;">Takım Seç</h3>
-                <div class="team-list" id="joinList" style="max-height:200px; overflow-y:auto; margin-bottom:15px;"></div>
-                <input type="password" id="inpJoinPassword" placeholder="Takım şifresi..." maxlength="20">
-                <div style="display:flex; gap:10px;">
+                <div id="joinTeamList" style="display:block;">
+                    <div class="team-list" id="joinList" style="max-height:300px; overflow-y:auto; margin-bottom:15px;"></div>
                     <button class="btn" onclick="GAME.hideJoinForm()">İptal</button>
-                    <button class="btn btn-primary" onclick="GAME.joinTeam()">Giriş</button>
+                </div>
+                <div id="joinPasswordSection" style="display:none;">
+                    <div style="margin-bottom:15px; color:#888; font-size:14px;">
+                        Seçilen takım: <span id="selectedTeamName" style="color:var(--gold); font-weight:600;"></span>
+                    </div>
+                    <input type="password" id="inpJoinPassword" placeholder="Takım şifresi..." maxlength="20">
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn" onclick="GAME.backToTeamList()">← Geri</button>
+                        <button class="btn btn-primary" onclick="GAME.joinTeam()">Giriş</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -544,9 +552,25 @@
                     initAudio(); // Ses sistemini başlat
                     document.getElementById('joinForm').style.display = 'block';
                     document.getElementById('createForm').style.display = 'none';
+                    // Takım listesini göster, şifre kısmını gizle
+                    document.getElementById('joinTeamList').style.display = 'block';
+                    document.getElementById('joinPasswordSection').style.display = 'none';
                     renderJoinList();
                 },
-                hideJoinForm: function() { document.getElementById('joinForm').style.display = 'none'; },
+                hideJoinForm: function() {
+                    document.getElementById('joinForm').style.display = 'none';
+                    // Formu sıfırla
+                    document.getElementById('joinTeamList').style.display = 'block';
+                    document.getElementById('joinPasswordSection').style.display = 'none';
+                    document.getElementById('inpJoinPassword').value = '';
+                    selectedJoinId = null;
+                },
+                backToTeamList: function() {
+                    document.getElementById('joinTeamList').style.display = 'block';
+                    document.getElementById('joinPasswordSection').style.display = 'none';
+                    document.getElementById('inpJoinPassword').value = '';
+                    selectedJoinId = null;
+                },
                 
                 createTeam: function() {
                     var name = document.getElementById('inpNewTeam').value.trim();
@@ -567,8 +591,13 @@
                 },
                 selectJoin: function(el) {
                     selectedJoinId = el.getAttribute('data-id');
-                    document.querySelectorAll('.team-opt').forEach(d => d.classList.remove('sel'));
-                    el.classList.add('sel');
+                    var teamName = el.getAttribute('data-name');
+
+                    // Takım listesini gizle, şifre kısmını göster
+                    document.getElementById('joinTeamList').style.display = 'none';
+                    document.getElementById('joinPasswordSection').style.display = 'block';
+                    document.getElementById('selectedTeamName').textContent = teamName;
+                    document.getElementById('inpJoinPassword').focus();
                 },
                 joinTeam: function() {
                     if (!selectedJoinId) { toast('Takım seçiniz', true); return; }
@@ -914,7 +943,7 @@
                 if (teams.length === 0) { c.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">Aktif takım yok</div>'; return; }
                 var html = '';
                 teams.forEach(t => {
-                    html += `<div class="team-opt" data-id="${t.id}" onclick="GAME.selectJoin(this)">
+                    html += `<div class="team-opt" data-id="${t.id}" data-name="${t.name}" onclick="GAME.selectJoin(this)">
                         <div style="font-weight:bold;color:#fff;">${t.name}</div>
                         <div style="font-size:12px;color:#666;">Puan: ${t.score}</div>
                     </div>`;
