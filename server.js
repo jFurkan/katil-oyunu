@@ -47,7 +47,18 @@ function loadCredits() {
     } catch (err) {
         console.log('Emeği geçenler dosyası okunamadı, varsayılan liste kullanılıyor');
     }
-    return ['Furkan', 'Claude'];
+    return [
+        {
+            id: 'credit_1',
+            name: 'Furkan',
+            content: 'Oyunun tasarımı ve geliştirmesi'
+        },
+        {
+            id: 'credit_2',
+            name: 'Claude',
+            content: 'Kodlama ve teknik destek'
+        }
+    ];
 }
 
 // Emeği geçenleri kaydet
@@ -395,12 +406,18 @@ io.on('connection', (socket) => {
         }
 
         const trimmedName = name.trim();
-        if (credits.includes(trimmedName)) {
+        if (credits.some(c => c.name === trimmedName)) {
             callback({ success: false, error: 'Bu isim zaten listede!' });
             return;
         }
 
-        credits.push(trimmedName);
+        const newCredit = {
+            id: 'credit_' + Date.now(),
+            name: trimmedName,
+            content: ''
+        };
+
+        credits.push(newCredit);
         saveCredits();
         io.emit('credits-update', credits);
         callback({ success: true });
@@ -408,18 +425,34 @@ io.on('connection', (socket) => {
     });
 
     // Emeği geçenler - İsim sil (admin)
-    socket.on('remove-credit', (name, callback) => {
-        const index = credits.indexOf(name);
+    socket.on('remove-credit', (creditId, callback) => {
+        const index = credits.findIndex(c => c.id === creditId);
         if (index === -1) {
             callback({ success: false, error: 'İsim bulunamadı!' });
             return;
         }
 
+        const creditName = credits[index].name;
         credits.splice(index, 1);
         saveCredits();
         io.emit('credits-update', credits);
         callback({ success: true });
-        console.log('Emeği geçenler listesinden silindi:', name);
+        console.log('Emeği geçenler listesinden silindi:', creditName);
+    });
+
+    // Emeği geçenler - İçerik güncelle (admin)
+    socket.on('update-credit-content', (data, callback) => {
+        const credit = credits.find(c => c.id === data.creditId);
+        if (!credit) {
+            callback({ success: false, error: 'Kişi bulunamadı!' });
+            return;
+        }
+
+        credit.content = data.content || '';
+        saveCredits();
+        io.emit('credits-update', credits);
+        callback({ success: true });
+        console.log('İçerik güncellendi:', credit.name);
     });
 
     // Bağlantı koptu
