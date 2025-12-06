@@ -40,12 +40,53 @@ function saveData() {
 let teams = loadData();
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '260678';
 
+// Oyun durumu
+let gameState = {
+    started: false,
+    countdown: 0,
+    countdownInterval: null
+};
+
+// Countdown'u başlat
+function startCountdown() {
+    if (gameState.countdownInterval) {
+        clearInterval(gameState.countdownInterval);
+    }
+
+    gameState.countdownInterval = setInterval(() => {
+        if (gameState.countdown > 0) {
+            gameState.countdown--;
+            io.emit('countdown-update', gameState.countdown);
+
+            if (gameState.countdown === 0) {
+                clearInterval(gameState.countdownInterval);
+                io.emit('game-ended');
+                console.log('Oyun süresi doldu!');
+            }
+        }
+    }, 1000);
+}
+
+// Countdown'u durdur
+function stopCountdown() {
+    if (gameState.countdownInterval) {
+        clearInterval(gameState.countdownInterval);
+        gameState.countdownInterval = null;
+    }
+}
+
 // Socket.io bağlantıları
 io.on('connection', (socket) => {
     console.log('Kullanıcı bağlandı:', socket.id);
 
     // Takım listesini gönder
     socket.emit('teams-update', teams);
+
+    // Oyun durumunu gönder
+    socket.emit('game-state-update', {
+        started: gameState.started,
+        countdown: gameState.countdown
+    });
 
     // Yeni takım oluştur
     socket.on('create-team', (name, callback) => {
@@ -89,6 +130,12 @@ io.on('connection', (socket) => {
 
     // İpucu ekle
     socket.on('add-clue', (data, callback) => {
+        // Oyun başlamadıysa ipucu gönderilemez
+        if (!gameState.started) {
+            callback({ success: false, error: 'Oyun henüz başlamadı!' });
+            return;
+        }
+
         const team = teams.find(t => t.id === data.teamId);
         if (team) {
             team.clues.push({
@@ -188,6 +235,56 @@ io.on('connection', (socket) => {
 
         callback({ success: true });
         console.log('Duyuru gönderildi:', message.trim());
+    });
+
+    // Oyunu başlat (admin)
+    socket.on('start-game', (minutes, callback) => {
+        if (gameState.started) {
+            callback({ success: false, error: 'Oyun zaten başlamış!' });
+            return;
+        }
+
+        if (!minutes || minutes <= 0) {
+            callback({ success: false, error: 'Geçerli bir süre giriniz!' });
+            return;
+        }
+
+        gameState.started = true;
+        gameState.countdown = minutes * 60; // Dakikayı saniyeye çevir
+        startCountdown();
+
+        io.emit('game-started', gameState.countdown);
+        callback({ success: true });
+        console.log(`Oyun başlatıldı! Süre: ${minutes} dakika`);
+    });
+
+    // Countdown'a süre ekle (admin)
+    socket.on('add-time', (seconds, callback) => {
+        if (!gameState.started) {
+            callback({ success: false, error: 'Oyun başlamadı!' });
+            return;
+        }
+
+        gameState.countdown += seconds;
+        io.emit('countdown-update', gameState.countdown);
+        callback({ success: true });
+        console.log(`${seconds} saniye eklendi. Yeni süre: ${gameState.countdown}s`);
+    });
+
+    // Oyunu bitir (admin)
+    socket.on('end-game', (callback) => {
+        if (!gameState.started) {
+            callback({ success: false, error: 'Oyun zaten bitmedi!' });
+            return;
+        }
+
+        stopCountdown();
+        gameState.started = false;
+        gameState.countdown = 0;
+
+        io.emit('game-ended');
+        callback({ success: true });
+        console.log('Oyun bitirildi!');
     });
 
     // Bağlantı koptu
