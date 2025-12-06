@@ -149,14 +149,33 @@
         #toast.show { transform: translate(-50%, 0); opacity: 1; }
         #toast.err { background: var(--accent); }
 
-        /* Bildirim Sistemi */
-        .notification-popup { position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #1a1a1a, #111); border: 1px solid var(--gold); border-radius: 12px; padding: 20px; min-width: 320px; max-width: 400px; box-shadow: 0 10px 40px rgba(212,175,55,0.3); z-index: 10000; transform: translateX(500px); opacity: 0; transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        /* Bildirim Sistemi - Genel Popup */
+        .notification-popup { position: fixed; top: 20px; right: 20px; border-radius: 12px; padding: 20px; min-width: 320px; max-width: 400px; z-index: 10000; transform: translateX(500px); opacity: 0; transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
         .notification-popup.show { transform: translateX(0); opacity: 1; }
-        .notif-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #333; }
-        .notif-title { font-size: 14px; font-weight: 600; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Duyuru Popup (Kırmızımsı) */
+        .notification-popup.announcement { background: linear-gradient(135deg, #1a0a0a, #0f0505); border: 2px solid var(--accent); box-shadow: 0 10px 40px rgba(139,0,0,0.5); }
+        .notification-popup.announcement .notif-header { border-bottom: 1px solid #300; }
+        .notification-popup.announcement .notif-title { color: #ff6666; }
+        .notification-popup.announcement .notif-body { color: #ffcccc; }
+
+        /* İpucu Popup (Yeşilimsi/Altın) */
+        .notification-popup.clue { background: linear-gradient(135deg, #0a1a0a, #050f05); border: 2px solid var(--gold); box-shadow: 0 10px 40px rgba(212,175,55,0.5); }
+        .notification-popup.clue .notif-header { border-bottom: 1px solid #2a4a2a; }
+        .notification-popup.clue .notif-title { color: var(--gold); }
+        .notification-popup.clue .notif-body { color: #d4e6cc; }
+
+        /* Puan Değişikliği Popup (Mavi tonları) */
+        .notification-popup.score { background: linear-gradient(135deg, #0a0a1a, #05050f); border: 2px solid #4a90e2; box-shadow: 0 10px 40px rgba(74,144,226,0.4); }
+        .notification-popup.score .notif-header { border-bottom: 1px solid #1a2a4a; }
+        .notification-popup.score .notif-title { color: #6ab0ff; }
+        .notification-popup.score .notif-body { color: #cce0ff; }
+
+        .notif-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; }
+        .notif-title { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
         .notif-close { background: transparent; border: none; color: #666; font-size: 20px; cursor: pointer; padding: 0; width: 24px; height: 24px; }
         .notif-close:hover { color: #fff; }
-        .notif-body { color: #ccc; font-size: 14px; line-height: 1.6; }
+        .notif-body { font-size: 14px; line-height: 1.6; }
         .notif-time { font-size: 11px; color: #555; margin-top: 10px; text-align: right; }
         .notif-badge { position: fixed; top: 20px; right: 30px; background: var(--accent); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; z-index: 9998; animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
@@ -292,6 +311,20 @@
             </header>
 
             <div style="max-width:500px; margin: 0 auto;">
+                <!-- Takım Bilgileri Kartı -->
+                <div style="background: linear-gradient(135deg, #1a1a1a, #111); border: 2px solid var(--gold); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 5px 20px rgba(212,175,55,0.2);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="color: #888; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Takım Adı</div>
+                            <div id="teamInfoName" style="color: #fff; font-size: 20px; font-weight: 600;">-</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: #888; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Puan</div>
+                            <div id="teamInfoScore" style="color: var(--gold); font-size: 32px; font-weight: 700; font-family: 'Courier New', monospace;">0</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Countdown Görünümü -->
                 <div id="teamCountdownSection"></div>
 
@@ -719,6 +752,15 @@
                     document.getElementById('popupTime').textContent = notif.time;
 
                     var popup = document.getElementById('notificationPopup');
+
+                    // Önceki tip class'larını temizle
+                    popup.classList.remove('announcement', 'clue', 'score');
+
+                    // Yeni tip class'ını ekle
+                    if (type) {
+                        popup.classList.add(type);
+                    }
+
                     popup.classList.add('show');
 
                     // Sadece duyuru (announcement) tipinde ses çal
@@ -1034,6 +1076,11 @@
 
             function renderTeamPage(team) {
                 document.getElementById('dispTeamName').textContent = team.name;
+
+                // Takım bilgileri kartını güncelle
+                document.getElementById('teamInfoName').textContent = team.name;
+                document.getElementById('teamInfoScore').textContent = team.score;
+
                 document.getElementById('clueCnt').textContent = '(' + team.clues.length + ')';
                 var list = document.getElementById('myClueList');
                 if (team.clues.length === 0) {
