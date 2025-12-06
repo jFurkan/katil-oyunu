@@ -268,7 +268,7 @@
             <!-- Emeği Geçenler -->
             <div class="credits">
                 <h3>Emeği Geçenler</h3>
-                <div class="credits-list">
+                <div class="credits-list" id="mainCreditsList">
                     <div class="credit-item">Furkan</div>
                     <div class="credit-item">Claude</div>
                 </div>
@@ -364,10 +364,11 @@
             </div>
 
             <!-- Admin Menü Butonları -->
-            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:15px; margin-bottom:30px;">
+            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:15px; margin-bottom:30px;">
                 <button class="btn btn-primary" onclick="ADMIN.showSection('game')">⏱️ Oyun Kontrolü</button>
                 <button class="btn" onclick="ADMIN.showSection('scoring')">🎯 Puanlama</button>
                 <button class="btn" onclick="ADMIN.showSection('notifications')">📢 Bildirimler</button>
+                <button class="btn" onclick="ADMIN.showSection('credits')">👥 Emeği Geçenler</button>
             </div>
 
             <!-- Oyun Kontrol Bölümü -->
@@ -442,6 +443,29 @@
 
                 <button class="btn" style="background:#300; color:#faa; border:1px solid #500; margin-top:30px;" onclick="GAME.resetGame()">⚠️ OYUNU SIFIRLA (Tüm Takımları Sil)</button>
             </div>
+
+            <!-- Emeği Geçenler Bölümü -->
+            <div id="adminSectionCredits" class="admin-section" style="display:none;">
+                <h3 style="color:var(--gold); font-size:18px; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">👥 Emeği Geçenler</h3>
+
+                <!-- İsim Ekleme Formu -->
+                <div class="announcement-form" style="margin-bottom:20px;">
+                    <h3 style="color:var(--gold); font-size:14px; margin-bottom:12px;">➕ Yeni İsim Ekle</h3>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="text" id="creditNameInput" placeholder="İsim girin..." maxlength="30" style="margin:0; flex:1;" onkeypress="if(event.key==='Enter') ADMIN.addCredit()">
+                        <button class="btn btn-primary" style="width:auto; padding:12px 24px; margin:0;" onclick="ADMIN.addCredit()">Ekle</button>
+                    </div>
+                </div>
+
+                <!-- İsimler Listesi -->
+                <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h3 style="color:#888; font-size:13px; text-transform:uppercase; letter-spacing:1px;">Mevcut İsimler</h3>
+                        <span id="creditsCount" style="color:#666; font-size:12px;">0 kişi</span>
+                    </div>
+                    <div id="creditsList" style="display:flex; flex-wrap:wrap; gap:10px; min-height:100px;"></div>
+                </div>
+            </div>
         </div>
 
         <div class="page" id="pgScoreboard">
@@ -503,6 +527,7 @@
         (function() {
             var socket = io();
             var teams = [];
+            var credits = ['Furkan', 'Claude'];
             var currentTeamId = localStorage.getItem('currentTeamId');
             var selectedJoinId = null;
             var isProcessing = false;
@@ -940,8 +965,14 @@
                     if (section === 'game') buttons[0].classList.add('btn-primary');
                     else if (section === 'scoring') buttons[1].classList.add('btn-primary');
                     else if (section === 'notifications') buttons[2].classList.add('btn-primary');
+                    else if (section === 'credits') buttons[3].classList.add('btn-primary');
 
                     this.currentSection = section;
+
+                    // Emeği geçenler bölümü açıldıysa listeyi render et
+                    if (section === 'credits') {
+                        renderCreditsList();
+                    }
                 },
 
                 sendGeneralClue: function() {
@@ -1055,6 +1086,37 @@
                     var titleDisplay = document.getElementById('adminPhaseTitle');
                     if (titleDisplay && gameState.phaseTitle) {
                         titleDisplay.textContent = gameState.phaseTitle;
+                    }
+                },
+
+                addCredit: function() {
+                    var input = document.getElementById('creditNameInput');
+                    var name = input.value.trim();
+
+                    if (!name) {
+                        toast('İsim giriniz', true);
+                        return;
+                    }
+
+                    socket.emit('add-credit', name, function(res) {
+                        if (res.success) {
+                            input.value = '';
+                            toast('İsim eklendi');
+                        } else {
+                            toast(res.error, true);
+                        }
+                    });
+                },
+
+                removeCredit: function(name) {
+                    if (confirm('"' + name + '" isimli kişiyi listeden silmek istediğinize emin misiniz?')) {
+                        socket.emit('remove-credit', name, function(res) {
+                            if (res.success) {
+                                toast('İsim silindi');
+                            } else {
+                                toast(res.error, true);
+                            }
+                        });
                     }
                 }
             };
@@ -1261,7 +1323,56 @@
                 });
             }
 
+            // Emeği geçenler listesini render et (Admin Paneli)
+            function renderCreditsList() {
+                var container = document.getElementById('creditsList');
+                var countEl = document.getElementById('creditsCount');
+
+                if (!container || !countEl) return;
+
+                countEl.textContent = credits.length + ' kişi';
+
+                if (credits.length === 0) {
+                    container.innerHTML = '<div style="color:#666; text-align:center; padding:40px; width:100%;">Henüz kimse eklenmemiş</div>';
+                    return;
+                }
+
+                var html = '';
+                credits.forEach(function(name) {
+                    var safeName = name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    html += `
+                    <div style="background:#1a1a1a; border:1px solid #333; border-radius:8px; padding:10px 15px; display:flex; align-items:center; gap:10px; transition:0.2s;">
+                        <span style="color:#fff; font-size:14px; flex:1;">${name}</span>
+                        <button onclick="ADMIN.removeCredit('${safeName}')" style="background:transparent; border:1px solid #500; color:#faa; padding:4px 10px; border-radius:4px; font-size:11px; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='rgba(139,0,0,0.2)'" onmouseout="this.style.background='transparent'">🗑️ Sil</button>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            }
+
+            // Ana sayfa emeği geçenler listesini render et
+            function renderMainCredits() {
+                var container = document.getElementById('mainCreditsList');
+                if (!container) return;
+
+                if (credits.length === 0) {
+                    container.innerHTML = '<div class="credit-item">-</div>';
+                    return;
+                }
+
+                var html = '';
+                credits.forEach(function(name) {
+                    html += `<div class="credit-item">${name}</div>`;
+                });
+                container.innerHTML = html;
+            }
+
             // Socket Listeners
+            socket.on('credits-update', function(newCredits) {
+                credits = newCredits;
+                renderMainCredits();
+                renderCreditsList();
+            });
+
             socket.on('teams-update', function(newTeams) {
                 var oldLen = teams.length;
                 teams = newTeams;
@@ -1407,6 +1518,7 @@
             // Init
             window.onload = function() {
                 NOTIF.updateBadge(); // Bildirim badge'ini güncelle
+                renderMainCredits(); // Ana sayfa emeği geçenler listesini render et
 
                 // İlk kullanıcı etkileşiminde sesi etkinleştir (mobil için - MÜLTİPLE EVENT)
                 var firstInteraction = function() {

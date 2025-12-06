@@ -11,8 +11,9 @@ const io = new Server(server);
 // Statik dosyalar
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Veri dosyası
+// Veri dosyaları
 const DATA_FILE = path.join(__dirname, 'data.json');
+const CREDITS_FILE = path.join(__dirname, 'credits.json');
 
 // Verileri dosyadan yükle
 function loadData() {
@@ -36,8 +37,31 @@ function saveData() {
     }
 }
 
+// Emeği geçenleri yükle
+function loadCredits() {
+    try {
+        if (fs.existsSync(CREDITS_FILE)) {
+            const data = fs.readFileSync(CREDITS_FILE, 'utf8');
+            return JSON.parse(data);
+        }
+    } catch (err) {
+        console.log('Emeği geçenler dosyası okunamadı, varsayılan liste kullanılıyor');
+    }
+    return ['Furkan', 'Claude'];
+}
+
+// Emeği geçenleri kaydet
+function saveCredits() {
+    try {
+        fs.writeFileSync(CREDITS_FILE, JSON.stringify(credits, null, 2));
+    } catch (err) {
+        console.log('Emeği geçenler kaydedilemedi:', err);
+    }
+}
+
 // Oyun verileri
 let teams = loadData();
+let credits = loadCredits();
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '260678';
 
 // Oyun durumu
@@ -99,6 +123,9 @@ io.on('connection', (socket) => {
         countdown: gameState.countdown,
         phaseTitle: gameState.phaseTitle
     });
+
+    // Emeği geçenleri gönder
+    socket.emit('credits-update', credits);
 
     // Yeni takım oluştur
     socket.on('create-team', (data, callback) => {
@@ -358,6 +385,41 @@ io.on('connection', (socket) => {
 
         callback({ success: true });
         console.log('Oyun bitirildi!');
+    });
+
+    // Emeği geçenler - İsim ekle (admin)
+    socket.on('add-credit', (name, callback) => {
+        if (!name || name.trim() === '') {
+            callback({ success: false, error: 'İsim boş olamaz!' });
+            return;
+        }
+
+        const trimmedName = name.trim();
+        if (credits.includes(trimmedName)) {
+            callback({ success: false, error: 'Bu isim zaten listede!' });
+            return;
+        }
+
+        credits.push(trimmedName);
+        saveCredits();
+        io.emit('credits-update', credits);
+        callback({ success: true });
+        console.log('Emeği geçenler listesine eklendi:', trimmedName);
+    });
+
+    // Emeği geçenler - İsim sil (admin)
+    socket.on('remove-credit', (name, callback) => {
+        const index = credits.indexOf(name);
+        if (index === -1) {
+            callback({ success: false, error: 'İsim bulunamadı!' });
+            return;
+        }
+
+        credits.splice(index, 1);
+        saveCredits();
+        io.emit('credits-update', credits);
+        callback({ success: true });
+        console.log('Emeği geçenler listesinden silindi:', name);
     });
 
     // Bağlantı koptu
