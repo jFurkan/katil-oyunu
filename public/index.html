@@ -175,6 +175,14 @@
         .announcement-form { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
         .announcement-form textarea { width: 100%; min-height: 80px; background: #000; border: 1px solid var(--border-color); border-radius: 6px; color: white; padding: 12px; font-family: inherit; resize: vertical; margin-bottom: 10px; }
         .announcement-form textarea:focus { outline: none; border-color: var(--gold); }
+
+        /* Emeği Geçenler Bölümü */
+        .credits { margin-top: 60px; padding: 30px 20px; border-top: 1px solid var(--border-color); text-align: center; }
+        .credits h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 2px; color: var(--gold); margin-bottom: 15px; font-weight: 600; }
+        .credits-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 15px; }
+        .credit-item { background: var(--card-bg); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 8px; font-size: 13px; color: var(--text-main); transition: all 0.2s; }
+        .credit-item:hover { border-color: var(--gold); transform: translateY(-2px); }
+        .credits-note { margin-top: 20px; font-size: 11px; color: var(--text-muted); font-style: italic; }
     </style>
 </head>
 <body>
@@ -193,6 +201,16 @@
                     <span id="notifBadgeLobby" style="display:none; background:var(--accent); color:white; border-radius:50%; width:20px; height:20px; font-size:11px; margin-left:auto;"></span>
                 </button>
                 <button class="btn" style="margin-top: 30px; color: #666; border-color: transparent;" onclick="GAME.showPassModal()">🔒 Yönetici Paneli</button>
+            </div>
+
+            <!-- Emeği Geçenler -->
+            <div class="credits">
+                <h3>Emeği Geçenler</h3>
+                <div class="credits-list">
+                    <div class="credit-item">Furkan</div>
+                    <div class="credit-item">Claude</div>
+                </div>
+                <div class="credits-note">Bu oyun Katil Kim? dedektiflik oyunu için geliştirilmiştir.</div>
             </div>
 
             <div class="form-box" id="createForm" style="display:none;">
@@ -337,17 +355,30 @@
                 if (!audioInitialized) {
                     var audio = document.getElementById('notificationSound');
                     if (audio) {
-                        // Sessiz bir şekilde çal ve hemen durdur (iOS/Android için)
-                        audio.volume = 0;
-                        audio.play().then(function() {
-                            audio.pause();
-                            audio.currentTime = 0;
-                            audio.volume = 0.5;
-                            audioInitialized = true;
-                            console.log('Ses sistemi başlatıldı');
-                        }).catch(function(err) {
-                            console.log('Ses başlatılamadı:', err);
-                        });
+                        try {
+                            // Audio elementini yükle
+                            audio.load();
+
+                            // Sessiz bir şekilde çal ve hemen durdur (iOS/Android için)
+                            audio.muted = true;
+                            var playPromise = audio.play();
+
+                            if (playPromise !== undefined) {
+                                playPromise.then(function() {
+                                    audio.pause();
+                                    audio.currentTime = 0;
+                                    audio.muted = false;
+                                    audio.volume = 0.6;
+                                    audioInitialized = true;
+                                    console.log('✓ Ses sistemi başlatıldı');
+                                }).catch(function(err) {
+                                    console.log('⚠ Ses başlatılamadı:', err.message);
+                                    audio.muted = false;
+                                });
+                            }
+                        } catch(e) {
+                            console.log('⚠ Ses hatası:', e.message);
+                        }
                     }
                 }
             }
@@ -361,12 +392,14 @@
             }
 
             function showPage(id) {
+                initAudio(); // Her sayfa değişiminde ses sistemini hazırla
                 document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
                 document.getElementById(id).classList.add('active');
             }
 
             // Global Fonksiyonlar (HTML onclick için)
             window.adminScore = function(teamId, amount) {
+                initAudio(); // Ses sistemini aktif et
                 if (isProcessing) return;
                 isProcessing = true;
                 socket.emit('change-score', { teamId: teamId, amount: amount }, function(res) {
@@ -490,10 +523,10 @@
                     if (notifications.length > 50) notifications = notifications.slice(0, 50); // Max 50 bildirim
                     localStorage.setItem('notifications', JSON.stringify(notifications));
                     this.updateBadge();
-                    this.showPopup(notif);
+                    this.showPopup(notif, type);
                 },
 
-                showPopup: function(notif) {
+                showPopup: function(notif, type) {
                     document.getElementById('popupTitle').textContent = notif.title;
                     document.getElementById('popupBody').textContent = notif.message;
                     document.getElementById('popupTime').textContent = notif.time;
@@ -501,8 +534,10 @@
                     var popup = document.getElementById('notificationPopup');
                     popup.classList.add('show');
 
-                    // Bildirim sesini çal
-                    this.playSound();
+                    // Sadece duyuru (announcement) tipinde ses çal
+                    if (type === 'announcement') {
+                        this.playSound();
+                    }
 
                     if (popupTimeout) clearTimeout(popupTimeout);
                     popupTimeout = setTimeout(function() {
@@ -512,26 +547,39 @@
 
                 playSound: function() {
                     var audio = document.getElementById('notificationSound');
-                    if (audio) {
+                    if (!audio) return;
+
+                    try {
                         // Mobil cihazlar için ses başlatma gerekiyorsa otomatik başlat
                         if (!audioInitialized) {
+                            console.log('⚠ Ses sistemi henüz başlatılmadı, başlatılıyor...');
                             initAudio();
+                            // Ses sistemi başlatıldıktan sonra 100ms bekle
+                            setTimeout(function() {
+                                NOTIF.playSound();
+                            }, 100);
+                            return;
                         }
 
-                        audio.currentTime = 0; // Başa sar
-                        audio.volume = 0.5; // Ses seviyesi %50
+                        // Audio'yu hazırla
+                        audio.currentTime = 0;
+                        if (audio.muted) audio.muted = false;
+                        if (audio.volume === 0) audio.volume = 0.6;
 
-                        // Promise ile hata yakalama
+                        // Çal
                         var playPromise = audio.play();
                         if (playPromise !== undefined) {
                             playPromise.then(function() {
-                                console.log('Bildirim sesi çalındı');
+                                console.log('🔊 Bildirim sesi çalındı');
                             }).catch(function(err) {
-                                console.log('Ses çalınamadı (kullanıcı etkileşimi gerekebilir):', err);
-                                // Mobil için: Bir sonraki kullanıcı tıklamasında tekrar dene
+                                console.log('⚠ Ses çalınamadı:', err.message);
+                                // Ses sistemi tekrar başlatılmalı
                                 audioInitialized = false;
                             });
                         }
+                    } catch(e) {
+                        console.log('⚠ Ses çalma hatası:', e.message);
+                        audioInitialized = false;
                     }
                 },
 
@@ -815,9 +863,23 @@
             window.onload = function() {
                 NOTIF.updateBadge(); // Bildirim badge'ini güncelle
 
-                // İlk kullanıcı tıklamasında sesi etkinleştir (mobil için)
-                document.addEventListener('click', initAudio, { once: true });
-                document.addEventListener('touchstart', initAudio, { once: true });
+                // İlk kullanıcı etkileşiminde sesi etkinleştir (mobil için - MÜLTİPLE EVENT)
+                var firstInteraction = function() {
+                    initAudio();
+                    console.log('İlk kullanıcı etkileşimi algılandı');
+                };
+
+                // Tüm olası kullanıcı etkileşimlerini dinle
+                document.addEventListener('click', firstInteraction, { once: true });
+                document.addEventListener('touchstart', firstInteraction, { once: true });
+                document.addEventListener('touchend', firstInteraction, { once: true });
+                document.addEventListener('keydown', firstInteraction, { once: true });
+
+                // Tüm butonlara da ekstra listener ekle (güvenlik için)
+                document.querySelectorAll('.btn, button').forEach(function(btn) {
+                    btn.addEventListener('click', initAudio);
+                    btn.addEventListener('touchstart', initAudio);
+                });
 
                 if (currentTeamId) {
                     socket.emit('get-team', currentTeamId, function(t) {
