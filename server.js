@@ -243,6 +243,22 @@ io.on('connection', (socket) => {
         console.log('Oyun sıfırlandı! ' + count + ' takım silindi.');
     });
 
+    // Genel ipucu gönder (admin)
+    socket.on('send-general-clue', (clue, callback) => {
+        if (!clue || clue.trim() === '') {
+            callback({ success: false, error: 'İpucu metni boş olamaz!' });
+            return;
+        }
+
+        // Tüm kullanıcılara ipucu gönder
+        io.emit('general-clue', {
+            clue: clue.trim()
+        });
+
+        callback({ success: true });
+        console.log('Genel ipucu gönderildi:', clue.trim());
+    });
+
     // Duyuru gönder (admin)
     socket.on('send-announcement', (message, callback) => {
         if (!message || message.trim() === '') {
