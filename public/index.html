@@ -202,10 +202,14 @@
 
         /* Takım Sayfası Countdown */
         .team-countdown { background: linear-gradient(135deg, #1a1a1a, #0a0a0a); border: 2px solid var(--gold); border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: center; }
+        .team-countdown-phase { font-size: 18px; color: var(--gold); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 15px; font-weight: 600; }
         .team-countdown-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
         .team-countdown-time { font-size: 56px; font-weight: 700; color: var(--gold); font-family: 'Courier New', monospace; letter-spacing: 5px; }
         .team-countdown-time.warning { color: #ff6666; }
         .game-not-started { color: #666; font-size: 14px; padding: 30px; text-align: center; font-style: italic; }
+
+        /* Admin Countdown Phase */
+        .admin-phase-title { text-align: center; color: var(--gold); font-size: 16px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px; font-weight: 600; }
 
         /* Emeği Geçenler Bölümü */
         .credits { margin-top: 60px; padding: 30px 20px; border-top: 1px solid var(--border-color); text-align: center; }
@@ -255,6 +259,7 @@
             <div class="form-box" id="createForm" style="display:none;">
                 <h3 style="margin-bottom:15px; color:white;">Yeni Takım</h3>
                 <input type="text" id="inpNewTeam" placeholder="Takım adı..." maxlength="20">
+                <input type="password" id="inpNewTeamPassword" placeholder="Takım şifresi..." maxlength="20">
                 <div style="display:flex; gap:10px;">
                     <button class="btn" onclick="GAME.hideCreateForm()">İptal</button>
                     <button class="btn btn-primary" onclick="GAME.createTeam()">Oluştur</button>
@@ -264,6 +269,7 @@
             <div class="form-box" id="joinForm" style="display:none;">
                 <h3 style="margin-bottom:15px; color:white;">Takım Seç</h3>
                 <div class="team-list" id="joinList" style="max-height:200px; overflow-y:auto; margin-bottom:15px;"></div>
+                <input type="password" id="inpJoinPassword" placeholder="Takım şifresi..." maxlength="20">
                 <div style="display:flex; gap:10px;">
                     <button class="btn" onclick="GAME.hideJoinForm()">İptal</button>
                     <button class="btn btn-primary" onclick="GAME.joinTeam()">Giriş</button>
@@ -316,6 +322,7 @@
 
                 <!-- Oyun Başlatma -->
                 <div id="gameStartSection">
+                    <input type="text" id="gameTitle" placeholder="Faz Başlığı (örn: Faz 1, İlk Tur)" maxlength="30" style="width:100%; margin:0 0 10px 0; padding:12px;">
                     <div style="display:flex; gap:10px; align-items:center; margin-bottom:15px;">
                         <input type="number" id="gameMinutes" placeholder="Süre (dakika)" min="1" max="180" style="flex:1; margin:0; padding:12px;">
                         <button class="btn btn-primary" style="width:auto; padding:12px 24px; margin:0;" onclick="ADMIN.startGame()">🎮 Oyunu Başlat</button>
@@ -324,6 +331,7 @@
 
                 <!-- Countdown Görünümü -->
                 <div id="gameRunningSection" style="display:none;">
+                    <div class="admin-phase-title" id="adminPhaseTitle"></div>
                     <div class="countdown-display" id="adminCountdown">00:00</div>
                     <div class="time-controls">
                         <button class="time-btn add" onclick="ADMIN.addTime(300)">+5 Dakika</button>
@@ -431,7 +439,8 @@
             // Oyun durumu
             var gameState = {
                 started: false,
-                countdown: 0
+                countdown: 0,
+                phaseTitle: ''
             };
 
             // Zaman formatlayıcı (saniye -> MM:SS)
@@ -541,13 +550,16 @@
                 
                 createTeam: function() {
                     var name = document.getElementById('inpNewTeam').value.trim();
+                    var password = document.getElementById('inpNewTeamPassword').value.trim();
                     if (!name) { toast('İsim giriniz', true); return; }
-                    socket.emit('create-team', name, function(res) {
+                    if (!password) { toast('Şifre giriniz', true); return; }
+                    socket.emit('create-team', { name: name, password: password }, function(res) {
                         if (res.success) {
                             currentTeamId = res.team.id;
                             localStorage.setItem('currentTeamId', currentTeamId);
                             GAME.hideCreateForm();
                             document.getElementById('inpNewTeam').value = '';
+                            document.getElementById('inpNewTeamPassword').value = '';
                             showPage('pgTeam');
                             renderTeamPage(res.team);
                         } else { toast(res.error, true); }
@@ -560,11 +572,14 @@
                 },
                 joinTeam: function() {
                     if (!selectedJoinId) { toast('Takım seçiniz', true); return; }
-                    socket.emit('join-team', selectedJoinId, function(res) {
+                    var password = document.getElementById('inpJoinPassword').value.trim();
+                    if (!password) { toast('Şifre giriniz', true); return; }
+                    socket.emit('join-team', { teamId: selectedJoinId, password: password }, function(res) {
                         if (res.success) {
                             currentTeamId = selectedJoinId;
                             localStorage.setItem('currentTeamId', currentTeamId);
                             GAME.hideJoinForm();
+                            document.getElementById('inpJoinPassword').value = '';
                             showPage('pgTeam');
                             renderTeamPage(res.team);
                         } else { toast(res.error, true); }
@@ -833,15 +848,18 @@
 
                 startGame: function() {
                     var minutes = parseInt(document.getElementById('gameMinutes').value);
+                    var title = document.getElementById('gameTitle').value.trim();
+
                     if (!minutes || minutes <= 0) {
                         toast('Geçerli bir süre giriniz!', true);
                         return;
                     }
 
-                    socket.emit('start-game', minutes, function(res) {
+                    socket.emit('start-game', { minutes: minutes, title: title }, function(res) {
                         if (res.success) {
                             toast('Oyun başlatıldı!');
                             document.getElementById('gameMinutes').value = '';
+                            document.getElementById('gameTitle').value = '';
                         } else {
                             toast(res.error, true);
                         }
@@ -880,6 +898,11 @@
                         } else {
                             display.classList.remove('warning');
                         }
+                    }
+
+                    var titleDisplay = document.getElementById('adminPhaseTitle');
+                    if (titleDisplay && gameState.phaseTitle) {
+                        titleDisplay.textContent = gameState.phaseTitle;
                     }
                 }
             };
@@ -926,8 +949,10 @@
                     container.innerHTML = '<div class="game-not-started">⏸️ Oyun henüz başlamadı. Lütfen bekleyiniz...</div>';
                 } else {
                     var timeClass = gameState.countdown < 60 ? 'warning' : '';
+                    var phaseHtml = gameState.phaseTitle ? `<div class="team-countdown-phase">${gameState.phaseTitle}</div>` : '';
                     container.innerHTML = `
                     <div class="team-countdown">
+                        ${phaseHtml}
                         <div class="team-countdown-label">Kalan Süre</div>
                         <div class="team-countdown-time ${timeClass}" id="teamCountdown">${formatTime(gameState.countdown)}</div>
                     </div>`;
@@ -1109,6 +1134,7 @@
             socket.on('game-state-update', function(state) {
                 gameState.started = state.started;
                 gameState.countdown = state.countdown;
+                gameState.phaseTitle = state.phaseTitle || '';
 
                 // Admin panelindeyse görünümü güncelle
                 if (document.getElementById('pgAdmin').classList.contains('active')) {
@@ -1129,9 +1155,10 @@
             });
 
             // Oyun başlatıldı
-            socket.on('game-started', function(countdown) {
+            socket.on('game-started', function(data) {
                 gameState.started = true;
-                gameState.countdown = countdown;
+                gameState.countdown = data.countdown;
+                gameState.phaseTitle = data.phaseTitle || '';
 
                 // Admin paneli güncelle
                 document.getElementById('gameStartSection').style.display = 'none';
@@ -1167,6 +1194,7 @@
             socket.on('game-ended', function() {
                 gameState.started = false;
                 gameState.countdown = 0;
+                gameState.phaseTitle = '';
 
                 // Admin paneli güncelle
                 document.getElementById('gameStartSection').style.display = 'block';

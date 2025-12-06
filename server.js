@@ -44,7 +44,8 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '260678';
 let gameState = {
     started: false,
     countdown: 0,
-    countdownInterval: null
+    countdownInterval: null,
+    phaseTitle: ''
 };
 
 // Countdown'u başlat
@@ -85,20 +86,27 @@ io.on('connection', (socket) => {
     // Oyun durumunu gönder
     socket.emit('game-state-update', {
         started: gameState.started,
-        countdown: gameState.countdown
+        countdown: gameState.countdown,
+        phaseTitle: gameState.phaseTitle
     });
 
     // Yeni takım oluştur
-    socket.on('create-team', (name, callback) => {
-        const exists = teams.some(t => t.name.toLowerCase() === name.toLowerCase());
+    socket.on('create-team', (data, callback) => {
+        const exists = teams.some(t => t.name.toLowerCase() === data.name.toLowerCase());
         if (exists) {
             callback({ success: false, error: 'Bu isimde takım var!' });
             return;
         }
 
+        if (!data.password || data.password.trim() === '') {
+            callback({ success: false, error: 'Şifre boş olamaz!' });
+            return;
+        }
+
         const team = {
             id: 'team_' + Date.now(),
-            name: name,
+            name: data.name,
+            password: data.password,
             score: 0,
             clues: []
         };
@@ -108,18 +116,24 @@ io.on('connection', (socket) => {
         callback({ success: true, team: team });
 
         io.emit('teams-update', teams);
-        console.log('Takım oluşturuldu:', name);
+        console.log('Takım oluşturuldu:', data.name);
     });
 
     // Takıma giriş yap
-    socket.on('join-team', (teamId, callback) => {
-        const team = teams.find(t => t.id === teamId);
-        if (team) {
-            socket.join(teamId);
-            callback({ success: true, team: team });
-        } else {
+    socket.on('join-team', (data, callback) => {
+        const team = teams.find(t => t.id === data.teamId);
+        if (!team) {
             callback({ success: false, error: 'Takım bulunamadı!' });
+            return;
         }
+
+        if (team.password !== data.password) {
+            callback({ success: false, error: 'Hatalı şifre!' });
+            return;
+        }
+
+        socket.join(data.teamId);
+        callback({ success: true, team: team });
     });
 
     // Takım bilgisi al
@@ -238,24 +252,28 @@ io.on('connection', (socket) => {
     });
 
     // Oyunu başlat (admin)
-    socket.on('start-game', (minutes, callback) => {
+    socket.on('start-game', (data, callback) => {
         if (gameState.started) {
             callback({ success: false, error: 'Oyun zaten başlamış!' });
             return;
         }
 
-        if (!minutes || minutes <= 0) {
+        if (!data.minutes || data.minutes <= 0) {
             callback({ success: false, error: 'Geçerli bir süre giriniz!' });
             return;
         }
 
         gameState.started = true;
-        gameState.countdown = minutes * 60; // Dakikayı saniyeye çevir
+        gameState.countdown = data.minutes * 60; // Dakikayı saniyeye çevir
+        gameState.phaseTitle = data.title || 'Oyun Başladı';
         startCountdown();
 
-        io.emit('game-started', gameState.countdown);
+        io.emit('game-started', {
+            countdown: gameState.countdown,
+            phaseTitle: gameState.phaseTitle
+        });
         callback({ success: true });
-        console.log(`Oyun başlatıldı! Süre: ${minutes} dakika`);
+        console.log(`Oyun başlatıldı! Başlık: "${gameState.phaseTitle}" - Süre: ${data.minutes} dakika`);
     });
 
     // Countdown'a süre ekle (admin)
@@ -281,6 +299,7 @@ io.on('connection', (socket) => {
         stopCountdown();
         gameState.started = false;
         gameState.countdown = 0;
+        gameState.phaseTitle = '';
 
         io.emit('game-ended');
         callback({ success: true });
