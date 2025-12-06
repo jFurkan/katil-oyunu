@@ -61,6 +61,16 @@ function startCountdown() {
 
             if (gameState.countdown === 0) {
                 clearInterval(gameState.countdownInterval);
+
+                const endedPhaseTitle = gameState.phaseTitle || 'OYUN';
+
+                // Süre doldu bildirimi gönder
+                io.emit('notification', {
+                    title: '⏰ Süre Doldu',
+                    message: `${endedPhaseTitle.toUpperCase()} SÜRESİ DOLDU! Artık ipucu gönderemezsiniz.`,
+                    type: 'announcement'
+                });
+
                 io.emit('game-ended');
                 console.log('Oyun süresi doldu!');
             }
@@ -272,6 +282,15 @@ io.on('connection', (socket) => {
             countdown: gameState.countdown,
             phaseTitle: gameState.phaseTitle
         });
+
+        // Oyun başlama bildirimi gönder
+        const phaseText = data.title ? data.title.toUpperCase() : 'OYUN';
+        io.emit('notification', {
+            title: '🎮 Oyun Başladı',
+            message: `${phaseText} BAŞLADI! ${data.minutes} DAKİKA SÜRENİZ VAR.`,
+            type: 'announcement'
+        });
+
         callback({ success: true });
         console.log(`Oyun başlatıldı! Başlık: "${gameState.phaseTitle}" - Süre: ${data.minutes} dakika`);
     });
@@ -285,6 +304,15 @@ io.on('connection', (socket) => {
 
         gameState.countdown += seconds;
         io.emit('countdown-update', gameState.countdown);
+
+        // Süre ekleme bildirimi gönder
+        const minutes = Math.floor(seconds / 60);
+        io.emit('notification', {
+            title: '⏱️ Süre Eklendi',
+            message: `Oyuna ${minutes} dakika eklendi! Yeni toplam süre: ${Math.floor(gameState.countdown / 60)} dakika.`,
+            type: 'announcement'
+        });
+
         callback({ success: true });
         console.log(`${seconds} saniye eklendi. Yeni süre: ${gameState.countdown}s`);
     });
@@ -296,12 +324,22 @@ io.on('connection', (socket) => {
             return;
         }
 
+        const endedPhaseTitle = gameState.phaseTitle || 'OYUN';
+
         stopCountdown();
         gameState.started = false;
         gameState.countdown = 0;
         gameState.phaseTitle = '';
 
         io.emit('game-ended');
+
+        // Oyun bitirme bildirimi gönder
+        io.emit('notification', {
+            title: '🏁 Oyun Bitti',
+            message: `${endedPhaseTitle.toUpperCase()} SONA ERDİ! Artık ipucu gönderemezsiniz.`,
+            type: 'announcement'
+        });
+
         callback({ success: true });
         console.log('Oyun bitirildi!');
     });
