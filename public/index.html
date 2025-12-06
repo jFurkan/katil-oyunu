@@ -295,6 +295,12 @@
                 <!-- Countdown Görünümü -->
                 <div id="teamCountdownSection"></div>
 
+                <!-- Genel İpuçları -->
+                <div id="generalCluesSection" style="background:#0a1a0a; padding:20px; border-radius:12px; border:1px solid var(--gold); margin-bottom:20px; display:none;">
+                    <h3 style="margin-bottom:12px; color:var(--gold);">💡 Genel İpuçları</h3>
+                    <div id="generalCluesList" style="max-height:200px; overflow-y:auto;"></div>
+                </div>
+
                 <div style="background:#111; padding:20px; border-radius:12px; border:1px solid #222; margin-bottom:20px;">
                     <h3 style="margin-bottom:12px; color:var(--gold);">🔎 Yeni İpucu</h3>
                     <div style="display:flex; gap:10px;">
@@ -361,6 +367,17 @@
             <!-- Bildirimler Bölümü -->
             <div id="adminSectionNotifications" class="admin-section" style="display:none;">
                 <h3 style="color:var(--gold); font-size:18px; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">📢 Bildirimler</h3>
+
+                <!-- İpucu Gönderme -->
+                <div class="announcement-form" style="margin-bottom:20px;">
+                    <h3 style="color:var(--gold); font-size:14px; margin-bottom:12px;">💡 Genel İpucu Gönder</h3>
+                    <textarea id="generalClueText" placeholder="Tüm takımlara gönderilecek ipucunu yazın..."></textarea>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <button class="btn btn-primary" style="width:auto; padding:10px 24px; margin:0;" onclick="ADMIN.sendGeneralClue()">İpucu Gönder</button>
+                    </div>
+                </div>
+
+                <!-- Duyuru Gönderme -->
                 <div class="announcement-form">
                     <h3 style="color:var(--gold); font-size:14px; margin-bottom:12px;">📢 Genel Duyuru Gönder</h3>
                     <textarea id="announcementText" placeholder="Tüm takımlara gönderilecek duyuruyu yazın..."></textarea>
@@ -457,6 +474,7 @@
             var selectedJoinId = null;
             var isProcessing = false;
             var notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+            var generalClues = [];
             var popupTimeout = null;
             var audioInitialized = false;
 
@@ -704,6 +722,7 @@
                     popup.classList.add('show');
 
                     // Sadece duyuru (announcement) tipinde ses çal
+                    // İpucu (clue) tipinde ses çalma
                     if (type === 'announcement') {
                         this.playSound();
                     }
@@ -883,6 +902,24 @@
                     this.currentSection = section;
                 },
 
+                sendGeneralClue: function() {
+                    var text = document.getElementById('generalClueText').value.trim();
+                    if (!text) {
+                        toast('İpucu metni giriniz', true);
+                        return;
+                    }
+                    if (confirm('Bu ipucu tüm takımlara gönderilecek. Emin misiniz?')) {
+                        socket.emit('send-general-clue', text, function(res) {
+                            if (res.success) {
+                                document.getElementById('generalClueText').value = '';
+                                toast('İpucu gönderildi');
+                            } else {
+                                toast(res.error, true);
+                            }
+                        });
+                    }
+                },
+
                 sendAnnouncement: function() {
                     var text = document.getElementById('announcementText').value.trim();
                     if (!text) {
@@ -1012,6 +1049,31 @@
 
                 // Countdown'u render et
                 renderTeamCountdown();
+
+                // Genel ipuçlarını render et
+                renderGeneralClues();
+            }
+
+            function renderGeneralClues() {
+                var container = document.getElementById('generalCluesSection');
+                var list = document.getElementById('generalCluesList');
+                if (!container || !list) return;
+
+                if (generalClues.length === 0) {
+                    container.style.display = 'none';
+                } else {
+                    container.style.display = 'block';
+                    var html = '';
+                    // Tersten sırala (en yeni en üstte)
+                    for (var i = generalClues.length - 1; i >= 0; i--) {
+                        var clue = generalClues[i];
+                        html += `<div style="padding:10px; border-bottom:1px solid #2a4a2a; color:#d4af37; background:#0d1f0d; margin-bottom:5px; border-radius:4px;">
+                            <div style="font-size:13px;">${clue.text}</div>
+                            <div style="font-size:10px; color:#666; margin-top:5px;">${clue.time}</div>
+                        </div>`;
+                    }
+                    list.innerHTML = html;
+                }
             }
 
             function renderTeamCountdown() {
@@ -1201,6 +1263,22 @@
             socket.on('score-changed', function(data) {
                 var msg = data.teamName + ' takımı ' + (data.amount > 0 ? '+' : '') + data.amount + ' puan aldı. Yeni puan: ' + data.newScore;
                 NOTIF.add('Puan Değişikliği', msg, 'score');
+            });
+
+            // Genel ipucu geldi
+            socket.on('general-clue', function(data) {
+                generalClues.push({
+                    text: data.clue,
+                    time: new Date().toLocaleString('tr-TR')
+                });
+
+                // Bildirim olarak ekle (ses çalmadan)
+                NOTIF.add('💡 Yeni İpucu', data.clue, 'clue');
+
+                // Takım sayfasındaysa render et
+                if (document.getElementById('pgTeam').classList.contains('active')) {
+                    renderGeneralClues();
+                }
             });
 
             // Oyun durumu güncellemesi
