@@ -192,7 +192,15 @@
                 <h1>Katil <span>Kim?</span></h1>
                 <p class="subtitle">"Şüphe, gerçeğin gölgesidir..."</p>
             </header>
-            <div style="max-width: 400px; margin: 0 auto;">
+
+            <!-- Ana Giriş Seçenekleri -->
+            <div id="mainEntry" style="max-width: 400px; margin: 0 auto;">
+                <button class="btn btn-primary" onclick="GAME.enterAsPlayer()">🎭 Oyuncu Olarak Giriş</button>
+                <button class="btn" style="margin-top: 15px; color: #666; border-color: transparent;" onclick="GAME.showPassModal()">🔒 Yönetici Olarak Giriş</button>
+            </div>
+
+            <!-- Oyuncu Menüsü (Gizli) -->
+            <div id="playerMenu" style="max-width: 400px; margin: 0 auto; display: none;">
                 <button class="btn" onclick="GAME.showCreateForm()">🎭 Yeni Takım Oluştur</button>
                 <button class="btn" onclick="GAME.showJoinForm()">🔑 Takıma Giriş Yap</button>
                 <button class="btn" onclick="GAME.showScoreboard()">🏆 Skor Tablosu</button>
@@ -200,7 +208,7 @@
                     🔔 Bildirimler
                     <span id="notifBadgeLobby" style="display:none; background:var(--accent); color:white; border-radius:50%; width:20px; height:20px; font-size:11px; margin-left:auto;"></span>
                 </button>
-                <button class="btn" style="margin-top: 30px; color: #666; border-color: transparent;" onclick="GAME.showPassModal()">🔒 Yönetici Paneli</button>
+                <button class="btn" style="margin-top: 30px; color: #888; border-color: #333; font-size: 13px;" onclick="GAME.backToMain()">← Ana Menüye Dön</button>
             </div>
 
             <!-- Emeği Geçenler -->
@@ -271,7 +279,10 @@
             <div class="announcement-form">
                 <h3 style="color:var(--gold); font-size:14px; margin-bottom:12px;">📢 Genel Duyuru Gönder</h3>
                 <textarea id="announcementText" placeholder="Tüm takımlara gönderilecek duyuruyu yazın..."></textarea>
-                <button class="btn btn-primary" style="width:auto; padding:10px 24px; margin:0;" onclick="ADMIN.sendAnnouncement()">Duyuruyu Gönder</button>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <button class="btn btn-primary" style="width:auto; padding:10px 24px; margin:0;" onclick="ADMIN.sendAnnouncement()">Duyuruyu Gönder</button>
+                    <button class="btn" style="width:auto; padding:10px 24px; margin:0; background:#300; color:#faa; border:1px solid #500;" onclick="ADMIN.clearAllNotifications()">🗑️ Tüm Bildirimleri Sil</button>
+                </div>
             </div>
 
             <div class="stats-chart" id="statsChart">
@@ -421,6 +432,18 @@
             };
 
             window.GAME = {
+                enterAsPlayer: function() {
+                    initAudio(); // Ses sistemini başlat
+                    document.getElementById('mainEntry').style.display = 'none';
+                    document.getElementById('playerMenu').style.display = 'block';
+                },
+                backToMain: function() {
+                    document.getElementById('mainEntry').style.display = 'block';
+                    document.getElementById('playerMenu').style.display = 'none';
+                    // Açık formları kapat
+                    document.getElementById('createForm').style.display = 'none';
+                    document.getElementById('joinForm').style.display = 'none';
+                },
                 showCreateForm: function() {
                     initAudio(); // Ses sistemini başlat
                     document.getElementById('createForm').style.display = 'block';
@@ -498,7 +521,11 @@
                         } else { toast('Hatalı şifre', true); }
                     });
                 },
-                goLobby: function() { showPage('pgLobby'); },
+                goLobby: function() {
+                    showPage('pgLobby');
+                    // Ana menüye dön (oyuncu menüsünü gizle)
+                    this.backToMain();
+                },
                 showScoreboard: function() { showPage('pgScoreboard'); renderScoreboard(); },
                 showNotifications: function() { showPage('pgNotifications'); NOTIF.render(); },
                 resetGame: function() {
@@ -606,6 +633,13 @@
                     this.render();
                 },
 
+                clearAll: function() {
+                    notifications = [];
+                    localStorage.setItem('notifications', JSON.stringify(notifications));
+                    this.updateBadge();
+                    this.render();
+                },
+
                 render: function() {
                     var container = document.getElementById('notifList');
                     document.getElementById('notifCount').textContent = notifications.length;
@@ -656,6 +690,13 @@
                                 toast(res.error, true);
                             }
                         });
+                    }
+                },
+
+                clearAllNotifications: function() {
+                    if (confirm('TÜM bildirimleri silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
+                        NOTIF.clearAll();
+                        toast('Tüm bildirimler silindi');
                     }
                 }
             };
