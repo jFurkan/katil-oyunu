@@ -324,58 +324,74 @@
                 <button class="back-btn" onclick="GAME.goLobby()">Çıkış</button>
             </div>
 
-            <!-- Oyun Kontrol Paneli -->
-            <div class="game-control">
-                <h3 style="color:var(--gold); font-size:14px; margin-bottom:15px;">⏱️ Oyun Kontrolü</h3>
+            <!-- Admin Menü Butonları -->
+            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:15px; margin-bottom:30px;">
+                <button class="btn btn-primary" onclick="ADMIN.showSection('game')">⏱️ Oyun Kontrolü</button>
+                <button class="btn" onclick="ADMIN.showSection('scoring')">🎯 Puanlama</button>
+                <button class="btn" onclick="ADMIN.showSection('notifications')">📢 Bildirimler</button>
+            </div>
 
-                <!-- Oyun Başlatma -->
-                <div id="gameStartSection">
-                    <input type="text" id="gameTitle" placeholder="Faz Başlığı (örn: Faz 1, İlk Tur)" maxlength="30" style="width:100%; margin:0 0 10px 0; padding:12px;">
-                    <div style="display:flex; gap:10px; align-items:center; margin-bottom:15px;">
-                        <input type="number" id="gameMinutes" placeholder="Süre (dakika)" min="1" max="180" style="flex:1; margin:0; padding:12px;">
-                        <button class="btn btn-primary" style="width:auto; padding:12px 24px; margin:0;" onclick="ADMIN.startGame()">🎮 Oyunu Başlat</button>
+            <!-- Oyun Kontrol Bölümü -->
+            <div id="adminSectionGame" class="admin-section" style="display:none;">
+                <h3 style="color:var(--gold); font-size:18px; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">⏱️ Oyun Kontrolü</h3>
+                <div class="game-control">
+                    <!-- Oyun Başlatma -->
+                    <div id="gameStartSection">
+                        <input type="text" id="gameTitle" placeholder="Faz Başlığı (örn: Faz 1, İlk Tur)" maxlength="30" style="width:100%; margin:0 0 10px 0; padding:12px;">
+                        <div style="display:flex; gap:10px; align-items:center; margin-bottom:15px;">
+                            <input type="number" id="gameMinutes" placeholder="Süre (dakika)" min="1" max="180" style="flex:1; margin:0; padding:12px;">
+                            <button class="btn btn-primary" style="width:auto; padding:12px 24px; margin:0;" onclick="ADMIN.startGame()">🎮 Oyunu Başlat</button>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Countdown Görünümü -->
-                <div id="gameRunningSection" style="display:none;">
-                    <div class="admin-phase-title" id="adminPhaseTitle"></div>
-                    <div class="countdown-display" id="adminCountdown">00:00</div>
-                    <div class="time-controls">
-                        <button class="time-btn add" onclick="ADMIN.addTime(300)">+5 Dakika</button>
-                        <button class="time-btn add" onclick="ADMIN.addTime(600)">+10 Dakika</button>
-                        <button class="time-btn add" onclick="ADMIN.addTime(60)">+1 Dakika</button>
+                    <!-- Countdown Görünümü -->
+                    <div id="gameRunningSection" style="display:none;">
+                        <div class="admin-phase-title" id="adminPhaseTitle"></div>
+                        <div class="countdown-display" id="adminCountdown">00:00</div>
+                        <div class="time-controls">
+                            <button class="time-btn add" onclick="ADMIN.addTime(300)">+5 Dakika</button>
+                            <button class="time-btn add" onclick="ADMIN.addTime(600)">+10 Dakika</button>
+                            <button class="time-btn add" onclick="ADMIN.addTime(60)">+1 Dakika</button>
+                        </div>
+                        <button class="btn" style="width:100%; margin-top:15px; background:#500; color:#faa; border:1px solid var(--accent);" onclick="ADMIN.endGame()">⏹️ Oyunu Bitir</button>
                     </div>
-                    <button class="btn" style="width:100%; margin-top:15px; background:#500; color:#faa; border:1px solid var(--accent);" onclick="ADMIN.endGame()">⏹️ Oyunu Bitir</button>
                 </div>
             </div>
 
-            <div class="announcement-form">
-                <h3 style="color:var(--gold); font-size:14px; margin-bottom:12px;">📢 Genel Duyuru Gönder</h3>
-                <textarea id="announcementText" placeholder="Tüm takımlara gönderilecek duyuruyu yazın..."></textarea>
-                <div style="display:flex; gap:10px; align-items:center;">
-                    <button class="btn btn-primary" style="width:auto; padding:10px 24px; margin:0;" onclick="ADMIN.sendAnnouncement()">Duyuruyu Gönder</button>
-                    <button class="btn" style="width:auto; padding:10px 24px; margin:0; background:#300; color:#faa; border:1px solid #500;" onclick="ADMIN.clearAllNotifications()">🗑️ Tüm Bildirimleri Sil</button>
-                </div>
-
-                <!-- Gönderilen Bildirimler Listesi -->
-                <div style="margin-top:25px; padding-top:20px; border-top:1px solid var(--border-color);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                        <h3 style="color:#888; font-size:13px; text-transform:uppercase; letter-spacing:1px;">Gönderilen Bildirimler</h3>
-                        <span id="adminNotifCount" style="color:#666; font-size:12px;">0 bildirim</span>
+            <!-- Bildirimler Bölümü -->
+            <div id="adminSectionNotifications" class="admin-section" style="display:none;">
+                <h3 style="color:var(--gold); font-size:18px; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">📢 Bildirimler</h3>
+                <div class="announcement-form">
+                    <h3 style="color:var(--gold); font-size:14px; margin-bottom:12px;">📢 Genel Duyuru Gönder</h3>
+                    <textarea id="announcementText" placeholder="Tüm takımlara gönderilecek duyuruyu yazın..."></textarea>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <button class="btn btn-primary" style="width:auto; padding:10px 24px; margin:0;" onclick="ADMIN.sendAnnouncement()">Duyuruyu Gönder</button>
+                        <button class="btn" style="width:auto; padding:10px 24px; margin:0; background:#300; color:#faa; border:1px solid #500;" onclick="ADMIN.clearAllNotifications()">🗑️ Tüm Bildirimleri Sil</button>
                     </div>
-                    <div id="adminNotifList" style="max-height:300px; overflow-y:auto;"></div>
+
+                    <!-- Gönderilen Bildirimler Listesi -->
+                    <div style="margin-top:25px; padding-top:20px; border-top:1px solid var(--border-color);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <h3 style="color:#888; font-size:13px; text-transform:uppercase; letter-spacing:1px;">Gönderilen Bildirimler</h3>
+                            <span id="adminNotifCount" style="color:#666; font-size:12px;">0 bildirim</span>
+                        </div>
+                        <div id="adminNotifList" style="max-height:300px; overflow-y:auto;"></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="stats-chart" id="statsChart">
-                <h3 style="color:#666; font-size:12px; text-transform:uppercase; margin-bottom:15px;">📊 Canlı Puan Durumu</h3>
-                <div id="chartContent"></div>
+            <!-- Puanlama Bölümü -->
+            <div id="adminSectionScoring" class="admin-section" style="display:none;">
+                <h3 style="color:var(--gold); font-size:18px; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">🎯 Puanlama</h3>
+                <div class="stats-chart" id="statsChart">
+                    <h3 style="color:#666; font-size:12px; text-transform:uppercase; margin-bottom:15px;">📊 Canlı Puan Durumu</h3>
+                    <div id="chartContent"></div>
+                </div>
+
+                <div id="adminList" class="admin-list"></div>
+
+                <button class="btn" style="background:#300; color:#faa; border:1px solid #500; margin-top:30px;" onclick="GAME.resetGame()">⚠️ OYUNU SIFIRLA (Tüm Takımları Sil)</button>
             </div>
-
-            <div id="adminList" class="admin-list"></div>
-
-            <button class="btn" style="background:#300; color:#faa; border:1px solid #500; margin-top:30px;" onclick="GAME.resetGame()">⚠️ OYUNU SIFIRLA (Tüm Takımları Sil)</button>
         </div>
 
         <div class="page" id="pgScoreboard">
@@ -642,6 +658,8 @@
                             GAME.hidePassModal();
                             showPage('pgAdmin');
                             renderAdminList();
+                            // Varsayılan olarak oyun kontrolü bölümünü göster
+                            ADMIN.showSection('game');
                         } else { toast('Hatalı şifre', true); }
                     });
                 },
@@ -839,6 +857,32 @@
 
             // YÖNETİCİ FONKSİYONLARI
             window.ADMIN = {
+                currentSection: 'game',
+
+                showSection: function(section) {
+                    // Tüm bölümleri gizle
+                    document.querySelectorAll('.admin-section').forEach(function(el) {
+                        el.style.display = 'none';
+                    });
+
+                    // Seçili bölümü göster
+                    document.getElementById('adminSection' + section.charAt(0).toUpperCase() + section.slice(1)).style.display = 'block';
+
+                    // Menü butonlarını güncelle
+                    var buttons = document.querySelectorAll('#pgAdmin > div:nth-child(2) button');
+                    buttons.forEach(function(btn) {
+                        btn.classList.remove('btn-primary');
+                        btn.classList.add('btn');
+                    });
+
+                    // Seçili butonu vurgula
+                    if (section === 'game') buttons[0].classList.add('btn-primary');
+                    else if (section === 'scoring') buttons[1].classList.add('btn-primary');
+                    else if (section === 'notifications') buttons[2].classList.add('btn-primary');
+
+                    this.currentSection = section;
+                },
+
                 sendAnnouncement: function() {
                     var text = document.getElementById('announcementText').value.trim();
                     if (!text) {
