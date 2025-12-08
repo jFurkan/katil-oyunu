@@ -1256,12 +1256,6 @@
     </div>
 
     <!-- Bildirim Sesi -->
-    <audio id="notificationSound" preload="auto">
-        <source src="/notification.mp3" type="audio/mpeg">
-        <source src="/notification.ogg" type="audio/ogg">
-        <source src="/notification.wav" type="audio/wav">
-    </audio>
-
     <script>
         // Tema Yönetimi
         var THEME = {
@@ -1429,7 +1423,6 @@
             var notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
             var generalClues = [];
             var popupTimeout = null;
-            var audioInitialized = false;
 
             // Oyun durumu
             var gameState = {
@@ -1445,39 +1438,6 @@
                 return (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
             }
 
-            // Mobil için ses başlatma (ilk kullanıcı etkileşiminde)
-            function initAudio() {
-                if (!audioInitialized) {
-                    var audio = document.getElementById('notificationSound');
-                    if (audio) {
-                        try {
-                            // Audio elementini yükle
-                            audio.load();
-
-                            // Sessiz bir şekilde çal ve hemen durdur (iOS/Android için)
-                            audio.muted = true;
-                            var playPromise = audio.play();
-
-                            if (playPromise !== undefined) {
-                                playPromise.then(function() {
-                                    audio.pause();
-                                    audio.currentTime = 0;
-                                    audio.muted = false;
-                                    audio.volume = 0.6;
-                                    audioInitialized = true;
-                                    console.log('✓ Ses sistemi başlatıldı');
-                                }).catch(function(err) {
-                                    console.log('⚠ Ses başlatılamadı:', err.message);
-                                    audio.muted = false;
-                                });
-                            }
-                        } catch(e) {
-                            console.log('⚠ Ses hatası:', e.message);
-                        }
-                    }
-                }
-            }
-
             // UI Yardımcıları
             function toast(msg, err) {
                 var t = document.getElementById('toast');
@@ -1487,14 +1447,12 @@
             }
 
             function showPage(id) {
-                initAudio(); // Her sayfa değişiminde ses sistemini hazırla
                 document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
                 document.getElementById(id).classList.add('active');
             }
 
             // Global Fonksiyonlar (HTML onclick için)
             window.adminScore = function(teamId, amount) {
-                initAudio(); // Ses sistemini aktif et
                 if (isProcessing) return;
                 isProcessing = true;
                 socket.emit('change-score', { teamId: teamId, amount: amount }, function(res) {
@@ -1517,7 +1475,6 @@
 
             window.GAME = {
                 enterAsPlayer: function() {
-                    initAudio(); // Ses sistemini başlat
                     document.getElementById('mainEntry').style.display = 'none';
                     document.getElementById('playerMenu').style.display = 'block';
                 },
@@ -1529,7 +1486,6 @@
                     document.getElementById('joinForm').style.display = 'none';
                 },
                 showCreateForm: function() {
-                    initAudio(); // Ses sistemini başlat
                     document.getElementById('createForm').style.display = 'block';
                     document.getElementById('joinForm').style.display = 'none';
                     CUSTOMIZE.init(); // Avatar ve renk seçiciyi başlat
@@ -1537,7 +1493,6 @@
                 },
                 hideCreateForm: function() { document.getElementById('createForm').style.display = 'none'; },
                 showJoinForm: function() {
-                    initAudio(); // Ses sistemini başlat
                     document.getElementById('joinForm').style.display = 'block';
                     document.getElementById('createForm').style.display = 'none';
                     // Takım listesini göster, şifre kısmını gizle
@@ -1622,7 +1577,6 @@
                     showPage('pgLobby');
                 },
                 showPassModal: function() {
-                    initAudio(); // Ses sistemini başlat
                     document.getElementById('passModal').classList.add('show');
                     document.getElementById('inpPass').value = '';
                     document.getElementById('inpPass').focus();
@@ -1707,54 +1661,10 @@
 
                     popup.classList.add('show');
 
-                    // Sadece duyuru (announcement) tipinde ses çal
-                    // İpucu (clue) tipinde ses çalma
-                    if (type === 'announcement') {
-                        this.playSound();
-                    }
-
                     if (popupTimeout) clearTimeout(popupTimeout);
                     popupTimeout = setTimeout(function() {
                         popup.classList.remove('show');
                     }, 6000);
-                },
-
-                playSound: function() {
-                    var audio = document.getElementById('notificationSound');
-                    if (!audio) return;
-
-                    try {
-                        // Mobil cihazlar için ses başlatma gerekiyorsa otomatik başlat
-                        if (!audioInitialized) {
-                            console.log('⚠ Ses sistemi henüz başlatılmadı, başlatılıyor...');
-                            initAudio();
-                            // Ses sistemi başlatıldıktan sonra 100ms bekle
-                            setTimeout(function() {
-                                NOTIF.playSound();
-                            }, 100);
-                            return;
-                        }
-
-                        // Audio'yu hazırla
-                        audio.currentTime = 0;
-                        if (audio.muted) audio.muted = false;
-                        if (audio.volume === 0) audio.volume = 0.6;
-
-                        // Çal
-                        var playPromise = audio.play();
-                        if (playPromise !== undefined) {
-                            playPromise.then(function() {
-                                console.log('🔊 Bildirim sesi çalındı');
-                            }).catch(function(err) {
-                                console.log('⚠ Ses çalınamadı:', err.message);
-                                // Ses sistemi tekrar başlatılmalı
-                                audioInitialized = false;
-                            });
-                        }
-                    } catch(e) {
-                        console.log('⚠ Ses çalma hatası:', e.message);
-                        audioInitialized = false;
-                    }
                 },
 
                 closePopup: function() {
@@ -2502,24 +2412,6 @@
             window.onload = function() {
                 NOTIF.updateBadge(); // Bildirim badge'ini güncelle
                 renderMainCredits(); // Ana sayfa emeği geçenler listesini render et
-
-                // İlk kullanıcı etkileşiminde sesi etkinleştir (mobil için - MÜLTİPLE EVENT)
-                var firstInteraction = function() {
-                    initAudio();
-                    console.log('İlk kullanıcı etkileşimi algılandı');
-                };
-
-                // Tüm olası kullanıcı etkileşimlerini dinle
-                document.addEventListener('click', firstInteraction, { once: true });
-                document.addEventListener('touchstart', firstInteraction, { once: true });
-                document.addEventListener('touchend', firstInteraction, { once: true });
-                document.addEventListener('keydown', firstInteraction, { once: true });
-
-                // Tüm butonlara da ekstra listener ekle (güvenlik için)
-                document.querySelectorAll('.btn, button').forEach(function(btn) {
-                    btn.addEventListener('click', initAudio);
-                    btn.addEventListener('touchstart', initAudio);
-                });
 
                 if (currentTeamId) {
                     socket.emit('get-team', currentTeamId, function(t) {
