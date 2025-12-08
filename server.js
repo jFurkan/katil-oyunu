@@ -2,7 +2,8 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const fs = require('fs');
+const { pool, initDatabase } = require('./database');
+require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
@@ -11,68 +12,25 @@ const io = new Server(server);
 // Statik dosyalar
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Veri dosyaları
-const DATA_FILE = path.join(__dirname, 'data.json');
-const CREDITS_FILE = path.join(__dirname, 'credits.json');
-
-// Verileri dosyadan yükle
-function loadData() {
+// Veritabanı test endpoint'i
+app.get('/api/health', async (req, res) => {
     try {
-        if (fs.existsSync(DATA_FILE)) {
-            const data = fs.readFileSync(DATA_FILE, 'utf8');
-            return JSON.parse(data);
-        }
+        const result = await pool.query('SELECT NOW() as time, COUNT(*) as team_count FROM teams');
+        res.json({
+            status: 'OK',
+            database: 'Connected',
+            serverTime: result.rows[0].time,
+            teamCount: result.rows[0].team_count
+        });
     } catch (err) {
-        console.log('Veri dosyası okunamadı, yeni başlatılıyor');
+        res.status(500).json({
+            status: 'ERROR',
+            database: 'Disconnected',
+            error: err.message
+        });
     }
-    return [];
-}
+});
 
-// Verileri dosyaya kaydet
-function saveData() {
-    try {
-        fs.writeFileSync(DATA_FILE, JSON.stringify(teams, null, 2));
-    } catch (err) {
-        console.log('Veri kaydedilemedi:', err);
-    }
-}
-
-// Emeği geçenleri yükle
-function loadCredits() {
-    try {
-        if (fs.existsSync(CREDITS_FILE)) {
-            const data = fs.readFileSync(CREDITS_FILE, 'utf8');
-            return JSON.parse(data);
-        }
-    } catch (err) {
-        console.log('Emeği geçenler dosyası okunamadı, varsayılan liste kullanılıyor');
-    }
-    return [
-        {
-            id: 'credit_1',
-            name: 'Furkan',
-            content: 'Oyunun tasarımı ve geliştirmesi'
-        },
-        {
-            id: 'credit_2',
-            name: 'Claude',
-            content: 'Kodlama ve teknik destek'
-        }
-    ];
-}
-
-// Emeği geçenleri kaydet
-function saveCredits() {
-    try {
-        fs.writeFileSync(CREDITS_FILE, JSON.stringify(credits, null, 2));
-    } catch (err) {
-        console.log('Emeği geçenler kaydedilemedi:', err);
-    }
-}
-
-// Oyun verileri
-let teams = loadData();
-let credits = loadCredits();
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '260678';
 
 // Oyun durumu
@@ -121,11 +79,36 @@ function stopCountdown() {
     }
 }
 
+// Helper fonksiyonlar - PostgreSQL işlemleri
+async function getAllTeams() {
+    const result = await pool.query(`
+        SELECT t.*,
+               COALESCE(
+                   json_agg(
+                       json_build_object('text', c.text, 'time', c.time)
+                       ORDER BY c.created_at
+                   ) FILTER (WHERE c.id IS NOT NULL),
+                   '[]'
+               ) as clues
+        FROM teams t
+        LEFT JOIN clues c ON t.id = c.team_id
+        GROUP BY t.id
+        ORDER BY t.created_at
+    `);
+    return result.rows;
+}
+
+async function getAllCredits() {
+    const result = await pool.query('SELECT * FROM credits ORDER BY created_at');
+    return result.rows;
+}
+
 // Socket.io bağlantıları
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
     console.log('Kullanıcı bağlandı:', socket.id);
 
     // Takım listesini gönder
+    const teams = await getAllTeams();
     socket.emit('teams-update', teams);
 
     // Oyun durumunu gönder
@@ -136,81 +119,155 @@ io.on('connection', (socket) => {
     });
 
     // Emeği geçenleri gönder
+    const credits = await getAllCredits();
     socket.emit('credits-update', credits);
 
     // Yeni takım oluştur
-    socket.on('create-team', (data, callback) => {
-        const exists = teams.some(t => t.name.toLowerCase() === data.name.toLowerCase());
-        if (exists) {
-            callback({ success: false, error: 'Bu isimde takım var!' });
-            return;
+    socket.on('create-team', async (data, callback) => {
+        try {
+            // Takım var mı kontrol et
+            const checkResult = await pool.query(
+                'SELECT EXISTS(SELECT 1 FROM teams WHERE LOWER(name) = LOWER($1))',
+                [data.name]
+            );
+
+            if (checkResult.rows[0].exists) {
+                callback({ success: false, error: 'Bu isimde takım var!' });
+                return;
+            }
+
+            if (!data.password || data.password.trim() === '') {
+                callback({ success: false, error: 'Şifre boş olamaz!' });
+                return;
+            }
+
+            const teamId = 'team_' + Date.now();
+
+            // Takım oluştur
+            const result = await pool.query(
+                'INSERT INTO teams (id, name, password, score) VALUES ($1, $2, $3, 0) RETURNING *',
+                [teamId, data.name, data.password]
+            );
+
+            const team = result.rows[0];
+            team.clues = [];
+
+            callback({ success: true, team: team });
+
+            const teams = await getAllTeams();
+            io.emit('teams-update', teams);
+            console.log('Takım oluşturuldu:', data.name);
+        } catch (err) {
+            console.error('Takım oluşturma hatası:', err);
+            callback({ success: false, error: 'Takım oluşturulamadı!' });
         }
-
-        if (!data.password || data.password.trim() === '') {
-            callback({ success: false, error: 'Şifre boş olamaz!' });
-            return;
-        }
-
-        const team = {
-            id: 'team_' + Date.now(),
-            name: data.name,
-            password: data.password,
-            score: 0,
-            clues: []
-        };
-
-        teams.push(team);
-        saveData();
-        callback({ success: true, team: team });
-
-        io.emit('teams-update', teams);
-        console.log('Takım oluşturuldu:', data.name);
     });
 
     // Takıma giriş yap
-    socket.on('join-team', (data, callback) => {
-        const team = teams.find(t => t.id === data.teamId);
-        if (!team) {
-            callback({ success: false, error: 'Takım bulunamadı!' });
-            return;
-        }
+    socket.on('join-team', async (data, callback) => {
+        try {
+            const result = await pool.query(`
+                SELECT t.*,
+                       COALESCE(
+                           json_agg(
+                               json_build_object('text', c.text, 'time', c.time)
+                               ORDER BY c.created_at
+                           ) FILTER (WHERE c.id IS NOT NULL),
+                           '[]'
+                       ) as clues
+                FROM teams t
+                LEFT JOIN clues c ON t.id = c.team_id
+                WHERE t.id = $1
+                GROUP BY t.id
+            `, [data.teamId]);
 
-        if (team.password !== data.password) {
-            callback({ success: false, error: 'Hatalı şifre!' });
-            return;
-        }
+            const team = result.rows[0];
 
-        socket.join(data.teamId);
-        callback({ success: true, team: team });
+            if (!team) {
+                callback({ success: false, error: 'Takım bulunamadı!' });
+                return;
+            }
+
+            if (team.password !== data.password) {
+                callback({ success: false, error: 'Hatalı şifre!' });
+                return;
+            }
+
+            socket.join(data.teamId);
+            callback({ success: true, team: team });
+        } catch (err) {
+            console.error('Takıma giriş hatası:', err);
+            callback({ success: false, error: 'Giriş yapılamadı!' });
+        }
     });
 
     // Takım bilgisi al
-    socket.on('get-team', (teamId, callback) => {
-        const team = teams.find(t => t.id === teamId);
-        callback(team || null);
+    socket.on('get-team', async (teamId, callback) => {
+        try {
+            const result = await pool.query(`
+                SELECT t.*,
+                       COALESCE(
+                           json_agg(
+                               json_build_object('text', c.text, 'time', c.time)
+                               ORDER BY c.created_at
+                           ) FILTER (WHERE c.id IS NOT NULL),
+                           '[]'
+                       ) as clues
+                FROM teams t
+                LEFT JOIN clues c ON t.id = c.team_id
+                WHERE t.id = $1
+                GROUP BY t.id
+            `, [teamId]);
+
+            callback(result.rows[0] || null);
+        } catch (err) {
+            console.error('Takım bilgisi alma hatası:', err);
+            callback(null);
+        }
     });
 
     // İpucu ekle
-    socket.on('add-clue', (data, callback) => {
+    socket.on('add-clue', async (data, callback) => {
         // Oyun başlamadıysa ipucu gönderilemez
         if (!gameState.started) {
             callback({ success: false, error: 'Oyun henüz başlamadı!' });
             return;
         }
 
-        const team = teams.find(t => t.id === data.teamId);
-        if (team) {
-            team.clues.push({
-                text: data.clue,
-                time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
-            });
-            saveData();
+        try {
+            const time = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+
+            // İpucu ekle
+            await pool.query(
+                'INSERT INTO clues (team_id, text, time) VALUES ($1, $2, $3)',
+                [data.teamId, data.clue, time]
+            );
+
             callback({ success: true });
 
+            // Güncel takım listesini ve takım bilgisini gönder
+            const teams = await getAllTeams();
             io.emit('teams-update', teams);
-            io.to(data.teamId).emit('team-update', team);
-        } else {
-            callback({ success: false, error: 'Takım bulunamadı!' });
+
+            const teamResult = await pool.query(`
+                SELECT t.*,
+                       COALESCE(
+                           json_agg(
+                               json_build_object('text', c.text, 'time', c.time)
+                               ORDER BY c.created_at
+                           ) FILTER (WHERE c.id IS NOT NULL),
+                           '[]'
+                       ) as clues
+                FROM teams t
+                LEFT JOIN clues c ON t.id = c.team_id
+                WHERE t.id = $1
+                GROUP BY t.id
+            `, [data.teamId]);
+
+            io.to(data.teamId).emit('team-update', teamResult.rows[0]);
+        } catch (err) {
+            console.error('İpucu ekleme hatası:', err);
+            callback({ success: false, error: 'İpucu eklenemedi!' });
         }
     });
 
@@ -224,20 +281,50 @@ io.on('connection', (socket) => {
     });
 
     // Puan değiştir (admin)
-    socket.on('change-score', (data, callback) => {
-        const team = teams.find(t => t.id === data.teamId);
-        if (team) {
+    socket.on('change-score', async (data, callback) => {
+        try {
+            // Mevcut takımı al
+            const teamResult = await pool.query('SELECT * FROM teams WHERE id = $1', [data.teamId]);
+            const team = teamResult.rows[0];
+
+            if (!team) {
+                callback({ success: false, error: 'Takım bulunamadı!' });
+                return;
+            }
+
             const newScore = team.score + data.amount;
             if (newScore < 0) {
                 callback({ success: false, error: 'Puan 0 altına düşemez!' });
                 return;
             }
+
+            // Puanı güncelle
+            await pool.query('UPDATE teams SET score = $1 WHERE id = $2', [newScore, data.teamId]);
+
             team.score = newScore;
-            saveData();
             callback({ success: true, team: team });
 
+            // Güncel takım listesini gönder
+            const teams = await getAllTeams();
             io.emit('teams-update', teams);
-            io.to(data.teamId).emit('team-update', team);
+
+            // Güncel takım bilgisini gönder
+            const updatedTeamResult = await pool.query(`
+                SELECT t.*,
+                       COALESCE(
+                           json_agg(
+                               json_build_object('text', c.text, 'time', c.time)
+                               ORDER BY c.created_at
+                           ) FILTER (WHERE c.id IS NOT NULL),
+                           '[]'
+                       ) as clues
+                FROM teams t
+                LEFT JOIN clues c ON t.id = c.team_id
+                WHERE t.id = $1
+                GROUP BY t.id
+            `, [data.teamId]);
+
+            io.to(data.teamId).emit('team-update', updatedTeamResult.rows[0]);
 
             // Puan değişikliği bildirimi gönder
             io.emit('score-changed', {
@@ -247,38 +334,51 @@ io.on('connection', (socket) => {
             });
 
             console.log(`${team.name}: ${data.amount > 0 ? '+' : ''}${data.amount} puan`);
-        } else {
-            callback({ success: false, error: 'Takım bulunamadı!' });
+        } catch (err) {
+            console.error('Puan değiştirme hatası:', err);
+            callback({ success: false, error: 'Puan değiştirilemedi!' });
         }
     });
 
     // Takım sil (admin)
-    socket.on('delete-team', (teamId, callback) => {
-        const teamIndex = teams.findIndex(t => t.id === teamId);
-        if (teamIndex !== -1) {
-            const teamName = teams[teamIndex].name;
-            teams.splice(teamIndex, 1);
-            saveData();
+    socket.on('delete-team', async (teamId, callback) => {
+        try {
+            const result = await pool.query('DELETE FROM teams WHERE id = $1 RETURNING name', [teamId]);
+
+            if (result.rowCount === 0) {
+                callback({ success: false, error: 'Takım bulunamadı!' });
+                return;
+            }
+
+            const teamName = result.rows[0].name;
             callback({ success: true });
 
+            const teams = await getAllTeams();
             io.emit('teams-update', teams);
             io.emit('team-deleted', teamId);
             console.log('Takım silindi:', teamName);
-        } else {
-            callback({ success: false, error: 'Takım bulunamadı!' });
+        } catch (err) {
+            console.error('Takım silme hatası:', err);
+            callback({ success: false, error: 'Takım silinemedi!' });
         }
     });
 
     // Oyunu sıfırla (admin)
-    socket.on('reset-game', (callback) => {
-        const count = teams.length;
-        teams = [];
-        saveData();
-        callback({ success: true, count: count });
+    socket.on('reset-game', async (callback) => {
+        try {
+            const result = await pool.query('DELETE FROM teams RETURNING *');
+            const count = result.rowCount;
 
-        io.emit('teams-update', teams);
-        io.emit('game-reset');
-        console.log('Oyun sıfırlandı! ' + count + ' takım silindi.');
+            callback({ success: true, count: count });
+
+            const teams = await getAllTeams();
+            io.emit('teams-update', teams);
+            io.emit('game-reset');
+            console.log('Oyun sıfırlandı! ' + count + ' takım silindi.');
+        } catch (err) {
+            console.error('Oyun sıfırlama hatası:', err);
+            callback({ success: false, error: 'Oyun sıfırlanamadı!' });
+        }
     });
 
     // Genel ipucu gönder (admin)
@@ -399,60 +499,89 @@ io.on('connection', (socket) => {
     });
 
     // Emeği geçenler - İsim ekle (admin)
-    socket.on('add-credit', (name, callback) => {
+    socket.on('add-credit', async (name, callback) => {
         if (!name || name.trim() === '') {
             callback({ success: false, error: 'İsim boş olamaz!' });
             return;
         }
 
-        const trimmedName = name.trim();
-        if (credits.some(c => c.name === trimmedName)) {
-            callback({ success: false, error: 'Bu isim zaten listede!' });
-            return;
+        try {
+            const trimmedName = name.trim();
+
+            // İsim var mı kontrol et
+            const checkResult = await pool.query(
+                'SELECT EXISTS(SELECT 1 FROM credits WHERE name = $1)',
+                [trimmedName]
+            );
+
+            if (checkResult.rows[0].exists) {
+                callback({ success: false, error: 'Bu isim zaten listede!' });
+                return;
+            }
+
+            const creditId = 'credit_' + Date.now();
+
+            // Credit ekle
+            await pool.query(
+                'INSERT INTO credits (id, name, content) VALUES ($1, $2, $3)',
+                [creditId, trimmedName, '']
+            );
+
+            const credits = await getAllCredits();
+            io.emit('credits-update', credits);
+            callback({ success: true });
+            console.log('Emeği geçenler listesine eklendi:', trimmedName);
+        } catch (err) {
+            console.error('Credit ekleme hatası:', err);
+            callback({ success: false, error: 'Eklenemedi!' });
         }
-
-        const newCredit = {
-            id: 'credit_' + Date.now(),
-            name: trimmedName,
-            content: ''
-        };
-
-        credits.push(newCredit);
-        saveCredits();
-        io.emit('credits-update', credits);
-        callback({ success: true });
-        console.log('Emeği geçenler listesine eklendi:', trimmedName);
     });
 
     // Emeği geçenler - İsim sil (admin)
-    socket.on('remove-credit', (creditId, callback) => {
-        const index = credits.findIndex(c => c.id === creditId);
-        if (index === -1) {
-            callback({ success: false, error: 'İsim bulunamadı!' });
-            return;
-        }
+    socket.on('remove-credit', async (creditId, callback) => {
+        try {
+            const result = await pool.query(
+                'DELETE FROM credits WHERE id = $1 RETURNING name',
+                [creditId]
+            );
 
-        const creditName = credits[index].name;
-        credits.splice(index, 1);
-        saveCredits();
-        io.emit('credits-update', credits);
-        callback({ success: true });
-        console.log('Emeği geçenler listesinden silindi:', creditName);
+            if (result.rowCount === 0) {
+                callback({ success: false, error: 'İsim bulunamadı!' });
+                return;
+            }
+
+            const creditName = result.rows[0].name;
+            const credits = await getAllCredits();
+            io.emit('credits-update', credits);
+            callback({ success: true });
+            console.log('Emeği geçenler listesinden silindi:', creditName);
+        } catch (err) {
+            console.error('Credit silme hatası:', err);
+            callback({ success: false, error: 'Silinemedi!' });
+        }
     });
 
     // Emeği geçenler - İçerik güncelle (admin)
-    socket.on('update-credit-content', (data, callback) => {
-        const credit = credits.find(c => c.id === data.creditId);
-        if (!credit) {
-            callback({ success: false, error: 'Kişi bulunamadı!' });
-            return;
-        }
+    socket.on('update-credit-content', async (data, callback) => {
+        try {
+            const result = await pool.query(
+                'UPDATE credits SET content = $1 WHERE id = $2 RETURNING name',
+                [data.content || '', data.creditId]
+            );
 
-        credit.content = data.content || '';
-        saveCredits();
-        io.emit('credits-update', credits);
-        callback({ success: true });
-        console.log('İçerik güncellendi:', credit.name);
+            if (result.rowCount === 0) {
+                callback({ success: false, error: 'Kişi bulunamadı!' });
+                return;
+            }
+
+            const credits = await getAllCredits();
+            io.emit('credits-update', credits);
+            callback({ success: true });
+            console.log('İçerik güncellendi:', result.rows[0].name);
+        } catch (err) {
+            console.error('Credit içerik güncelleme hatası:', err);
+            callback({ success: false, error: 'Güncellenemedi!' });
+        }
     });
 
     // Bağlantı koptu
@@ -463,8 +592,15 @@ io.on('connection', (socket) => {
 
 // Sunucuyu başlat
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`
+
+async function startServer() {
+    try {
+        // Veritabanını başlat
+        await initDatabase();
+
+        // Sunucuyu başlat
+        server.listen(PORT, () => {
+            console.log(`
 ╔════════════════════════════════════════╗
 ║         KATİL KİM? OYUNU               ║
 ║────────────────────────────────────────║
@@ -473,5 +609,12 @@ server.listen(PORT, () => {
 ║                                        ║
 ║  Admin Şifresi: ${ADMIN_PASSWORD}                 ║
 ╚════════════════════════════════════════╝
-    `);
-});
+            `);
+        });
+    } catch (err) {
+        console.error('Sunucu başlatılamadı:', err);
+        process.exit(1);
+    }
+}
+
+startServer();
