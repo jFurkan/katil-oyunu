@@ -28,6 +28,10 @@ async function initDatabase() {
                 name VARCHAR(100) UNIQUE NOT NULL,
                 password VARCHAR(100) NOT NULL,
                 score INTEGER DEFAULT 0,
+                avatar VARCHAR(255) DEFAULT NULL,
+                color VARCHAR(7) DEFAULT '#3b82f6',
+                clue_limit INTEGER DEFAULT 10,
+                clues_sent INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
@@ -39,6 +43,7 @@ async function initDatabase() {
                 team_id VARCHAR(50) REFERENCES teams(id) ON DELETE CASCADE,
                 text TEXT NOT NULL,
                 time VARCHAR(10) NOT NULL,
+                status VARCHAR(20) DEFAULT 'pending',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
@@ -49,6 +54,39 @@ async function initDatabase() {
                 id VARCHAR(50) PRIMARY KEY,
                 name VARCHAR(100) UNIQUE NOT NULL,
                 content TEXT DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Game history tablosu
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS game_history (
+                id SERIAL PRIMARY KEY,
+                winner_team_id VARCHAR(50),
+                winner_team_name VARCHAR(100),
+                winner_score INTEGER,
+                game_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                total_teams INTEGER DEFAULT 0,
+                total_clues INTEGER DEFAULT 0
+            )
+        `);
+
+        // Settings tablosu
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS settings (
+                id SERIAL PRIMARY KEY,
+                key VARCHAR(50) UNIQUE NOT NULL,
+                value TEXT NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // General clues tablosu (Yönetici ipuçları)
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS general_clues (
+                id SERIAL PRIMARY KEY,
+                text TEXT NOT NULL,
+                time VARCHAR(10) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);

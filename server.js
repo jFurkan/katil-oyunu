@@ -103,6 +103,11 @@ async function getAllCredits() {
     return result.rows;
 }
 
+async function getAllGeneralClues() {
+    const result = await pool.query('SELECT * FROM general_clues ORDER BY created_at');
+    return result.rows;
+}
+
 // Socket.io bağlantıları
 io.on('connection', async (socket) => {
     console.log('Kullanıcı bağlandı:', socket.id);
@@ -121,6 +126,10 @@ io.on('connection', async (socket) => {
     // Emeği geçenleri gönder
     const credits = await getAllCredits();
     socket.emit('credits-update', credits);
+
+    // Yönetici ipuçlarını gönder
+    const generalClues = await getAllGeneralClues();
+    socket.emit('general-clues-update', generalClues);
 
     // Yeni takım oluştur
     socket.on('create-team', async (data, callback) => {
@@ -382,19 +391,37 @@ io.on('connection', async (socket) => {
     });
 
     // Genel ipucu gönder (admin)
-    socket.on('send-general-clue', (clue, callback) => {
+    socket.on('send-general-clue', async (clue, callback) => {
         if (!clue || clue.trim() === '') {
             callback({ success: false, error: 'İpucu metni boş olamaz!' });
             return;
         }
 
-        // Tüm kullanıcılara ipucu gönder
-        io.emit('general-clue', {
-            clue: clue.trim()
-        });
+        try {
+            const time = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 
-        callback({ success: true });
-        console.log('Genel ipucu gönderildi:', clue.trim());
+            // Veritabanına kaydet
+            await pool.query(
+                'INSERT INTO general_clues (text, time) VALUES ($1, $2)',
+                [clue.trim(), time]
+            );
+
+            // Tüm kullanıcılara ipucu gönder
+            const generalClues = await getAllGeneralClues();
+            io.emit('general-clues-update', generalClues);
+
+            // Bildirim olarak gönder
+            io.emit('general-clue-notification', {
+                clue: clue.trim(),
+                time: time
+            });
+
+            callback({ success: true });
+            console.log('Genel ipucu gönderildi:', clue.trim());
+        } catch (err) {
+            console.error('Genel ipucu gönderme hatası:', err);
+            callback({ success: false, error: 'İpucu gönderilemedi!' });
+        }
     });
 
     // Duyuru gönder (admin)

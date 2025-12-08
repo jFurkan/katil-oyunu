@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Tema 1: Classic Dark (Default) */
         :root {
             --bg-color: #050505;
             --card-bg: #111111;
@@ -20,7 +21,36 @@
             --success: #2d5a27;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Tema 2: Midnight Detective */
+        [data-theme="midnight"] {
+            --bg-color: #0a0e1a;
+            --card-bg: #141b2d;
+            --border-color: #1e2a45;
+            --accent: #5b7c99;
+            --gold: #ffd700;
+            --text-main: #e8eef7;
+            --text-muted: #7a8ba3;
+            --success: #2d5a27;
+        }
+
+        /* Tema 3: Blood Moon */
+        [data-theme="blood"] {
+            --bg-color: #0d0404;
+            --card-bg: #1a0a0a;
+            --border-color: #2d0f0f;
+            --accent: #b91c1c;
+            --gold: #ff6b6b;
+            --text-main: #f5e6e6;
+            --text-muted: #9a6b6b;
+            --success: #2d5a27;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
         body { font-family: 'Inter', sans-serif; background: var(--bg-color); color: var(--text-main); min-height: 100vh; font-size: 14px; }
         
         /* Genel Yapı */
@@ -238,9 +268,583 @@
         .credit-item:hover { border-color: var(--gold); transform: translateY(-2px); background: #1a1a1a; }
         .credit-item:active { transform: translateY(0); }
         .credits-note { margin-top: 20px; font-size: 11px; color: var(--text-muted); font-style: italic; }
+
+        /* Liderlik Tablosu Stilleri */
+        .leaderboard-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideIn 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .leaderboard-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--border-color);
+            transition: all 0.3s;
+        }
+        .leaderboard-item:hover { transform: translateX(8px); border-color: #444; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+        .leaderboard-item:hover::before { background: var(--gold); }
+        .leaderboard-item.rank-1 { border-color: var(--gold); background: linear-gradient(135deg, #1a1410, #111); }
+        .leaderboard-item.rank-1::before { background: var(--gold); width: 6px; }
+        .leaderboard-item.rank-2 { border-color: #C0C0C0; }
+        .leaderboard-item.rank-2::before { background: #C0C0C0; }
+        .leaderboard-item.rank-3 { border-color: #cd7f32; }
+        .leaderboard-item.rank-3::before { background: #cd7f32; }
+
+        .leaderboard-left { display: flex; align-items: center; gap: 15px; }
+        .leaderboard-rank {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #666;
+            transition: all 0.3s;
+        }
+        .leaderboard-item.rank-1 .leaderboard-rank {
+            background: var(--gold);
+            color: #000;
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+            animation: pulse-gold 2s infinite;
+        }
+        .leaderboard-item.rank-2 .leaderboard-rank { background: #C0C0C0; color: #000; border-color: #C0C0C0; }
+        .leaderboard-item.rank-3 .leaderboard-rank { background: #cd7f32; color: #000; border-color: #cd7f32; }
+
+        @keyframes pulse-gold {
+            0%, 100% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(212, 175, 55, 0.7); }
+        }
+
+        .leaderboard-info { display: flex; flex-direction: column; gap: 4px; }
+        .leaderboard-name { font-size: 18px; font-weight: 600; color: #fff; }
+        .leaderboard-item.rank-1 .leaderboard-name { color: var(--gold); }
+        .leaderboard-stats { font-size: 12px; color: #888; }
+
+        .leaderboard-score {
+            font-size: 32px;
+            font-weight: 700;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s;
+        }
+        .leaderboard-item.rank-1 .leaderboard-score { color: var(--gold); }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Tema Seçici */
+        .theme-switcher {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+        }
+        .theme-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            background: var(--card-bg);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .theme-btn:hover {
+            transform: scale(1.1) rotate(15deg);
+            border-color: var(--gold);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        }
+        .theme-menu {
+            position: absolute;
+            bottom: 65px;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            animation: slideUp 0.3s ease;
+        }
+        .theme-menu.active { display: flex; }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .theme-option {
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .theme-option:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: var(--gold);
+            transform: translateX(-5px);
+        }
+        .theme-option.active {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        .theme-preview {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid #fff;
+        }
+        .theme-preview.classic { background: linear-gradient(135deg, #050505, #8B0000); }
+        .theme-preview.midnight { background: linear-gradient(135deg, #0a0e1a, #5b7c99); }
+        .theme-preview.blood { background: linear-gradient(135deg, #0d0404, #b91c1c); }
+
+        /* ===== RESPONSIVE DESIGN ===== */
+
+        /* Tablet - Orta Ekranlar (768px - 1024px) */
+        @media (max-width: 1024px) {
+            .container {
+                max-width: 100%;
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 36px;
+            }
+
+            .admin-list {
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 15px;
+            }
+
+            .form-box {
+                max-width: 100%;
+                padding: 20px;
+            }
+        }
+
+        /* Mobile - Küçük Ekranlar (<768px) */
+        @media (max-width: 768px) {
+            /* Genel Yapı */
+            body {
+                font-size: 14px;
+            }
+
+            .container {
+                padding: 10px;
+            }
+
+            /* Header */
+            header {
+                padding: 20px 0;
+            }
+
+            h1 {
+                font-size: 28px;
+                letter-spacing: -0.5px;
+            }
+
+            .subtitle {
+                font-size: 13px;
+            }
+
+            /* Butonlar - Daha büyük dokunma alanı */
+            .btn {
+                padding: 14px;
+                font-size: 14px;
+                margin-bottom: 10px;
+            }
+
+            /* Form Alanları */
+            .form-box {
+                padding: 18px;
+                margin-top: 15px;
+            }
+
+            input {
+                padding: 12px;
+                font-size: 16px; /* iOS zoom'u önlemek için minimum 16px */
+                margin-bottom: 12px;
+            }
+
+            /* Admin Grid - Tek sütun */
+            .admin-list {
+                grid-template-columns: 1fr;
+                gap: 12px;
+                margin-bottom: 30px;
+            }
+
+            /* Admin Kartı */
+            .admin-card {
+                padding: 15px;
+            }
+
+            .card-head h3 {
+                font-size: 16px;
+            }
+
+            .card-meta {
+                font-size: 11px;
+            }
+
+            .team-score {
+                font-size: 22px;
+            }
+
+            .clues-list {
+                gap: 8px;
+            }
+
+            .clue-item {
+                padding: 10px;
+                font-size: 13px;
+            }
+
+            /* Admin Header */
+            .admin-head {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+
+            .back-btn {
+                width: 100%;
+                padding: 12px;
+            }
+
+            /* Liderlik Tablosu */
+            .leaderboard-item {
+                padding: 15px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .leaderboard-left {
+                width: 100%;
+            }
+
+            .leaderboard-rank {
+                font-size: 20px;
+                width: 35px;
+                height: 35px;
+            }
+
+            .leaderboard-name {
+                font-size: 15px;
+            }
+
+            .leaderboard-stats {
+                font-size: 11px;
+            }
+
+            .leaderboard-score {
+                font-size: 24px;
+                align-self: flex-end;
+                width: 100%;
+                text-align: right;
+            }
+
+            /* Tema Seçici - Mobil için optimize */
+            .theme-switcher {
+                bottom: 15px;
+                right: 15px;
+            }
+
+            .theme-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 22px;
+            }
+
+            .theme-menu {
+                bottom: 60px;
+                right: 0;
+                min-width: 200px;
+            }
+
+            .theme-option {
+                padding: 10px 15px;
+                font-size: 13px;
+            }
+
+            .theme-preview {
+                width: 18px;
+                height: 18px;
+            }
+
+            /* Modal & Popups */
+            .error-modal,
+            .success-modal {
+                max-width: 90%;
+                padding: 20px;
+            }
+        }
+
+        /* Çok Küçük Mobil Cihazlar (<480px) */
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 24px;
+            }
+
+            .btn {
+                padding: 12px;
+                font-size: 13px;
+            }
+
+            .admin-card {
+                padding: 12px;
+            }
+
+            .card-head h3 {
+                font-size: 15px;
+            }
+
+            .team-score {
+                font-size: 20px;
+            }
+
+            .leaderboard-rank {
+                font-size: 18px;
+                width: 32px;
+                height: 32px;
+            }
+
+            .leaderboard-name {
+                font-size: 14px;
+            }
+
+            .leaderboard-score {
+                font-size: 22px;
+            }
+
+            .theme-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 20px;
+            }
+
+            .theme-menu {
+                min-width: 180px;
+            }
+        }
+
+        /* Yatay Mod (Landscape) için optimizasyonlar */
+        @media (max-height: 600px) and (orientation: landscape) {
+            header {
+                padding: 15px 0;
+            }
+
+            h1 {
+                font-size: 24px;
+                margin-bottom: 5px;
+            }
+
+            .form-box {
+                margin-top: 10px;
+                padding: 15px;
+            }
+
+            input {
+                padding: 10px;
+                margin-bottom: 10px;
+            }
+
+            .btn {
+                padding: 10px;
+                margin-bottom: 8px;
+            }
+        }
+
+        /* Dokunmatik ekranlar için hover devre dışı */
+        @media (hover: none) and (pointer: coarse) {
+            .btn:hover,
+            .admin-card:hover,
+            .theme-option:hover,
+            .leaderboard-item:hover {
+                transform: none;
+            }
+
+            /* Dokunma için aktif efekt */
+            .btn:active {
+                transform: scale(0.98);
+                opacity: 0.8;
+            }
+
+            .admin-card:active {
+                transform: scale(0.99);
+            }
+        }
+
+        /* ===== BİLDİRİM SİSTEMİ ===== */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-width: 400px;
+            pointer-events: none;
+        }
+
+        .notification {
+            background: linear-gradient(135deg, #1a1a1a, #111);
+            border: 2px solid var(--accent);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.8), 0 0 20px rgba(139,0,0,0.4);
+            animation: slideInNotification 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            pointer-events: all;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .notification::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent);
+            animation: notificationGlow 2s ease-in-out infinite;
+        }
+
+        .notification.closing {
+            animation: slideOutNotification 0.3s ease forwards;
+        }
+
+        @keyframes slideInNotification {
+            from {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutNotification {
+            to {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+        }
+
+        @keyframes notificationGlow {
+            0%, 100% { box-shadow: 0 0 5px var(--accent); }
+            50% { box-shadow: 0 0 15px var(--accent); }
+        }
+
+        .notification-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .notification-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 14px;
+        }
+
+        .notification-close {
+            background: transparent;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .notification-close:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .notification-body {
+            color: var(--text-main);
+            font-size: 13px;
+            line-height: 1.5;
+            padding-left: 8px;
+        }
+
+        .notification-time {
+            color: #666;
+            font-size: 11px;
+            margin-top: 6px;
+            padding-left: 8px;
+        }
+
+        /* Mobil için bildirimler */
+        @media (max-width: 768px) {
+            .notification-container {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+
+            .notification {
+                padding: 14px;
+            }
+
+            .notification-title {
+                font-size: 13px;
+            }
+
+            .notification-body {
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Bildirim Container -->
+    <div class="notification-container" id="notificationContainer"></div>
+
     <div class="container">
         <div class="page active" id="pgLobby">
             <header>
@@ -329,10 +933,28 @@
                 <!-- Countdown Görünümü -->
                 <div id="teamCountdownSection"></div>
 
-                <!-- Genel İpuçları -->
-                <div id="generalCluesSection" style="background:#0a1a0a; padding:20px; border-radius:12px; border:1px solid var(--gold); margin-bottom:20px; display:none;">
-                    <h3 style="margin-bottom:12px; color:var(--gold);">💡 Genel İpuçları</h3>
-                    <div id="generalCluesList" style="max-height:200px; overflow-y:auto;"></div>
+                <!-- Yönetici İpuçları - YENİ TASARIM -->
+                <div id="adminCluesSection" style="display:none; margin-bottom:20px;">
+                    <div style="background: linear-gradient(135deg, #1a0a0a, #0d0404); border: 2px solid var(--accent); border-radius: 12px; padding: 20px; box-shadow: 0 8px 25px rgba(139,0,0,0.3); position: relative; overflow: hidden;">
+                        <!-- Başlık -->
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--accent); padding-bottom: 10px;">
+                            <div style="font-size: 24px;">🎯</div>
+                            <div>
+                                <h3 style="margin: 0; color: var(--accent); font-size: 18px; font-weight: 700;">Yönetici İpuçları</h3>
+                                <div style="color: #888; font-size: 11px; margin-top: 2px;">Oyun yöneticisinden gelen ipuçları</div>
+                            </div>
+                            <div id="adminCluesCount" style="margin-left: auto; background: var(--accent); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;">0</div>
+                        </div>
+
+                        <!-- İpuçları Listesi -->
+                        <div id="adminCluesList" style="max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;"></div>
+
+                        <!-- Boş Durum -->
+                        <div id="adminCluesEmpty" style="text-align: center; padding: 30px; color: #666;">
+                            <div style="font-size: 32px; margin-bottom: 10px;">🔍</div>
+                            <div style="font-size: 13px;">Henüz yönetici ipucu yok</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div style="background:#111; padding:20px; border-radius:12px; border:1px solid #222; margin-bottom:20px;">
@@ -520,6 +1142,25 @@
 
     <div id="toast"></div>
 
+    <!-- Tema Seçici -->
+    <div class="theme-switcher">
+        <div class="theme-menu" id="themeMenu">
+            <div class="theme-option active" onclick="THEME.setTheme('classic')" data-theme="classic">
+                <div class="theme-preview classic"></div>
+                <span>Classic Dark</span>
+            </div>
+            <div class="theme-option" onclick="THEME.setTheme('midnight')" data-theme="midnight">
+                <div class="theme-preview midnight"></div>
+                <span>Midnight Detective</span>
+            </div>
+            <div class="theme-option" onclick="THEME.setTheme('blood')" data-theme="blood">
+                <div class="theme-preview blood"></div>
+                <span>Blood Moon</span>
+            </div>
+        </div>
+        <button class="theme-btn" onclick="THEME.toggleMenu()">🎨</button>
+    </div>
+
     <!-- Bildirim Popup -->
     <div id="notificationPopup" class="notification-popup">
         <div class="notif-header">
@@ -538,6 +1179,108 @@
     </audio>
 
     <script>
+        // Tema Yönetimi
+        var THEME = {
+            current: localStorage.getItem('theme') || 'classic',
+
+            init: function() {
+                this.applyTheme(this.current);
+            },
+
+            setTheme: function(theme) {
+                this.current = theme;
+                localStorage.setItem('theme', theme);
+                this.applyTheme(theme);
+                this.updateActiveOption(theme);
+                this.closeMenu();
+            },
+
+            applyTheme: function(theme) {
+                if (theme === 'classic') {
+                    document.documentElement.removeAttribute('data-theme');
+                } else {
+                    document.documentElement.setAttribute('data-theme', theme);
+                }
+            },
+
+            updateActiveOption: function(theme) {
+                document.querySelectorAll('.theme-option').forEach(function(opt) {
+                    opt.classList.remove('active');
+                });
+                document.querySelector('.theme-option[data-theme="' + theme + '"]').classList.add('active');
+            },
+
+            toggleMenu: function() {
+                var menu = document.getElementById('themeMenu');
+                menu.classList.toggle('active');
+            },
+
+            closeMenu: function() {
+                document.getElementById('themeMenu').classList.remove('active');
+            }
+        };
+
+        // Sayfa yüklendiğinde temayı uygula
+        THEME.init();
+
+        // Bildirim Sistemi
+        var NOTIFICATION = {
+            container: null,
+            nextId: 1,
+
+            init: function() {
+                this.container = document.getElementById('notificationContainer');
+            },
+
+            show: function(title, message, time) {
+                if (!this.container) this.init();
+
+                var id = 'notif-' + this.nextId++;
+                var notif = document.createElement('div');
+                notif.className = 'notification';
+                notif.id = id;
+                notif.innerHTML = `
+                    <div class="notification-header">
+                        <div class="notification-title">
+                            <span>🎯</span>
+                            <span>${title}</span>
+                        </div>
+                        <button class="notification-close" onclick="NOTIFICATION.close('${id}')">×</button>
+                    </div>
+                    <div class="notification-body">${message}</div>
+                    ${time ? `<div class="notification-time">${time}</div>` : ''}
+                `;
+
+                this.container.appendChild(notif);
+
+                // 8 saniye sonra otomatik kapat
+                setTimeout(() => {
+                    this.close(id);
+                }, 8000);
+
+                return id;
+            },
+
+            close: function(id) {
+                var notif = document.getElementById(id);
+                if (notif) {
+                    notif.classList.add('closing');
+                    setTimeout(() => {
+                        notif.remove();
+                    }, 300);
+                }
+            }
+        };
+
+        NOTIFICATION.init();
+
+        // Menü dışına tıklandığında kapat
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.theme-switcher')) {
+                THEME.closeMenu();
+            }
+        });
+
         (function() {
             var socket = io();
             var teams = [];
@@ -1217,22 +1960,47 @@
             }
 
             function renderGeneralClues() {
-                var container = document.getElementById('generalCluesSection');
-                var list = document.getElementById('generalCluesList');
+                var container = document.getElementById('adminCluesSection');
+                var list = document.getElementById('adminCluesList');
+                var emptyEl = document.getElementById('adminCluesEmpty');
+                var countEl = document.getElementById('adminCluesCount');
+
                 if (!container || !list) return;
+
+                // Sayıyı güncelle
+                if (countEl) countEl.textContent = generalClues.length;
 
                 if (generalClues.length === 0) {
                     container.style.display = 'none';
+                    if (list) list.style.display = 'none';
+                    if (emptyEl) emptyEl.style.display = 'block';
                 } else {
                     container.style.display = 'block';
+                    if (list) list.style.display = 'flex';
+                    if (emptyEl) emptyEl.style.display = 'none';
+
                     var html = '';
                     // Tersten sırala (en yeni en üstte)
                     for (var i = generalClues.length - 1; i >= 0; i--) {
                         var clue = generalClues[i];
-                        html += `<div style="padding:10px; border-bottom:1px solid #2a4a2a; color:#d4af37; background:#0d1f0d; margin-bottom:5px; border-radius:4px;">
-                            <div style="font-size:13px;">${clue.text}</div>
-                            <div style="font-size:10px; color:#666; margin-top:5px;">${clue.time}</div>
-                        </div>`;
+                        html += `
+                            <div style="
+                                background: rgba(139,0,0,0.15);
+                                border: 1px solid rgba(139,0,0,0.3);
+                                border-left: 4px solid var(--accent);
+                                border-radius: 8px;
+                                padding: 14px;
+                                animation: slideIn 0.3s ease;
+                            ">
+                                <div style="color: var(--text-main); font-size: 14px; line-height: 1.5; margin-bottom: 6px;">
+                                    ${clue.text}
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px; color: #666; font-size: 11px;">
+                                    <span>⏰</span>
+                                    <span>${clue.time}</span>
+                                </div>
+                            </div>
+                        `;
                     }
                     list.innerHTML = html;
                 }
@@ -1341,25 +2109,32 @@
 
             function renderScoreboard() {
                 var c = document.getElementById('scoreboardList');
-                if (teams.length === 0) { c.innerHTML = '<div style="text-align:center; color:#666; padding:40px;">Veri yok</div>'; return; }
-                
+                if (teams.length === 0) {
+                    c.innerHTML = '<div style="text-align:center; color:#666; padding:40px;">Henüz takım yok</div>';
+                    return;
+                }
+
                 var sorted = teams.slice().sort((a, b) => b.score - a.score);
                 var html = '';
+
                 sorted.forEach((t, i) => {
-                    var bg = '#161616';
-                    var border = '#333';
-                    var color = '#fff';
-                    if (i===0) { border = '#D4AF37'; color='#D4AF37'; }
-                    
+                    var rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
+                    var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+                    var clueCount = Array.isArray(t.clues) ? t.clues.length : 0;
+
                     html += `
-                    <div style="background:${bg}; border:1px solid ${border}; padding:20px; border-radius:10px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between;">
-                        <div style="display:flex; align-items:center; gap:15px;">
-                            <div style="font-size:20px; font-weight:bold; width:30px; text-align:center; color:#666;">${i+1}</div>
-                            <div style="font-size:18px; font-weight:600; color:#fff;">${t.name}</div>
+                    <div class="leaderboard-item ${rankClass}" style="animation-delay: ${i * 0.1}s">
+                        <div class="leaderboard-left">
+                            <div class="leaderboard-rank">${medal}</div>
+                            <div class="leaderboard-info">
+                                <div class="leaderboard-name">${t.name}</div>
+                                <div class="leaderboard-stats">${clueCount} ipucu gönderildi</div>
+                            </div>
                         </div>
-                        <div style="font-size:24px; font-weight:bold; color:${color};">${t.score}</div>
+                        <div class="leaderboard-score">${t.score}</div>
                     </div>`;
                 });
+
                 c.innerHTML = html;
             }
 
@@ -1483,20 +2258,27 @@
                 NOTIF.add('Puan Değişikliği', msg, 'score');
             });
 
-            // Genel ipucu geldi
-            socket.on('general-clue', function(data) {
-                generalClues.push({
-                    text: data.clue,
-                    time: new Date().toLocaleString('tr-TR')
-                });
-
-                // Bildirim olarak ekle (ses çalmadan)
-                NOTIF.add('💡 Yeni İpucu', data.clue, 'clue');
+            // Yönetici ipuçları listesi güncellendi
+            socket.on('general-clues-update', function(clues) {
+                generalClues = clues;
 
                 // Takım sayfasındaysa render et
                 if (document.getElementById('pgTeam').classList.contains('active')) {
                     renderGeneralClues();
                 }
+            });
+
+            // Yeni yönetici ipucu bildirimi
+            socket.on('general-clue-notification', function(data) {
+                // Bildirim göster
+                NOTIFICATION.show('Yönetici İpucu', data.clue, data.time);
+
+                // Takım sayfasındaysa render et (biraz gecikme ile, veritabanından gelmesini bekle)
+                setTimeout(function() {
+                    if (document.getElementById('pgTeam').classList.contains('active')) {
+                        renderGeneralClues();
+                    }
+                }, 100);
             });
 
             // Oyun durumu güncellemesi
