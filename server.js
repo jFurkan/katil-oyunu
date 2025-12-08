@@ -85,13 +85,22 @@ async function getAllTeams() {
         SELECT t.*,
                COALESCE(
                    json_agg(
-                       json_build_object('text', c.text, 'time', c.time)
-                       ORDER BY c.created_at
+                       DISTINCT json_build_object('text', c.text, 'time', c.time)
+                       ORDER BY json_build_object('text', c.text, 'time', c.time)
                    ) FILTER (WHERE c.id IS NOT NULL),
                    '[]'
-               ) as clues
+               ) as clues,
+               COALESCE(
+                   json_agg(
+                       DISTINCT json_build_object('id', b.id, 'name', b.name, 'icon', b.icon, 'color', b.color)
+                       ORDER BY json_build_object('id', b.id, 'name', b.name, 'icon', b.icon, 'color', b.color)
+                   ) FILTER (WHERE b.id IS NOT NULL),
+                   '[]'
+               ) as badges
         FROM teams t
         LEFT JOIN clues c ON t.id = c.team_id
+        LEFT JOIN team_badges tb ON t.id = tb.team_id
+        LEFT JOIN badges b ON tb.badge_id = b.id
         GROUP BY t.id
         ORDER BY t.created_at
     `);
@@ -105,6 +114,22 @@ async function getAllCredits() {
 
 async function getAllGeneralClues() {
     const result = await pool.query('SELECT * FROM general_clues ORDER BY created_at');
+    return result.rows;
+}
+
+async function getAllBadges() {
+    const result = await pool.query('SELECT * FROM badges ORDER BY created_at');
+    return result.rows;
+}
+
+async function getTeamBadges(teamId) {
+    const result = await pool.query(`
+        SELECT b.*, tb.awarded_at
+        FROM badges b
+        JOIN team_badges tb ON b.id = tb.badge_id
+        WHERE tb.team_id = $1
+        ORDER BY tb.awarded_at DESC
+    `, [teamId]);
     return result.rows;
 }
 
@@ -131,6 +156,10 @@ io.on('connection', async (socket) => {
     const generalClues = await getAllGeneralClues();
     socket.emit('general-clues-update', generalClues);
 
+    // Rozetleri gönder
+    const badges = await getAllBadges();
+    socket.emit('badges-update', badges);
+
     // Yeni takım oluştur
     socket.on('create-team', async (data, callback) => {
         try {
@@ -151,15 +180,18 @@ io.on('connection', async (socket) => {
             }
 
             const teamId = 'team_' + Date.now();
+            const avatar = data.avatar || '🕵️';
+            const color = data.color || '#3b82f6';
 
             // Takım oluştur
             const result = await pool.query(
-                'INSERT INTO teams (id, name, password, score) VALUES ($1, $2, $3, 0) RETURNING *',
-                [teamId, data.name, data.password]
+                'INSERT INTO teams (id, name, password, score, avatar, color) VALUES ($1, $2, $3, 0, $4, $5) RETURNING *',
+                [teamId, data.name, data.password, avatar, color]
             );
 
             const team = result.rows[0];
             team.clues = [];
+            team.badges = [];
 
             callback({ success: true, team: team });
 
@@ -608,6 +640,101 @@ io.on('connection', async (socket) => {
         } catch (err) {
             console.error('Credit içerik güncelleme hatası:', err);
             callback({ success: false, error: 'Güncellenemedi!' });
+        }
+    });
+
+    // Takım özelleştirme (avatar + renk)
+    socket.on('update-team-customization', async (data, callback) => {
+        try {
+            await pool.query(
+                'UPDATE teams SET avatar = $1, color = $2 WHERE id = $3',
+                [data.avatar, data.color, data.teamId]
+            );
+
+            callback({ success: true });
+
+            const teams = await getAllTeams();
+            io.emit('teams-update', teams);
+            console.log('Takım özelleştirildi:', data.teamId);
+        } catch (err) {
+            console.error('Özelleştirme hatası:', err);
+            callback({ success: false, error: 'Özelleştirilemedi!' });
+        }
+    });
+
+    // Rozet oluştur (admin)
+    socket.on('create-badge', async (data, callback) => {
+        if (!data.name || !data.icon) {
+            callback({ success: false, error: 'Rozet adı ve ikonu gerekli!' });
+            return;
+        }
+
+        try {
+            const result = await pool.query(
+                'INSERT INTO badges (name, icon, description, color) VALUES ($1, $2, $3, $4) RETURNING *',
+                [data.name, data.icon, data.description || '', data.color || '#FFD700']
+            );
+
+            const badges = await getAllBadges();
+            io.emit('badges-update', badges);
+            callback({ success: true, badge: result.rows[0] });
+            console.log('Rozet oluşturuldu:', data.name);
+        } catch (err) {
+            console.error('Rozet oluşturma hatası:', err);
+            callback({ success: false, error: 'Rozet oluşturulamadı!' });
+        }
+    });
+
+    // Rozet ver (admin)
+    socket.on('award-badge', async (data, callback) => {
+        try {
+            await pool.query(
+                'INSERT INTO team_badges (team_id, badge_id) VALUES ($1, $2) ON CONFLICT (team_id, badge_id) DO NOTHING',
+                [data.teamId, data.badgeId]
+            );
+
+            callback({ success: true });
+
+            const teams = await getAllTeams();
+            io.emit('teams-update', teams);
+            console.log(`Rozet verildi: Badge ${data.badgeId} -> Team ${data.teamId}`);
+        } catch (err) {
+            console.error('Rozet verme hatası:', err);
+            callback({ success: false, error: 'Rozet verilemedi!' });
+        }
+    });
+
+    // Rozeti takımdan kaldır (admin)
+    socket.on('remove-badge-from-team', async (data, callback) => {
+        try {
+            await pool.query(
+                'DELETE FROM team_badges WHERE team_id = $1 AND badge_id = $2',
+                [data.teamId, data.badgeId]
+            );
+
+            callback({ success: true });
+
+            const teams = await getAllTeams();
+            io.emit('teams-update', teams);
+            console.log(`Rozet kaldırıldı: Badge ${data.badgeId} <- Team ${data.teamId}`);
+        } catch (err) {
+            console.error('Rozet kaldırma hatası:', err);
+            callback({ success: false, error: 'Rozet kaldırılamadı!' });
+        }
+    });
+
+    // Rozeti sil (admin)
+    socket.on('delete-badge', async (badgeId, callback) => {
+        try {
+            await pool.query('DELETE FROM badges WHERE id = $1', [badgeId]);
+
+            const badges = await getAllBadges();
+            io.emit('badges-update', badges);
+            callback({ success: true });
+            console.log('Rozet silindi:', badgeId);
+        } catch (err) {
+            console.error('Rozet silme hatası:', err);
+            callback({ success: false, error: 'Rozet silinemedi!' });
         }
     });
 

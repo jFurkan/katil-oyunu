@@ -91,6 +91,29 @@ async function initDatabase() {
             )
         `);
 
+        // Badges tablosu (Rozetler)
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS badges (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                icon VARCHAR(10) NOT NULL,
+                description TEXT,
+                color VARCHAR(7) DEFAULT '#FFD700',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Team badges tablosu (Takım-Rozet ilişkisi)
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS team_badges (
+                id SERIAL PRIMARY KEY,
+                team_id VARCHAR(50) REFERENCES teams(id) ON DELETE CASCADE,
+                badge_id INTEGER REFERENCES badges(id) ON DELETE CASCADE,
+                awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(team_id, badge_id)
+            )
+        `);
+
         console.log('✓ Veritabanı tabloları hazır');
     } catch (err) {
         console.error('Veritabanı başlatma hatası:', err);
