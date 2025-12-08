@@ -56,3 +56,4 @@ Varsayılan: `260678`
 
 Değiştirmek için Render'da Environment Variable ekle:
 `ADMIN_PASSWORD` = yeni_şifre
+Fix: Module not found patch added
