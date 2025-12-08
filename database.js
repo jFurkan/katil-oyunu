@@ -2,7 +2,11 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 // PostgreSQL bağlantı havuzu
-const pool = new Pool({
+// Railway DATABASE_URL kullanıyorsa onu kullan, yoksa manuel config
+const pool = process.env.DATABASE_URL ? new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+}) : new Pool({
     host: process.env.PGHOST || process.env.DB_HOST,
     port: process.env.PGPORT || process.env.DB_PORT,
     database: process.env.PGDATABASE || process.env.DB_NAME,
