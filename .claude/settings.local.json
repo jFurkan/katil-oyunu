@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"C:\\Program Files\\PostgreSQL\" /b)",
+      "Bash(net start:*)",
+      "Bash(sc query:*)",
+      "Bash(findstr:*)",
+      "Bash(wmic service:*)",
+      "Bash(\"C:\\Program Files\\PostgreSQL\\18\\bin\\pg_ctl.exe\" status -D \"C:\\Program Files\\PostgreSQL\\18\\data\")",
+      "Bash(npm start)",
+      "Bash(taskkill:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(psql:*)",
+      "Bash(\"C:\\Program Files\\PostgreSQL\\18\\bin\\psql.exe\" -U postgres -d katil_oyunu -f \"c:\\Users\\Furkan\\Desktop\\katil-oyunu\\migrate_database.sql\")",
+      "Bash(powershell -Command \"Remove-Item -Path ''.\\nul'' -Force\")",
+      "Bash(git rm:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
