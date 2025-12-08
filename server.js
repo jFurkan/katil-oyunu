@@ -85,15 +85,15 @@ async function getAllTeams() {
         SELECT t.*,
                COALESCE(
                    json_agg(
-                       DISTINCT json_build_object('text', c.text, 'time', c.time)
-                       ORDER BY json_build_object('text', c.text, 'time', c.time)
+                       json_build_object('text', c.text, 'time', c.time)
+                       ORDER BY c.id
                    ) FILTER (WHERE c.id IS NOT NULL),
                    '[]'
                ) as clues,
                COALESCE(
                    json_agg(
-                       DISTINCT json_build_object('id', b.id, 'name', b.name, 'icon', b.icon, 'color', b.color)
-                       ORDER BY json_build_object('id', b.id, 'name', b.name, 'icon', b.icon, 'color', b.color)
+                       json_build_object('id', b.id, 'name', b.name, 'icon', b.icon, 'color', b.color)
+                       ORDER BY b.id
                    ) FILTER (WHERE b.id IS NOT NULL),
                    '[]'
                ) as badges
