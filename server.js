@@ -292,7 +292,7 @@ class IPBotProtection {
             );
 
             const count = parseInt(result.rows[0].count);
-            return count < maxAllowed;
+            return count <= maxAllowed;
         } catch (err) {
             console.error('IP check error:', err);
             return true; // Hata durumunda engellemiyoruz (fail open)
