@@ -1034,7 +1034,7 @@
                 <div style="background:#111; padding:20px; border-radius:12px; border:1px solid #222; margin-bottom:20px;">
                     <h3 style="margin-bottom:12px; color:var(--gold);">🔎 Yeni İpucu</h3>
                     <div style="display:flex; gap:10px;">
-                        <input type="text" id="inpClue" placeholder="Bulduğunuz ipucunu yazın..." style="margin:0;">
+                        <input type="text" id="inpClue" placeholder="Bulduğunuz ipucunu yazın..." maxlength="300" style="margin:0;">
                         <button class="btn btn-primary" style="width:auto; margin:0;" onclick="GAME.addClue()">Gönder</button>
                     </div>
                 </div>
@@ -1109,7 +1109,7 @@
                 <!-- İpucu Gönderme -->
                 <div class="announcement-form" style="margin-bottom:20px;">
                     <h3 style="color:var(--gold); font-size:14px; margin-bottom:12px;">💡 Genel İpucu Gönder</h3>
-                    <textarea id="generalClueText" placeholder="Tüm takımlara gönderilecek ipucunu yazın..."></textarea>
+                    <textarea id="generalClueText" placeholder="Tüm takımlara gönderilecek ipucunu yazın..." maxlength="500"></textarea>
                     <div style="display:flex; gap:10px; align-items:center;">
                         <button class="btn btn-primary" style="width:auto; padding:10px 24px; margin:0;" onclick="ADMIN.sendGeneralClue()">İpucu Gönder</button>
                     </div>
@@ -1118,7 +1118,7 @@
                 <!-- Duyuru Gönderme -->
                 <div class="announcement-form">
                     <h3 style="color:var(--gold); font-size:14px; margin-bottom:12px;">📢 Genel Duyuru Gönder</h3>
-                    <textarea id="announcementText" placeholder="Tüm takımlara gönderilecek duyuruyu yazın..."></textarea>
+                    <textarea id="announcementText" placeholder="Tüm takımlara gönderilecek duyuruyu yazın..." maxlength="500"></textarea>
                     <div style="display:flex; gap:10px; align-items:center;">
                         <button class="btn btn-primary" style="width:auto; padding:10px 24px; margin:0;" onclick="ADMIN.sendAnnouncement()">Duyuruyu Gönder</button>
                         <button class="btn" style="width:auto; padding:10px 24px; margin:0; background:#300; color:#faa; border:1px solid #500;" onclick="ADMIN.clearAllNotifications()">🗑️ Tüm Bildirimleri Sil</button>
@@ -1407,6 +1407,14 @@
                 var mins = Math.floor(seconds / 60);
                 var secs = seconds % 60;
                 return (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+            }
+
+            // HTML Escape - XSS koruması
+            function htmlEscape(text) {
+                if (!text) return '';
+                var div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
             }
 
             // UI Yardımcıları
@@ -1732,10 +1740,10 @@
                         html += `
                         <div class="notif-item ${n.unread ? 'unread' : ''}">
                             <div class="notif-item-header">
-                                <div class="notif-item-title">${icon} ${n.title}</div>
+                                <div class="notif-item-title">${icon} ${htmlEscape(n.title)}</div>
                                 <div class="notif-item-time">${n.time}</div>
                             </div>
-                            <div class="notif-item-body">${n.message}</div>
+                            <div class="notif-item-body">${htmlEscape(n.message)}</div>
                         </div>`;
                     });
                     container.innerHTML = html;
@@ -1984,8 +1992,9 @@
                 if (teams.length === 0) { c.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">Aktif takım yok</div>'; return; }
                 var html = '';
                 teams.forEach(t => {
-                    html += `<div class="team-opt" data-id="${t.id}" data-name="${t.name}" onclick="GAME.selectJoin(this)">
-                        <div style="font-weight:bold;color:#fff;">${t.name}</div>
+                    var safeName = htmlEscape(t.name);
+                    html += `<div class="team-opt" data-id="${t.id}" data-name="${safeName}" onclick="GAME.selectJoin(this)">
+                        <div style="font-weight:bold;color:#fff;">${safeName}</div>
                         <div style="font-size:12px;color:#666;">Puan: ${t.score}</div>
                     </div>`;
                 });
@@ -2007,7 +2016,7 @@
                     var html = '';
                     // Tersten sırala (en yeni en üstte)
                     for (var i = team.clues.length - 1; i >= 0; i--) {
-                        html += `<div style="padding:10px; border-bottom:1px solid #222; color:#ccc;">${team.clues[i].text}</div>`;
+                        html += `<div style="padding:10px; border-bottom:1px solid #222; color:#ccc;">${htmlEscape(team.clues[i].text)}</div>`;
                     }
                     list.innerHTML = html;
                 }
@@ -2053,7 +2062,7 @@
                                 animation: slideIn 0.3s ease;
                             ">
                                 <div style="color: var(--text-main); font-size: 14px; line-height: 1.5; margin-bottom: 6px;">
-                                    ${clue.text}
+                                    ${htmlEscape(clue.text)}
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 6px; color: #666; font-size: 11px;">
                                     <span>⏰</span>
@@ -2111,6 +2120,7 @@
                 var html = '';
                 sorted.forEach((t, index) => {
                     var safeName = t.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    var safeNameHTML = htmlEscape(t.name);
                     var rankClass = '';
                     // Rank için gerçek sırayı hesapla
                     var realRank = sortedForChart.findIndex(st => st.id === t.id) + 1;
@@ -2124,7 +2134,7 @@
                         <div class="card-header" style="background: linear-gradient(135deg, ${t.color || '#3b82f6'}15, transparent)">
                             <div class="team-identity">
                                 <div class="rank-badge ${rankClass}">${realRank}</div>
-                                <div class="team-name" style="color: ${t.color || '#3b82f6'}">${t.name}</div>
+                                <div class="team-name" style="color: ${t.color || '#3b82f6'}">${safeNameHTML}</div>
                             </div>
                             <div class="team-score" id="score_${t.id}">${t.score}</div>
                         </div>
@@ -2135,17 +2145,17 @@
                                 <button class="ctrl-btn btn-m5" onclick="adminScore('${t.id}', -5)">-5</button>
                                 <button class="ctrl-btn btn-m10" onclick="adminScore('${t.id}', -10)">-10</button>
                             </div>
-                            
+
                             <div class="clues-section" id="clues_${t.id}">
                                 <div class="clues-title">İPUÇLARI (${t.clues.length})</div>
-                                ${ t.clues.length === 0 
-                                    ? '<div class="no-clues">İpucu yok</div>' 
-                                    : t.clues.map(c => 
-                                        `<div class="clue-item">${c.text}<div class="clue-time">${c.time}</div><div style="clear:both"></div></div>`
-                                      ).join('') 
+                                ${ t.clues.length === 0
+                                    ? '<div class="no-clues">İpucu yok</div>'
+                                    : t.clues.map(c =>
+                                        `<div class="clue-item">${htmlEscape(c.text)}<div class="clue-time">${c.time}</div><div style="clear:both"></div></div>`
+                                      ).join('')
                                 }
                             </div>
-                            
+
                             <button class="delete-btn" onclick="adminDel('${t.id}', '${safeName}')">Takımı Sil</button>
                         </div>
                     </div>`;
@@ -2163,7 +2173,7 @@
                     var teamColor = t.color || '#3b82f6';
                     html += `
                     <div class="chart-bar">
-                        <div class="chart-label" style="color: ${teamColor}">${t.name}</div>
+                        <div class="chart-label" style="color: ${teamColor}">${htmlEscape(t.name)}</div>
                         <div class="chart-track">
                             <div class="chart-fill" style="width: ${pct}%; background: ${teamColor}"></div>
                         </div>
@@ -2205,14 +2215,14 @@
                     html += `
                         <div style="background: #1a1a1a; border-left: 4px solid ${group.teamColor}; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
                             <h4 style="color: ${group.teamColor}; margin: 0 0 15px 0; font-size: 18px;">
-                                ${group.teamName}
+                                ${htmlEscape(group.teamName)}
                             </h4>
                             <div style="display: grid; gap: 10px;">
                                 ${group.users.map(u => `
                                     <div style="background: #222; padding: 12px 15px; border-radius: 6px; display: flex; align-items: center; gap: 10px;">
                                         ${u.is_captain ? '<span style="font-size: 20px;">👑</span>' : '<span style="font-size: 20px;">👤</span>'}
                                         <span style="color: white; font-weight: ${u.is_captain ? 'bold' : 'normal'};">
-                                            ${u.nickname}
+                                            ${htmlEscape(u.nickname)}
                                         </span>
                                         ${u.is_captain ? '<span style="color: #fbbf24; font-size: 12px; margin-left: auto;">(Kaptan)</span>' : ''}
                                     </div>
@@ -2233,7 +2243,7 @@
                                 ${usersWithoutTeam.map(u => `
                                     <div style="background: #222; padding: 12px 15px; border-radius: 6px; display: flex; align-items: center; gap: 10px;">
                                         <span style="font-size: 20px;">👤</span>
-                                        <span style="color: white;">${u.nickname}</span>
+                                        <span style="color: white;">${htmlEscape(u.nickname)}</span>
                                     </div>
                                 `).join('')}
                             </div>
@@ -2264,7 +2274,7 @@
                         <div class="leaderboard-left">
                             <div class="leaderboard-rank">${medal}</div>
                             <div class="leaderboard-info">
-                                <div class="leaderboard-name">${t.name}</div>
+                                <div class="leaderboard-name">${htmlEscape(t.name)}</div>
                                 <div class="leaderboard-stats">${clueCount} ipucu gönderildi</div>
                             </div>
                         </div>
@@ -2305,15 +2315,16 @@
                 var html = '';
                 credits.forEach(function(credit) {
                     var safeName = credit.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    var safeNameHTML = htmlEscape(credit.name);
                     html += `
                     <div style="background:#1a1a1a; border:1px solid #333; border-radius:8px; padding:15px; transition:0.2s;">
                         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
-                            <span style="color:var(--gold); font-size:15px; font-weight:600;">${credit.name}</span>
+                            <span style="color:var(--gold); font-size:15px; font-weight:600;">${safeNameHTML}</span>
                             <button onclick="ADMIN.removeCredit('${credit.id}', '${safeName}')" style="background:transparent; border:1px solid #500; color:#faa; padding:4px 10px; border-radius:4px; font-size:11px; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='rgba(139,0,0,0.2)'" onmouseout="this.style.background='transparent'">🗑️ Sil</button>
                         </div>
                         <div style="margin-bottom:8px;">
                             <label style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; display:block;">Katkıları</label>
-                            <textarea id="creditContent_${credit.id}" placeholder="Bu kişinin katkılarını yazın..." style="width:100%; min-height:80px; background:#0a0a0a; border:1px solid #333; border-radius:6px; color:#fff; padding:10px; font-family:inherit; resize:vertical; font-size:13px; line-height:1.6;">${credit.content || ''}</textarea>
+                            <textarea id="creditContent_${credit.id}" placeholder="Bu kişinin katkılarını yazın..." maxlength="1000" style="width:100%; min-height:80px; background:#0a0a0a; border:1px solid #333; border-radius:6px; color:#fff; padding:10px; font-family:inherit; resize:vertical; font-size:13px; line-height:1.6;">${credit.content || ''}</textarea>
                         </div>
                         <button onclick="ADMIN.updateCreditContent('${credit.id}')" class="btn btn-primary" style="width:100%; padding:8px; margin:0; font-size:12px;">💾 İçeriği Kaydet</button>
                     </div>`;
@@ -2333,7 +2344,7 @@
 
                 var html = '';
                 credits.forEach(function(credit) {
-                    html += `<div class="credit-item" onclick="GAME.showCreditDetail('${credit.id}')">${credit.name}</div>`;
+                    html += `<div class="credit-item" onclick="GAME.showCreditDetail('${credit.id}')">${htmlEscape(credit.name)}</div>`;
                 });
                 container.innerHTML = html;
             }
