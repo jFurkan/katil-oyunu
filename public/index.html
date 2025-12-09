@@ -2236,9 +2236,13 @@
             });
 
             socket.on('game-reset', function() {
-                currentTeamId = null;
-                localStorage.removeItem('currentTeamId');
-                showPage('pgLobby');
+                // Admin panelindeyse atma
+                var isInAdminPanel = document.getElementById('pgAdmin').classList.contains('active');
+                if (!isInAdminPanel) {
+                    currentTeamId = null;
+                    localStorage.removeItem('currentTeamId');
+                    showPage('pgLobby');
+                }
             });
 
             // Bildirim Eventi
