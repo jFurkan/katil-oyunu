@@ -103,6 +103,31 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
+// Admin korumalı kullanıcı temizleme endpoint'i
+app.post('/api/cleanup-users', async (req, res) => {
+    try {
+        // Admin authentication
+        const adminPassword = req.body.password || req.query.password;
+
+        if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
+            return res.status(403).json({
+                success: false,
+                error: 'Yetkisiz erişim - Admin şifresi gerekli'
+            });
+        }
+
+        // Temizliği çalıştır
+        const result = await userCleanup.cleanup();
+
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '260678';
 
 // Oyun durumu
@@ -452,6 +477,50 @@ class IPBotProtection {
 
 const botProtection = new IPBotProtection();
 
+// Kullanıcı temizleme sınıfı - inaktif kullanıcıları otomatik sil
+class UserCleanup {
+    constructor(inactiveDays = 7) {
+        this.inactiveDays = inactiveDays;
+    }
+
+    // İnaktif kullanıcıları temizle
+    async cleanup() {
+        try {
+            const result = await pool.query(
+                `DELETE FROM users
+                 WHERE last_activity < NOW() - INTERVAL '${this.inactiveDays} days'
+                 RETURNING id, nickname`
+            );
+
+            if (result.rows.length > 0) {
+                console.log(`🧹 Temizlik: ${result.rows.length} inaktif kullanıcı silindi (${this.inactiveDays} günden eski)`);
+                result.rows.forEach(user => {
+                    console.log(`   - ${user.nickname} (${user.id})`);
+                });
+            }
+
+            return { success: true, removed: result.rows.length, users: result.rows };
+        } catch (error) {
+            console.error('❌ Kullanıcı temizliği hatası:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Kullanıcının son aktivitesini güncelle
+    async updateActivity(userId) {
+        try {
+            await pool.query(
+                'UPDATE users SET last_activity = NOW() WHERE id = $1',
+                [userId]
+            );
+        } catch (error) {
+            console.error('❌ last_activity güncelleme hatası:', error);
+        }
+    }
+}
+
+const userCleanup = new UserCleanup(7); // 7 günden eski kullanıcıları sil
+
 // WebSocket güvenlik middleware'i
 io.use((socket, next) => {
     const origin = socket.handshake.headers.origin;
@@ -604,6 +673,9 @@ io.on('connection', async (socket) => {
 
             // GÜVENLİK: Socket session'a userId kaydet
             socket.data.userId = userId;
+
+            // Son aktivite zamanını güncelle
+            await userCleanup.updateActivity(userId);
 
             callback({ success: true });
 
@@ -1604,6 +1676,17 @@ async function startServer() {
             `);
             console.log('✓ Server ready and listening on', server.address());
             console.log('✓ Admin password loaded from environment variables');
+
+            // Otomatik kullanıcı temizleme cron job'u (her 24 saatte bir)
+            const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // 24 saat
+            setInterval(async () => {
+                console.log('🕐 Otomatik kullanıcı temizliği başlatılıyor...');
+                await userCleanup.cleanup();
+            }, CLEANUP_INTERVAL);
+
+            // İlk temizliği hemen çalıştır
+            console.log('🧹 İlk kullanıcı temizliği başlatılıyor...');
+            userCleanup.cleanup();
         });
     } catch (err) {
         console.error('Sunucu başlatılamadı:', err);
