@@ -1,16 +1,20 @@
 const { Pool } = require('pg');
-require('dotenv').config();
 
 // PostgreSQL bağlantı havuzu
 // Railway DATABASE_URL kullanıyorsa onu kullan, yoksa manuel config
+console.log('🔍 ENV Variables check:');
+console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'EXISTS' : 'MISSING');
+console.log('PGHOST:', process.env.PGHOST || 'MISSING');
+console.log('DB_HOST:', process.env.DB_HOST || 'MISSING');
+
 const pool = process.env.DATABASE_URL ? new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 }) : new Pool({
-    host: process.env.PGHOST || process.env.DB_HOST,
-    port: process.env.PGPORT || process.env.DB_PORT,
-    database: process.env.PGDATABASE || process.env.DB_NAME,
-    user: process.env.PGUSER || process.env.DB_USER,
+    host: process.env.PGHOST || process.env.DB_HOST || 'localhost',
+    port: process.env.PGPORT || process.env.DB_PORT || 5432,
+    database: process.env.PGDATABASE || process.env.DB_NAME || 'katil_oyunu',
+    user: process.env.PGUSER || process.env.DB_USER || 'postgres',
     password: process.env.PGPASSWORD || process.env.DB_PASSWORD,
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });

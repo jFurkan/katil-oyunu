@@ -1,9 +1,9 @@
+require('dotenv').config(); // Railway'de env vars için
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const { pool, initDatabase } = require('./database');
-require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
