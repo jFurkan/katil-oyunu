@@ -1,11 +1,8 @@
 [phases.setup]
-nixPkgs = ['nodejs-18_x']
+nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = ["npm ci --legacy-peer-deps || npm install --legacy-peer-deps"]
-
-[phases.build]
-cmds = []
+cmds = ["npm ci"]
 
 [start]
-cmd = "npm start"
+cmd = "node server.js"
