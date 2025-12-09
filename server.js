@@ -454,6 +454,36 @@ io.on('connection', async (socket) => {
         }
     });
 
+    // Kullanıcı reconnect (sayfa yenilendiğinde)
+    socket.on('reconnect-user', async (userId, callback) => {
+        try {
+            // Kullanıcının var olup olmadığını kontrol et
+            const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+
+            if (userResult.rows.length === 0) {
+                callback({ success: false, error: 'Kullanıcı bulunamadı!' });
+                return;
+            }
+
+            // Kullanıcının socket_id'sini güncelle ve online yap
+            await pool.query(
+                'UPDATE users SET socket_id = $1, online = TRUE WHERE id = $2',
+                [socket.id, userId]
+            );
+
+            callback({ success: true });
+
+            // Kullanıcı listesini güncelle
+            const users = await getUsersByTeam();
+            io.emit('users-update', users);
+
+            console.log('Kullanıcı reconnect edildi:', userResult.rows[0].nickname, '- Yeni socket:', socket.id);
+        } catch (err) {
+            console.error('Kullanıcı reconnect hatası:', err);
+            callback({ success: false, error: 'Reconnect başarısız!' });
+        }
+    });
+
     // Yeni takım oluştur
     socket.on('create-team', async (data, callback) => {
         // Rate limiting: 3 takım/dakika

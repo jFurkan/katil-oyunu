@@ -1407,6 +1407,38 @@
             socket.on('connect', function() {
                 socketConnected = true;
                 console.log('Socket bağlantısı kuruldu');
+
+                // Sayfa yenilendiyse veya bağlantı kopup tekrar bağlandıysa, kullanıcı bilgisini restore et
+                if (currentUser && currentUser.userId) {
+                    socket.emit('reconnect-user', currentUser.userId, function(res) {
+                        if (res.success) {
+                            console.log('Kullanıcı reconnect edildi:', currentUser.nickname);
+                            // Takım varsa takım bilgilerini al
+                            if (currentTeamId) {
+                                socket.emit('get-team', currentTeamId, function(team) {
+                                    if (!team) {
+                                        // Takım silinmiş
+                                        currentTeamId = null;
+                                        localStorage.removeItem('currentTeamId');
+                                        console.log('Takım bulunamadı, temizlendi');
+                                    }
+                                });
+                            }
+                        } else {
+                            // Kullanıcı veritabanında bulunamadı (silinmiş olabilir)
+                            console.log('Kullanıcı reconnect edilemedi, temizleniyor');
+                            currentUser = null;
+                            currentTeamId = null;
+                            localStorage.removeItem('currentUser');
+                            localStorage.removeItem('currentTeamId');
+                            updateCurrentUserDisplay();
+                            if (document.getElementById('pgNickname').classList.contains('active') === false) {
+                                showPage('pgNickname');
+                                toast('Oturumunuz sonlanmış. Lütfen tekrar giriş yapın.', true);
+                            }
+                        }
+                    });
+                }
             });
 
             socket.on('disconnect', function() {
