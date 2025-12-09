@@ -15,7 +15,15 @@
       "Bash(psql:*)",
       "Bash(\"C:\\Program Files\\PostgreSQL\\18\\bin\\psql.exe\" -U postgres -d katil_oyunu -f \"c:\\Users\\Furkan\\Desktop\\katil-oyunu\\migrate_database.sql\")",
       "Bash(powershell -Command \"Remove-Item -Path ''.\\nul'' -Force\")",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(git checkout:*)",
+      "Bash(netstat:*)",
+      "Bash(powershell -Command \"Get-Content ''public\\index.html'' | Select-Object -Last 200 | Select-String -Pattern ''function|const |let |var '' -Context 2,2\")",
+      "Bash(powershell -Command \"Get-Content ''public\\index.html'' -Raw | Select-String -Pattern ''var GAME = \\{'' -Context 10,30\")",
+      "Bash(powershell -Command \"(Get-Content ''public\\index.html'' -Raw).Length\")",
+      "Bash(powershell -Command \"Get-Content ''public\\index.html'' | Select-Object -Last 50\")",
+      "Bash(powershell -Command:*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []
