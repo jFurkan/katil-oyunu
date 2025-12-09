@@ -26,6 +26,12 @@
   - send-announcement: 10/dakika (admin)
   - Otomatik cleanup (her dakika)
   - Socket disconnect'te otomatik temizlik
+- ✅ **Bot Farm Koruması (IP bazlı)**
+  - register-user: Max 3 kullanıcı/24 saat (aynı IP)
+  - create-team: Max 2 takım/24 saat (aynı IP)
+  - PostgreSQL tablosu ile tracking (ip_activity)
+  - Otomatik cleanup (7 gün sonra eski kayıtlar silinir)
+  - X-Forwarded-For header desteği (proxy/CDN arkasında)
 
 ### 4. **HTTP Güvenlik Header'ları (Helmet)**
 - ✅ HSTS (HTTP Strict Transport Security)

@@ -90,6 +90,22 @@ async function initDatabase() {
             ADD COLUMN IF NOT EXISTS captain_nickname TEXT
         `);
 
+        // IP Activity tracking tablosu (Bot farm koruması)
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS ip_activity (
+                id SERIAL PRIMARY KEY,
+                ip_address TEXT NOT NULL,
+                action TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        `);
+
+        // IP activity index (hızlı sorgu için)
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_ip_activity_lookup
+            ON ip_activity(ip_address, action, created_at DESC)
+        `);
+
         console.log('✓ Database initialized');
     } catch (err) {
         console.error('Database init error:', err);

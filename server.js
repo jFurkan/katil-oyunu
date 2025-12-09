@@ -272,6 +272,69 @@ class SocketRateLimiter {
 
 const rateLimiter = new SocketRateLimiter();
 
+// IP-based Bot Farm Protection
+class IPBotProtection {
+    constructor() {
+        // Cleanup eski kayıtları her saat (database'de gereksiz veri birikmemesi için)
+        this.cleanupInterval = setInterval(() => this.cleanupOldRecords(), 3600000); // Her saat
+    }
+
+    // IP'den son N saatte kaç işlem yapılmış kontrol et
+    async checkLimit(ipAddress, action, maxAllowed = 5, hours = 24) {
+        try {
+            const result = await pool.query(
+                `SELECT COUNT(*) as count FROM ip_activity
+                 WHERE ip_address = $1 AND action = $2
+                 AND created_at > NOW() - INTERVAL '${hours} hours'`,
+                [ipAddress, action]
+            );
+
+            const count = parseInt(result.rows[0].count);
+            return count < maxAllowed;
+        } catch (err) {
+            console.error('IP check error:', err);
+            return true; // Hata durumunda engellemiyoruz (fail open)
+        }
+    }
+
+    // IP aktivitesini kaydet
+    async recordActivity(ipAddress, action) {
+        try {
+            await pool.query(
+                'INSERT INTO ip_activity (ip_address, action) VALUES ($1, $2)',
+                [ipAddress, action]
+            );
+        } catch (err) {
+            console.error('IP record error:', err);
+        }
+    }
+
+    // 7 günden eski kayıtları temizle
+    async cleanupOldRecords() {
+        try {
+            const result = await pool.query(
+                "DELETE FROM ip_activity WHERE created_at < NOW() - INTERVAL '7 days'"
+            );
+            if (result.rowCount > 0) {
+                console.log(`✓ IP activity cleanup: ${result.rowCount} eski kayıt silindi`);
+            }
+        } catch (err) {
+            console.error('IP cleanup error:', err);
+        }
+    }
+
+    // IP'yi al (proxy/cloudflare arkasındaysa X-Forwarded-For header'ını kontrol et)
+    getClientIP(socket) {
+        const forwarded = socket.handshake.headers['x-forwarded-for'];
+        if (forwarded) {
+            return forwarded.split(',')[0].trim();
+        }
+        return socket.handshake.address || 'unknown';
+    }
+}
+
+const botProtection = new IPBotProtection();
+
 // WebSocket güvenlik middleware'i
 io.use((socket, next) => {
     const origin = socket.handshake.headers.origin;
@@ -337,6 +400,16 @@ io.on('connection', async (socket) => {
             return;
         }
 
+        // Bot farm koruması: IP bazlı limit (24 saatte max 3 kullanıcı)
+        const clientIP = botProtection.getClientIP(socket);
+        const ipAllowed = await botProtection.checkLimit(clientIP, 'register-user', 3, 24);
+
+        if (!ipAllowed) {
+            callback({ success: false, error: 'Bu IP adresinden çok fazla kayıt yapıldı. Lütfen daha sonra tekrar deneyin.' });
+            console.log('🤖 Bot koruması: register-user engellendi -', clientIP);
+            return;
+        }
+
         try {
             if (!nickname || nickname.trim() === '') {
                 callback({ success: false, error: 'Nick boş olamaz!' });
@@ -364,13 +437,16 @@ io.on('connection', async (socket) => {
                 [userId, trimmedNick, socket.id]
             );
 
+            // IP aktivitesini kaydet (başarılı kayıt)
+            await botProtection.recordActivity(clientIP, 'register-user');
+
             callback({ success: true, userId: userId, nickname: trimmedNick });
 
             // Tüm kullanıcılara güncel listeyi gönder
             const users = await getUsersByTeam();
             io.emit('users-update', users);
 
-            console.log('Kullanıcı kaydedildi:', trimmedNick);
+            console.log('Kullanıcı kaydedildi:', trimmedNick, '- IP:', clientIP);
         } catch (err) {
             console.error('Kullanıcı kayıt hatası:', err);
             callback({ success: false, error: 'Kayıt oluşturulamadı!' });
@@ -383,6 +459,16 @@ io.on('connection', async (socket) => {
         if (!rateLimiter.check(socket.id, 'create-team', 3, 60000)) {
             callback({ success: false, error: 'Çok fazla takım oluşturma denemesi! Lütfen bekleyin.' });
             console.log('⚠️  Rate limit: create-team -', socket.id);
+            return;
+        }
+
+        // Bot farm koruması: IP bazlı limit (24 saatte max 2 takım)
+        const clientIP = botProtection.getClientIP(socket);
+        const ipAllowed = await botProtection.checkLimit(clientIP, 'create-team', 2, 24);
+
+        if (!ipAllowed) {
+            callback({ success: false, error: 'Bu IP adresinden çok fazla takım oluşturuldu. Lütfen daha sonra tekrar deneyin.' });
+            console.log('🤖 Bot koruması: create-team engellendi -', clientIP);
             return;
         }
 
@@ -449,6 +535,9 @@ io.on('connection', async (socket) => {
 
             const team = teamResult.rows[0];
 
+            // IP aktivitesini kaydet (başarılı takım oluşturma)
+            await botProtection.recordActivity(clientIP, 'create-team');
+
             callback({ success: true, team: team });
 
             const teams = await getAllTeams();
@@ -458,7 +547,7 @@ io.on('connection', async (socket) => {
             const users = await getUsersByTeam();
             io.emit('users-update', users);
 
-            console.log('Takım oluşturuldu:', data.name, '- Kaptan:', user.nickname);
+            console.log('Takım oluşturuldu:', data.name, '- Kaptan:', user.nickname, '- IP:', clientIP);
         } catch (err) {
             console.error('Takım oluşturma hatası:', err);
             callback({ success: false, error: 'Takım oluşturulamadı!' });
