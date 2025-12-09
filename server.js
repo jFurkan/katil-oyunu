@@ -12,6 +12,9 @@ const io = new Server(server);
 // Statik dosyalar
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Favicon route (404 hatasını önle)
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
 // Veritabanı test endpoint'i
 app.get('/api/health', async (req, res) => {
     try {
