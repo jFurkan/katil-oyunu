@@ -15,6 +15,11 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '260678';
 // Static files
 app.use(express.static('public'));
 
+// Root endpoint - Railway health check
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Health check
 app.get('/api/health', async (req, res) => {
     try {
@@ -23,6 +28,11 @@ app.get('/api/health', async (req, res) => {
     } catch (err) {
         res.status(500).json({ status: 'error', message: err.message });
     }
+});
+
+// Keep alive - Railway might check this
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
 });
 
 // Socket.IO
