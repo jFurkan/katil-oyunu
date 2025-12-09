@@ -21,8 +21,8 @@ Gerçek zamanlı çok oyunculu dedektif oyunu.
    - **Start Command:** `npm start`
    - **Instance Type:** Free
 
-6. Environment Variables (isteğe bağlı):
-   - `ADMIN_PASSWORD` = senin şifren (varsayılan: 260678)
+6. Environment Variables (ZORUNLU):
+   - `ADMIN_PASSWORD` = güçlü bir şifre belirle (örn: rastgele 12+ karakter)
 
 7. "Create Web Service" tıkla
 
@@ -52,8 +52,14 @@ Tarayıcıda: http://localhost:3000
 
 ## Admin Şifresi
 
-Varsayılan: `260678`
+⚠️ **GÜVENLİK:** Varsayılan şifre yoktur! Render/Railway'de Environment Variable ile ayarlamalısın:
 
-Değiştirmek için Render'da Environment Variable ekle:
-`ADMIN_PASSWORD` = yeni_şifre
+```
+ADMIN_PASSWORD = güçlü_şifreni_buraya_yaz
+```
+
+**Güçlü şifre önerileri:**
+- En az 12 karakter
+- Büyük/küçük harf, sayı ve özel karakter karışımı
+- Örnek: `X7k#mP9$qL2@v` (bunu kullanma, kendin üret!)
 Fix: Module not found patch added

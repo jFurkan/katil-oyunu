@@ -6,6 +6,8 @@ const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const crypto = require('crypto'); // UUID üretmek için
+const validator = require('validator'); // Input validation için
+const escapeHtml = require('escape-html'); // XSS koruması için
 const { pool, initDatabase } = require('./database');
 
 const app = express();
@@ -274,6 +276,93 @@ class SocketRateLimiter {
 
 const rateLimiter = new SocketRateLimiter();
 
+// Input Validation & Sanitization Helper
+const InputValidator = {
+    // Genel text sanitization (XSS önleme)
+    sanitizeText(text, maxLength = 500) {
+        if (!text || typeof text !== 'string') return '';
+        const trimmed = text.trim();
+        const truncated = trimmed.substring(0, maxLength);
+        return escapeHtml(truncated);
+    },
+
+    // Nickname validation
+    validateNickname(nickname) {
+        if (!nickname || typeof nickname !== 'string') {
+            return { valid: false, error: 'Nick geçersiz!' };
+        }
+        const trimmed = nickname.trim();
+        if (trimmed.length < 2) {
+            return { valid: false, error: 'Nick en az 2 karakter olmalı!' };
+        }
+        if (trimmed.length > 20) {
+            return { valid: false, error: 'Nick en fazla 20 karakter olabilir!' };
+        }
+        // Sadece alfanumerik ve Türkçe karakterler, boşluk, tire, alt çizgi
+        if (!/^[\wçğıöşüÇĞİÖŞÜ\s\-_]+$/u.test(trimmed)) {
+            return { valid: false, error: 'Nick geçersiz karakter içeriyor!' };
+        }
+        return { valid: true, value: this.sanitizeText(trimmed, 20) };
+    },
+
+    // Takım adı validation
+    validateTeamName(name) {
+        if (!name || typeof name !== 'string') {
+            return { valid: false, error: 'Takım adı geçersiz!' };
+        }
+        const trimmed = name.trim();
+        if (trimmed.length < 3) {
+            return { valid: false, error: 'Takım adı en az 3 karakter olmalı!' };
+        }
+        if (trimmed.length > 30) {
+            return { valid: false, error: 'Takım adı en fazla 30 karakter olabilir!' };
+        }
+        return { valid: true, value: this.sanitizeText(trimmed, 30) };
+    },
+
+    // Şifre validation (takım şifresi)
+    validatePassword(password) {
+        if (!password || typeof password !== 'string') {
+            return { valid: false, error: 'Şifre geçersiz!' };
+        }
+        const trimmed = password.trim();
+        if (trimmed.length < 4) {
+            return { valid: false, error: 'Şifre en az 4 karakter olmalı!' };
+        }
+        if (trimmed.length > 20) {
+            return { valid: false, error: 'Şifre en fazla 20 karakter olabilir!' };
+        }
+        return { valid: true, value: trimmed }; // Şifreyi escape etmiyoruz
+    },
+
+    // İpucu/mesaj validation
+    validateMessage(message, maxLength = 200) {
+        if (!message || typeof message !== 'string') {
+            return { valid: false, error: 'Mesaj geçersiz!' };
+        }
+        const trimmed = message.trim();
+        if (trimmed.length === 0) {
+            return { valid: false, error: 'Mesaj boş olamaz!' };
+        }
+        if (trimmed.length > maxLength) {
+            return { valid: false, error: `Mesaj en fazla ${maxLength} karakter olabilir!` };
+        }
+        return { valid: true, value: this.sanitizeText(trimmed, maxLength) };
+    },
+
+    // Sayı validation (puan, süre vs.)
+    validateNumber(value, min = 0, max = 999999) {
+        const num = parseInt(value);
+        if (isNaN(num)) {
+            return { valid: false, error: 'Geçersiz sayı!' };
+        }
+        if (num < min || num > max) {
+            return { valid: false, error: `Sayı ${min} ile ${max} arasında olmalı!` };
+        }
+        return { valid: true, value: num };
+    }
+};
+
 // IP-based Bot Farm Protection
 class IPBotProtection {
     constructor() {
@@ -443,12 +532,13 @@ io.on('connection', async (socket) => {
         }
 
         try {
-            if (!nickname || nickname.trim() === '') {
-                callback({ success: false, error: 'Nick boş olamaz!' });
+            // GÜVENLİK: Input validation & XSS koruması
+            const nickValidation = InputValidator.validateNickname(nickname);
+            if (!nickValidation.valid) {
+                callback({ success: false, error: nickValidation.error });
                 return;
             }
-
-            const trimmedNick = nickname.trim();
+            const trimmedNick = nickValidation.value;
 
             // Aynı nickname var mı kontrol et (case insensitive)
             const checkResult = await pool.query(
@@ -561,19 +651,29 @@ io.on('connection', async (socket) => {
                 return;
             }
 
+            // GÜVENLİK: Input validation & XSS koruması
+            const teamNameValidation = InputValidator.validateTeamName(data.name);
+            if (!teamNameValidation.valid) {
+                callback({ success: false, error: teamNameValidation.error });
+                return;
+            }
+            const teamName = teamNameValidation.value;
+
+            const passwordValidation = InputValidator.validatePassword(data.password);
+            if (!passwordValidation.valid) {
+                callback({ success: false, error: passwordValidation.error });
+                return;
+            }
+            const teamPassword = passwordValidation.value;
+
             // Takım var mı kontrol et
             const checkResult = await pool.query(
                 'SELECT EXISTS(SELECT 1 FROM teams WHERE LOWER(name) = LOWER($1))',
-                [data.name]
+                [teamName]
             );
 
             if (checkResult.rows[0].exists) {
                 callback({ success: false, error: 'Bu isimde takım var!' });
-                return;
-            }
-
-            if (!data.password || data.password.trim() === '') {
-                callback({ success: false, error: 'Şifre boş olamaz!' });
                 return;
             }
 
@@ -594,7 +694,7 @@ io.on('connection', async (socket) => {
             // Takım oluştur ve captain nickname kaydet
             await pool.query(
                 'INSERT INTO teams (id, name, password, score, avatar, color, captain_nickname) VALUES ($1, $2, $3, 0, $4, $5, $6)',
-                [teamId, data.name, data.password, avatar, color, user.nickname]
+                [teamId, teamName, teamPassword, avatar, color, user.nickname]
             );
 
             // Kullanıcıyı takıma ekle ve captain yap
@@ -671,7 +771,14 @@ io.on('connection', async (socket) => {
                 return;
             }
 
-            if (team.password !== data.password) {
+            // GÜVENLİK: Şifre validasyonu
+            const passwordValidation = InputValidator.validatePassword(data.password);
+            if (!passwordValidation.valid) {
+                callback({ success: false, error: passwordValidation.error });
+                return;
+            }
+
+            if (team.password !== passwordValidation.value) {
                 callback({ success: false, error: 'Hatalı şifre!' });
                 return;
             }
@@ -733,12 +840,19 @@ io.on('connection', async (socket) => {
         }
 
         try {
+            // GÜVENLİK: Input validation & XSS koruması
+            const clueValidation = InputValidator.validateMessage(data.clue, 200);
+            if (!clueValidation.valid) {
+                callback({ success: false, error: clueValidation.error });
+                return;
+            }
+
             const time = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 
             // İpucu ekle
             await pool.query(
                 'INSERT INTO clues (team_id, text, time) VALUES ($1, $2, $3)',
-                [data.teamId, data.clue, time]
+                [data.teamId, clueValidation.value, time]
             );
 
             callback({ success: true });
@@ -952,8 +1066,10 @@ io.on('connection', async (socket) => {
             return;
         }
 
-        if (!clue || clue.trim() === '') {
-            callback({ success: false, error: 'İpucu metni boş olamaz!' });
+        // GÜVENLİK: Input validation & XSS koruması
+        const clueValidation = InputValidator.validateMessage(clue, 500);
+        if (!clueValidation.valid) {
+            callback({ success: false, error: clueValidation.error });
             return;
         }
 
@@ -963,7 +1079,7 @@ io.on('connection', async (socket) => {
             // Veritabanına kaydet
             await pool.query(
                 'INSERT INTO general_clues (text, time) VALUES ($1, $2)',
-                [clue.trim(), time]
+                [clueValidation.value, time]
             );
 
             // Tüm kullanıcılara ipucu gönder
@@ -972,12 +1088,12 @@ io.on('connection', async (socket) => {
 
             // Bildirim olarak gönder
             io.emit('general-clue-notification', {
-                clue: clue.trim(),
+                clue: clueValidation.value,
                 time: time
             });
 
             callback({ success: true });
-            console.log('Genel ipucu gönderildi:', clue.trim());
+            console.log('Genel ipucu gönderildi:', clueValidation.value);
         } catch (err) {
             console.error('Genel ipucu gönderme hatası:', err);
             callback({ success: false, error: 'İpucu gönderilemedi!' });
@@ -1000,20 +1116,22 @@ io.on('connection', async (socket) => {
             return;
         }
 
-        if (!message || message.trim() === '') {
-            callback({ success: false, error: 'Duyuru metni boş olamaz!' });
+        // GÜVENLİK: Input validation & XSS koruması
+        const messageValidation = InputValidator.validateMessage(message, 300);
+        if (!messageValidation.valid) {
+            callback({ success: false, error: messageValidation.error });
             return;
         }
 
         // Tüm kullanıcılara bildirim gönder
         io.emit('notification', {
             title: 'Yönetici Duyurusu',
-            message: message.trim(),
+            message: messageValidation.value,
             type: 'announcement'
         });
 
         callback({ success: true });
-        console.log('Duyuru gönderildi:', message.trim());
+        console.log('Duyuru gönderildi:', messageValidation.value);
     });
 
     // Oyunu başlat (admin)
@@ -1030,14 +1148,24 @@ io.on('connection', async (socket) => {
             return;
         }
 
-        if (!data.minutes || data.minutes <= 0) {
-            callback({ success: false, error: 'Geçerli bir süre giriniz!' });
+        // GÜVENLİK: Input validation
+        const minutesValidation = InputValidator.validateNumber(data.minutes, 1, 300);
+        if (!minutesValidation.valid) {
+            callback({ success: false, error: minutesValidation.error });
             return;
         }
 
+        let phaseTitle = 'Oyun Başladı';
+        if (data.title) {
+            const titleValidation = InputValidator.validateMessage(data.title, 50);
+            if (titleValidation.valid) {
+                phaseTitle = titleValidation.value;
+            }
+        }
+
         gameState.started = true;
-        gameState.countdown = data.minutes * 60; // Dakikayı saniyeye çevir
-        gameState.phaseTitle = data.title || 'Oyun Başladı';
+        gameState.countdown = minutesValidation.value * 60; // Dakikayı saniyeye çevir
+        gameState.phaseTitle = phaseTitle;
         startCountdown();
 
         io.emit('game-started', {
@@ -1046,10 +1174,10 @@ io.on('connection', async (socket) => {
         });
 
         // Oyun başlama bildirimi gönder
-        const phaseText = data.title ? data.title.toUpperCase() : 'OYUN';
+        const phaseText = phaseTitle.toUpperCase();
         io.emit('notification', {
             title: '🎮 Oyun Başladı',
-            message: `${phaseText} BAŞLADI! ${data.minutes} DAKİKA SÜRENİZ VAR.`,
+            message: `${phaseText} BAŞLADI! ${minutesValidation.value} DAKİKA SÜRENİZ VAR.`,
             type: 'announcement'
         });
 
@@ -1071,11 +1199,18 @@ io.on('connection', async (socket) => {
             return;
         }
 
-        gameState.countdown += seconds;
+        // GÜVENLİK: Input validation
+        const secondsValidation = InputValidator.validateNumber(seconds, -3600, 3600);
+        if (!secondsValidation.valid) {
+            callback({ success: false, error: secondsValidation.error });
+            return;
+        }
+
+        gameState.countdown += secondsValidation.value;
         io.emit('countdown-update', gameState.countdown);
 
         // Süre ekleme bildirimi gönder
-        const minutes = Math.floor(seconds / 60);
+        const minutes = Math.floor(secondsValidation.value / 60);
         io.emit('notification', {
             title: '⏱️ Süre Eklendi',
             message: `Oyuna ${minutes} dakika eklendi! Yeni toplam süre: ${Math.floor(gameState.countdown / 60)} dakika.`,
@@ -1083,7 +1218,7 @@ io.on('connection', async (socket) => {
         });
 
         callback({ success: true });
-        console.log(`${seconds} saniye eklendi. Yeni süre: ${gameState.countdown}s`);
+        console.log(`${secondsValidation.value} saniye eklendi. Yeni süre: ${gameState.countdown}s`);
     });
 
     // Oyunu bitir (admin)
@@ -1129,13 +1264,15 @@ io.on('connection', async (socket) => {
             return;
         }
 
-        if (!name || name.trim() === '') {
-            callback({ success: false, error: 'İsim boş olamaz!' });
+        // GÜVENLİK: Input validation & XSS koruması
+        const nameValidation = InputValidator.validateMessage(name, 50);
+        if (!nameValidation.valid) {
+            callback({ success: false, error: nameValidation.error });
             return;
         }
 
         try {
-            const trimmedName = name.trim();
+            const trimmedName = nameValidation.value;
 
             // İsim var mı kontrol et
             const checkResult = await pool.query(
@@ -1207,9 +1344,16 @@ io.on('connection', async (socket) => {
         }
 
         try {
+            // GÜVENLİK: Input validation & XSS koruması
+            const contentValidation = InputValidator.validateMessage(data.content || '', 2000);
+            if (!contentValidation.valid) {
+                callback({ success: false, error: contentValidation.error });
+                return;
+            }
+
             const result = await pool.query(
                 'UPDATE credits SET content = $1 WHERE id = $2 RETURNING name',
-                [data.content || '', data.creditId]
+                [contentValidation.value, data.creditId]
             );
 
             if (result.rowCount === 0) {
