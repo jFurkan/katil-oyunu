@@ -71,6 +71,25 @@ async function initDatabase() {
             )
         `);
 
+        // Users tablosu
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id TEXT PRIMARY KEY,
+                nickname TEXT NOT NULL UNIQUE,
+                team_id TEXT REFERENCES teams(id) ON DELETE SET NULL,
+                is_captain BOOLEAN DEFAULT FALSE,
+                socket_id TEXT,
+                online BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        `);
+
+        // Teams tablosuna captain_nickname ekle (eğer yoksa)
+        await pool.query(`
+            ALTER TABLE teams
+            ADD COLUMN IF NOT EXISTS captain_nickname TEXT
+        `);
+
         console.log('✓ Database initialized');
     } catch (err) {
         console.error('Database init error:', err);

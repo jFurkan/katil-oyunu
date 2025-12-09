@@ -880,7 +880,31 @@
     <div class="notification-container" id="notificationContainer"></div>
 
     <div class="container">
-        <div class="page active" id="pgLobby">
+        <!-- Nickname Alma Sayfası -->
+        <div class="page active" id="pgNickname">
+            <header>
+                <h1>Katil <span>Kim?</span></h1>
+                <p class="subtitle">"Şüphe, gerçeğin gölgesidir..."</p>
+            </header>
+
+            <div style="max-width: 400px; margin: 40px auto; text-align: center;">
+                <h2 style="color: #e0e0e0; margin-bottom: 30px;">🎭 Oyuna Hoşgeldiniz</h2>
+                <p style="color: #999; margin-bottom: 30px;">Devam etmek için bir nick seçin</p>
+
+                <input
+                    type="text"
+                    id="inpNickname"
+                    placeholder="Nick giriniz..."
+                    maxlength="20"
+                    style="width: 100%; padding: 15px; font-size: 16px; border: 2px solid #333; background: #1a1a1a; color: white; border-radius: 8px; margin-bottom: 20px;"
+                    onkeypress="if(event.key==='Enter') USER.registerNickname()"
+                />
+
+                <button class="btn btn-primary" onclick="USER.registerNickname()">Devam Et</button>
+            </div>
+        </div>
+
+        <div class="page" id="pgLobby">
             <header>
                 <h1>Katil <span>Kim?</span></h1>
                 <p class="subtitle">"Şüphe, gerçeğin gölgesidir..."</p>
@@ -1037,8 +1061,9 @@
             </div>
 
             <!-- Admin Menü Butonları -->
-            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:15px; margin-bottom:30px;">
+            <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:15px; margin-bottom:30px;">
                 <button class="btn btn-primary" onclick="ADMIN.showSection('game')">⏱️ Oyun Kontrolü</button>
+                <button class="btn" onclick="ADMIN.showSection('users')">👤 Kullanıcılar</button>
                 <button class="btn" onclick="ADMIN.showSection('scoring')">🎯 Puanlama</button>
                 <button class="btn" onclick="ADMIN.showSection('notifications')">📢 Bildirimler</button>
                 <button class="btn" onclick="ADMIN.showSection('credits')">👥 Emeği Geçenler</button>
@@ -1069,6 +1094,12 @@
                         <button class="btn" style="width:100%; margin-top:15px; background:#500; color:#faa; border:1px solid var(--accent);" onclick="ADMIN.endGame()">⏹️ Oyunu Bitir</button>
                     </div>
                 </div>
+            </div>
+
+            <!-- Kullanıcılar Bölümü -->
+            <div id="adminSectionUsers" class="admin-section" style="display:none;">
+                <h3 style="color:var(--gold); font-size:18px; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">👤 Kullanıcılar</h3>
+                <div id="usersList"></div>
             </div>
 
             <!-- Bildirimler Bölümü -->
@@ -1351,6 +1382,8 @@
             window.socket = io(); // Global yapıyoruz
             var socket = window.socket;
             var teams = [];
+            var users = [];
+            var currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
             var credits = [
                 { id: 'credit_1', name: 'Furkan', content: 'Oyunun tasarımı ve geliştirmesi' },
                 { id: 'credit_2', name: 'Claude', content: 'Kodlama ve teknik destek' }
@@ -1411,6 +1444,28 @@
                 }
             };
 
+            // USER objesi - Kullanıcı işlemleri
+            window.USER = {
+                registerNickname: function() {
+                    var nickname = document.getElementById('inpNickname').value.trim();
+                    if (!nickname) {
+                        toast('Lütfen bir nick girin!', true);
+                        return;
+                    }
+
+                    socket.emit('register-user', nickname, function(res) {
+                        if (res.success) {
+                            currentUser = { userId: res.userId, nickname: res.nickname };
+                            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                            showPage('pgLobby');
+                            toast('Hoşgeldin, ' + res.nickname + '!');
+                        } else {
+                            toast(res.error, true);
+                        }
+                    });
+                }
+            };
+
             window.GAME = {
                 enterAsPlayer: function() {
                     document.getElementById('mainEntry').style.display = 'none';
@@ -1454,6 +1509,11 @@
                 },
                 
                 createTeam: function() {
+                    if (!currentUser) {
+                        toast('Önce nick girmeniz gerekiyor!', true);
+                        return;
+                    }
+
                     var name = document.getElementById('inpNewTeam').value.trim();
                     var password = document.getElementById('inpNewTeamPassword').value.trim();
                     if (!name) { toast('İsim giriniz', true); return; }
@@ -1461,7 +1521,8 @@
                     socket.emit('create-team', {
                         name: name,
                         password: password,
-                        color: CUSTOMIZE.selectedColor
+                        color: CUSTOMIZE.selectedColor,
+                        userId: currentUser.userId
                     }, function(res) {
                         if (res.success) {
                             currentTeamId = res.team.id;
@@ -1485,10 +1546,15 @@
                     document.getElementById('inpJoinPassword').focus();
                 },
                 joinTeam: function() {
+                    if (!currentUser) {
+                        toast('Önce nick girmeniz gerekiyor!', true);
+                        return;
+                    }
+
                     if (!selectedJoinId) { toast('Takım seçiniz', true); return; }
                     var password = document.getElementById('inpJoinPassword').value.trim();
                     if (!password) { toast('Şifre giriniz', true); return; }
-                    socket.emit('join-team', { teamId: selectedJoinId, password: password }, function(res) {
+                    socket.emit('join-team', { teamId: selectedJoinId, password: password, userId: currentUser.userId }, function(res) {
                         if (res.success) {
                             currentTeamId = selectedJoinId;
                             localStorage.setItem('currentTeamId', currentTeamId);
@@ -1729,11 +1795,17 @@
 
                     // Seçili butonu vurgula
                     if (section === 'game') buttons[0].classList.add('btn-primary');
-                    else if (section === 'scoring') buttons[1].classList.add('btn-primary');
-                    else if (section === 'notifications') buttons[2].classList.add('btn-primary');
-                    else if (section === 'credits') buttons[3].classList.add('btn-primary');
+                    else if (section === 'users') buttons[1].classList.add('btn-primary');
+                    else if (section === 'scoring') buttons[2].classList.add('btn-primary');
+                    else if (section === 'notifications') buttons[3].classList.add('btn-primary');
+                    else if (section === 'credits') buttons[4].classList.add('btn-primary');
 
                     this.currentSection = section;
+
+                    // Kullanıcılar bölümü açıldıysa listeyi render et
+                    if (section === 'users') {
+                        renderUsersList();
+                    }
 
                     // Emeği geçenler bölümü açıldıysa listeyi render et
                     if (section === 'credits') {
@@ -2101,6 +2173,77 @@
                 document.getElementById('chartContent').innerHTML = html;
             }
 
+            function renderUsersList() {
+                var container = document.getElementById('usersList');
+                if (users.length === 0) {
+                    container.innerHTML = '<div style="text-align:center; padding:40px; color:#666;">Henüz kullanıcı yok.</div>';
+                    return;
+                }
+
+                // Takımlara göre grupla
+                var usersWithTeam = users.filter(u => u.team_id);
+                var usersWithoutTeam = users.filter(u => !u.team_id);
+
+                // Takımlara göre grupla
+                var teamGroups = {};
+                usersWithTeam.forEach(u => {
+                    if (!teamGroups[u.team_id]) {
+                        teamGroups[u.team_id] = {
+                            teamName: u.team_name,
+                            teamColor: u.team_color || '#3b82f6',
+                            users: []
+                        };
+                    }
+                    teamGroups[u.team_id].users.push(u);
+                });
+
+                var html = '';
+
+                // Takımlı kullanıcılar
+                Object.keys(teamGroups).forEach(teamId => {
+                    var group = teamGroups[teamId];
+                    html += `
+                        <div style="background: #1a1a1a; border-left: 4px solid ${group.teamColor}; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                            <h4 style="color: ${group.teamColor}; margin: 0 0 15px 0; font-size: 18px;">
+                                ${group.teamName}
+                            </h4>
+                            <div style="display: grid; gap: 10px;">
+                                ${group.users.map(u => `
+                                    <div style="background: #222; padding: 12px 15px; border-radius: 6px; display: flex; align-items: center; gap: 10px;">
+                                        ${u.is_captain ? '<span style="font-size: 20px;">👑</span>' : '<span style="font-size: 20px;">👤</span>'}
+                                        <span style="color: white; font-weight: ${u.is_captain ? 'bold' : 'normal'};">
+                                            ${u.nickname}
+                                        </span>
+                                        ${u.is_captain ? '<span style="color: #fbbf24; font-size: 12px; margin-left: auto;">(Kaptan)</span>' : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // Takımsız kullanıcılar
+                if (usersWithoutTeam.length > 0) {
+                    html += `
+                        <div style="background: #1a1a1a; border-left: 4px solid #666; border-radius: 8px; padding: 20px;">
+                            <h4 style="color: #999; margin: 0 0 15px 0; font-size: 18px;">
+                                Takımsız Kullanıcılar
+                            </h4>
+                            <div style="display: grid; gap: 10px;">
+                                ${usersWithoutTeam.map(u => `
+                                    <div style="background: #222; padding: 12px 15px; border-radius: 6px; display: flex; align-items: center; gap: 10px;">
+                                        <span style="font-size: 20px;">👤</span>
+                                        <span style="color: white;">${u.nickname}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                container.innerHTML = html;
+            }
+
             function renderScoreboard() {
                 var c = document.getElementById('scoreboardList');
                 if (teams.length === 0) {
@@ -2223,6 +2366,17 @@
                 if (currentTeamId) {
                     var myTeam = teams.find(t => t.id === currentTeamId);
                     if (myTeam) renderTeamPage(myTeam);
+                }
+            });
+
+            socket.on('users-update', function(newUsers) {
+                users = newUsers;
+
+                if (document.getElementById('pgAdmin').classList.contains('active')) {
+                    // Admin panelinde users section açıksa render et
+                    if (document.getElementById('adminSectionUsers').style.display !== 'none') {
+                        renderUsersList();
+                    }
                 }
             });
 
@@ -2360,11 +2514,21 @@
                 NOTIF.updateBadge(); // Bildirim badge'ini güncelle
                 renderMainCredits(); // Ana sayfa emeği geçenler listesini render et
 
-                if (currentTeamId) {
-                    socket.emit('get-team', currentTeamId, function(t) {
-                        if (t) { showPage('pgTeam'); renderTeamPage(t); }
-                        else { currentTeamId = null; localStorage.removeItem('currentTeamId'); }
-                    });
+                // Başlangıç kontrolü
+                if (!currentUser) {
+                    // Nick alınmamışsa nickname sayfasında kal
+                    showPage('pgNickname');
+                } else {
+                    // Nick varsa lobby'ye geç
+                    showPage('pgLobby');
+
+                    // Takım varsa takım sayfasına geç
+                    if (currentTeamId) {
+                        socket.emit('get-team', currentTeamId, function(t) {
+                            if (t) { showPage('pgTeam'); renderTeamPage(t); }
+                            else { currentTeamId = null; localStorage.removeItem('currentTeamId'); }
+                        });
+                    }
                 }
             };
         })();

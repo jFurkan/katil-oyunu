@@ -143,6 +143,23 @@ async function getTeamBadges(teamId) {
     return result.rows;
 }
 
+// Kullanıcı fonksiyonları
+async function getAllUsers() {
+    const result = await pool.query('SELECT * FROM users ORDER BY created_at');
+    return result.rows;
+}
+
+async function getUsersByTeam() {
+    const result = await pool.query(`
+        SELECT u.*, t.name as team_name, t.color as team_color
+        FROM users u
+        LEFT JOIN teams t ON u.team_id = t.id
+        WHERE u.online = TRUE
+        ORDER BY u.team_id NULLS LAST, u.is_captain DESC, u.created_at
+    `);
+    return result.rows;
+}
+
 // Socket.io bağlantıları
 io.on('connection', async (socket) => {
     console.log('Kullanıcı bağlandı:', socket.id);
@@ -170,9 +187,61 @@ io.on('connection', async (socket) => {
     const badges = await getAllBadges();
     socket.emit('badges-update', badges);
 
+    // Kullanıcıları gönder
+    const users = await getUsersByTeam();
+    socket.emit('users-update', users);
+
+    // Kullanıcı kaydı (nickname al)
+    socket.on('register-user', async (nickname, callback) => {
+        try {
+            if (!nickname || nickname.trim() === '') {
+                callback({ success: false, error: 'Nick boş olamaz!' });
+                return;
+            }
+
+            const trimmedNick = nickname.trim();
+
+            // Aynı nickname var mı kontrol et (case insensitive)
+            const checkResult = await pool.query(
+                'SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(nickname) = LOWER($1))',
+                [trimmedNick]
+            );
+
+            if (checkResult.rows[0].exists) {
+                callback({ success: false, error: 'Bu nick kullanımda!' });
+                return;
+            }
+
+            const userId = 'user_' + Date.now();
+
+            // Kullanıcı oluştur
+            await pool.query(
+                'INSERT INTO users (id, nickname, socket_id, online) VALUES ($1, $2, $3, TRUE)',
+                [userId, trimmedNick, socket.id]
+            );
+
+            callback({ success: true, userId: userId, nickname: trimmedNick });
+
+            // Tüm kullanıcılara güncel listeyi gönder
+            const users = await getUsersByTeam();
+            io.emit('users-update', users);
+
+            console.log('Kullanıcı kaydedildi:', trimmedNick);
+        } catch (err) {
+            console.error('Kullanıcı kayıt hatası:', err);
+            callback({ success: false, error: 'Kayıt oluşturulamadı!' });
+        }
+    });
+
     // Yeni takım oluştur
     socket.on('create-team', async (data, callback) => {
         try {
+            // userId kontrolü
+            if (!data.userId) {
+                callback({ success: false, error: 'Kullanıcı girişi yapmalısınız!' });
+                return;
+            }
+
             // Takım var mı kontrol et
             const checkResult = await pool.query(
                 'SELECT EXISTS(SELECT 1 FROM teams WHERE LOWER(name) = LOWER($1))',
@@ -189,14 +258,29 @@ io.on('connection', async (socket) => {
                 return;
             }
 
+            // Kullanıcıyı al
+            const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [data.userId]);
+            const user = userResult.rows[0];
+
+            if (!user) {
+                callback({ success: false, error: 'Kullanıcı bulunamadı!' });
+                return;
+            }
+
             const teamId = 'team_' + Date.now();
             const avatar = data.avatar || '🕵️';
             const color = data.color || '#3b82f6';
 
-            // Takım oluştur
+            // Takım oluştur ve captain nickname kaydet
             await pool.query(
-                'INSERT INTO teams (id, name, password, score, avatar, color) VALUES ($1, $2, $3, 0, $4, $5)',
-                [teamId, data.name, data.password, avatar, color]
+                'INSERT INTO teams (id, name, password, score, avatar, color, captain_nickname) VALUES ($1, $2, $3, 0, $4, $5, $6)',
+                [teamId, data.name, data.password, avatar, color, user.nickname]
+            );
+
+            // Kullanıcıyı takıma ekle ve captain yap
+            await pool.query(
+                'UPDATE users SET team_id = $1, is_captain = TRUE WHERE id = $2',
+                [teamId, data.userId]
             );
 
             // Tam team objesini badges ve clues ile birlikte al
@@ -218,7 +302,12 @@ io.on('connection', async (socket) => {
 
             const teams = await getAllTeams();
             io.emit('teams-update', teams);
-            console.log('Takım oluşturuldu:', data.name);
+
+            // Kullanıcı listesini güncelle
+            const users = await getUsersByTeam();
+            io.emit('users-update', users);
+
+            console.log('Takım oluşturuldu:', data.name, '- Kaptan:', user.nickname);
         } catch (err) {
             console.error('Takım oluşturma hatası:', err);
             callback({ success: false, error: 'Takım oluşturulamadı!' });
@@ -228,6 +317,12 @@ io.on('connection', async (socket) => {
     // Takıma giriş yap
     socket.on('join-team', async (data, callback) => {
         try {
+            // userId kontrolü
+            if (!data.userId) {
+                callback({ success: false, error: 'Kullanıcı girişi yapmalısınız!' });
+                return;
+            }
+
             const result = await pool.query(`
                 SELECT t.*,
                        COALESCE(
@@ -251,8 +346,20 @@ io.on('connection', async (socket) => {
                 return;
             }
 
+            // Kullanıcıyı takıma ekle
+            await pool.query(
+                'UPDATE users SET team_id = $1, is_captain = FALSE WHERE id = $2',
+                [data.teamId, data.userId]
+            );
+
             socket.join(data.teamId);
             callback({ success: true, team: team });
+
+            // Kullanıcı listesini güncelle
+            const users = await getUsersByTeam();
+            io.emit('users-update', users);
+
+            console.log('Kullanıcı takıma katıldı:', team.name);
         } catch (err) {
             console.error('Takıma giriş hatası:', err);
             callback({ success: false, error: 'Giriş yapılamadı!' });
@@ -744,8 +851,19 @@ io.on('connection', async (socket) => {
     });
 
     // Bağlantı koptu
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
         console.log('Kullanıcı ayrıldı:', socket.id);
+
+        // Kullanıcıyı offline yap
+        try {
+            await pool.query('UPDATE users SET online = FALSE WHERE socket_id = $1', [socket.id]);
+
+            // Kullanıcı listesini güncelle
+            const users = await getUsersByTeam();
+            io.emit('users-update', users);
+        } catch (err) {
+            console.error('Disconnect hatası:', err);
+        }
     });
 });
 
