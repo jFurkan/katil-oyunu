@@ -1411,7 +1411,8 @@
         });
 
         (function() {
-            var socket = io();
+            window.socket = io(); // Global yapıyoruz
+            var socket = window.socket;
             var teams = [];
             var credits = [
                 { id: 'credit_1', name: 'Furkan', content: 'Oyunun tasarımı ve geliştirmesi' },
