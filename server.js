@@ -5,6 +5,7 @@ const { Server } = require('socket.io');
 const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const crypto = require('crypto'); // UUID üretmek için
 const { pool, initDatabase } = require('./database');
 
 const app = express();
@@ -430,7 +431,8 @@ io.on('connection', async (socket) => {
                 return;
             }
 
-            const userId = 'user_' + Date.now();
+            // Güvenli UUID üret (sayfa yenilendiğinde değişmez)
+            const userId = crypto.randomUUID();
 
             // Kullanıcı oluştur
             await pool.query(
@@ -535,7 +537,8 @@ io.on('connection', async (socket) => {
                 return;
             }
 
-            const teamId = 'team_' + Date.now();
+            // Güvenli UUID üret (sayfa yenilendiğinde değişmez)
+            const teamId = crypto.randomUUID();
             const avatar = data.avatar || '🕵️';
             const color = data.color || '#3b82f6';
 
@@ -1211,10 +1214,11 @@ async function startServer() {
 ║────────────────────────────────────────║
 ║  Sunucu çalışıyor!                     ║
 ║  Port: ${PORT}                             ║
-║  Admin Şifresi: ${ADMIN_PASSWORD}                 ║
+║  Admin Şifresi: **** (gizli)           ║
 ╚════════════════════════════════════════╝
             `);
             console.log('✓ Server ready and listening on', server.address());
+            console.log('✓ Admin password loaded from environment variables');
         });
     } catch (err) {
         console.error('Sunucu başlatılamadı:', err);
