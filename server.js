@@ -769,3 +769,37 @@ async function startServer() {
 }
 
 startServer();
+
+// Unhandled errors'ı yakala - server çökmesin
+process.on('uncaughtException', (err) => {
+    console.error('❌ Uncaught Exception:', err);
+    // Server çökmesin, devam etsin
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+    // Server çökmesin, devam etsin
+});
+
+// Graceful shutdown için SIGTERM/SIGINT handler
+process.on('SIGTERM', () => {
+    console.log('SIGTERM alındı, graceful shutdown başlatılıyor...');
+    server.close(() => {
+        console.log('HTTP server kapatıldı');
+        pool.end(() => {
+            console.log('Database pool kapatıldı');
+            process.exit(0);
+        });
+    });
+});
+
+process.on('SIGINT', () => {
+    console.log('SIGINT alındı, graceful shutdown başlatılıyor...');
+    server.close(() => {
+        console.log('HTTP server kapatıldı');
+        pool.end(() => {
+            console.log('Database pool kapatıldı');
+            process.exit(0);
+        });
+    });
+});
