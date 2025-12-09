@@ -880,27 +880,48 @@
     <div class="notification-container" id="notificationContainer"></div>
 
     <div class="container">
-        <!-- Nickname Alma Sayfası -->
+        <!-- Ana Giriş Sayfası -->
         <div class="page active" id="pgNickname">
             <header>
                 <h1>Katil <span>Kim?</span></h1>
                 <p class="subtitle">"Şüphe, gerçeğin gölgesidir..."</p>
             </header>
 
-            <div style="max-width: 400px; margin: 40px auto; text-align: center;">
-                <h2 style="color: #e0e0e0; margin-bottom: 30px;">🎭 Oyuna Hoşgeldiniz</h2>
-                <p style="color: #999; margin-bottom: 30px;">Devam etmek için bir nick seçin</p>
+            <div style="max-width: 420px; margin: 40px auto;">
+                <!-- Oyuncu Girişi -->
+                <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 30px; margin-bottom: 20px;">
+                    <h2 style="color: var(--gold); margin-bottom: 10px; font-size: 20px; text-align: center;">🎭 Oyuncu Girişi</h2>
+                    <p style="color: #999; margin-bottom: 25px; text-align: center; font-size: 14px;">Oyuna katılmak için bir nick seçin</p>
 
-                <input
-                    type="text"
-                    id="inpNickname"
-                    placeholder="Nick giriniz..."
-                    maxlength="20"
-                    style="width: 100%; padding: 15px; font-size: 16px; border: 2px solid #333; background: #1a1a1a; color: white; border-radius: 8px; margin-bottom: 20px;"
-                    onkeypress="if(event.key==='Enter') USER.registerNickname()"
-                />
+                    <input
+                        type="text"
+                        id="inpNickname"
+                        placeholder="Nick giriniz..."
+                        maxlength="20"
+                        style="width: 100%; padding: 15px; font-size: 16px; border: 2px solid var(--border-color); background: #000; color: white; border-radius: 8px; margin-bottom: 15px; transition: border-color 0.2s;"
+                        onkeypress="if(event.key==='Enter') USER.registerNickname()"
+                        onfocus="this.style.borderColor='var(--gold)'"
+                        onblur="this.style.borderColor='var(--border-color)'"
+                    />
 
-                <button class="btn btn-primary" onclick="USER.registerNickname()">Devam Et</button>
+                    <button class="btn btn-primary" style="margin-bottom: 0;" onclick="USER.registerNickname()">🎮 Oyuna Giriş Yap</button>
+                </div>
+
+                <!-- Yönetici Girişi -->
+                <div style="background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 25px; text-align: center;">
+                    <h3 style="color: #888; margin-bottom: 15px; font-size: 16px;">🔒 Yönetici Girişi</h3>
+                    <button class="btn" style="margin-bottom: 0; background: #222; border-color: #444; color: #aaa;" onclick="GAME.showAdminLoginForm()">Yönetici Paneline Git</button>
+                </div>
+            </div>
+
+            <!-- Emeği Geçenler -->
+            <div class="credits">
+                <h3>Emeği Geçenler</h3>
+                <div class="credits-list" id="mainCreditsList">
+                    <div class="credit-item">Furkan</div>
+                    <div class="credit-item">Claude</div>
+                </div>
+                <div class="credits-note">Bu oyun Katil Kim? dedektiflik oyunu için geliştirilmiştir.</div>
             </div>
         </div>
 
@@ -909,7 +930,7 @@
                 <h1>Katil <span>Kim?</span></h1>
                 <p class="subtitle">"Şüphe, gerçeğin gölgesidir..."</p>
                 <!-- Mevcut kullanıcı bilgisi -->
-                <div id="currentUserInfo" style="margin-top: 15px; display: none;">
+                <div id="currentUserInfo" style="margin-top: 15px;">
                     <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; display: inline-flex; align-items: center; gap: 10px;">
                         <span style="color: var(--text-muted); font-size: 13px;">Giriş yapıldı:</span>
                         <span id="currentUserNick" style="color: var(--gold); font-weight: 600;"></span>
@@ -920,14 +941,8 @@
                 </div>
             </header>
 
-            <!-- Ana Giriş Seçenekleri -->
-            <div id="mainEntry" style="max-width: 400px; margin: 0 auto;">
-                <button class="btn btn-primary" onclick="GAME.enterAsPlayer()">🎭 Oyuncu Olarak Giriş</button>
-                <button class="btn" style="margin-top: 15px; color: #666; border-color: transparent;" onclick="GAME.showPassModal()">🔒 Yönetici Olarak Giriş</button>
-            </div>
-
-            <!-- Oyuncu Menüsü (Gizli) -->
-            <div id="playerMenu" style="max-width: 400px; margin: 0 auto; display: none;">
+            <!-- Oyuncu Menüsü -->
+            <div style="max-width: 400px; margin: 0 auto;">
                 <button class="btn" onclick="GAME.showCreateForm()">🎭 Yeni Takım Oluştur</button>
                 <button class="btn" onclick="GAME.showJoinForm()">🔑 Takıma Giriş Yap</button>
                 <button class="btn" onclick="GAME.showScoreboard()">🏆 Skor Tablosu</button>
@@ -935,7 +950,7 @@
                     🔔 Bildirimler
                     <span id="notifBadgeLobby" style="display:none; background:var(--accent); color:white; border-radius:50%; width:20px; height:20px; font-size:11px; margin-left:auto;"></span>
                 </button>
-                <button class="btn" style="margin-top: 30px; color: #888; border-color: #333; font-size: 13px;" onclick="GAME.backToMain()">← Ana Menüye Dön</button>
+                <button class="btn" style="margin-top: 30px; color: #888; border-color: #333; font-size: 13px;" onclick="GAME.backToMain()">← Ana Sayfaya Dön</button>
             </div>
 
             <!-- Emeği Geçenler -->
@@ -1615,16 +1630,18 @@
             };
 
             window.GAME = {
-                enterAsPlayer: function() {
-                    document.getElementById('mainEntry').style.display = 'none';
-                    document.getElementById('playerMenu').style.display = 'block';
-                },
                 backToMain: function() {
-                    document.getElementById('mainEntry').style.display = 'block';
-                    document.getElementById('playerMenu').style.display = 'none';
+                    // Ana sayfaya dön (pgNickname)
+                    showPage('pgNickname');
                     // Açık formları kapat
                     document.getElementById('createForm').style.display = 'none';
                     document.getElementById('joinForm').style.display = 'none';
+                },
+                showAdminLoginForm: function() {
+                    // Admin şifre modalını göster
+                    document.getElementById('passModal').classList.add('show');
+                    document.getElementById('inpPass').value = '';
+                    document.getElementById('inpPass').focus();
                 },
                 showCreateForm: function() {
                     document.getElementById('createForm').style.display = 'block';
@@ -1756,11 +1773,6 @@
                     currentTeamId = null;
                     localStorage.removeItem('currentTeamId');
                     showPage('pgLobby');
-                },
-                showPassModal: function() {
-                    document.getElementById('passModal').classList.add('show');
-                    document.getElementById('inpPass').value = '';
-                    document.getElementById('inpPass').focus();
                 },
                 hidePassModal: function() { document.getElementById('passModal').classList.remove('show'); },
                 checkPass: function() {
