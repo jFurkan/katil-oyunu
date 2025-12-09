@@ -2029,25 +2029,30 @@
                     return;
                 }
 
-                // Sıralama
-                var sorted = teams.slice().sort((a, b) => b.score - a.score);
-                renderScoreChart(sorted);
+                // Sıralama YAPMA - created_at sırasında kalsın
+                var sorted = teams.slice(); // Orijinal sırayı koru
+
+                // Grafik için puana göre sıralı versiyonu oluştur
+                var sortedForChart = teams.slice().sort((a, b) => b.score - a.score);
+                renderScoreChart(sortedForChart);
 
                 var html = '';
                 sorted.forEach((t, index) => {
                     var safeName = t.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
                     var rankClass = '';
-                    if (index === 0 && t.score > 0) rankClass = 'g';
-                    else if (index === 1 && t.score > 0) rankClass = 's';
-                    else if (index === 2 && t.score > 0) rankClass = 'b';
+                    // Rank için gerçek sırayı hesapla
+                    var realRank = sortedForChart.findIndex(st => st.id === t.id) + 1;
+                    if (realRank === 1 && t.score > 0) rankClass = 'g';
+                    else if (realRank === 2 && t.score > 0) rankClass = 's';
+                    else if (realRank === 3 && t.score > 0) rankClass = 'b';
 
-                    // Kart HTML Yapısı
+                    // Kart HTML Yapısı - Takım rengi ile
                     html += `
-                    <div class="admin-card" id="card_${t.id}">
-                        <div class="card-header">
+                    <div class="admin-card" id="card_${t.id}" style="border-left: 4px solid ${t.color || '#3b82f6'}">
+                        <div class="card-header" style="background: linear-gradient(135deg, ${t.color || '#3b82f6'}15, transparent)">
                             <div class="team-identity">
-                                <div class="rank-badge ${rankClass}">${index + 1}</div>
-                                <div class="team-name">${t.name}</div>
+                                <div class="rank-badge ${rankClass}">${realRank}</div>
+                                <div class="team-name" style="color: ${t.color || '#3b82f6'}">${t.name}</div>
                             </div>
                             <div class="team-score" id="score_${t.id}">${t.score}</div>
                         </div>
@@ -2079,15 +2084,16 @@
             function renderScoreChart(sortedTeams) {
                 var maxScore = Math.max(...sortedTeams.map(t => t.score));
                 if (maxScore <= 0) maxScore = 1;
-                
+
                 var html = '';
                 sortedTeams.forEach(t => {
                     var pct = Math.max(0, (t.score / maxScore) * 100);
+                    var teamColor = t.color || '#3b82f6';
                     html += `
                     <div class="chart-bar">
-                        <div class="chart-label">${t.name}</div>
+                        <div class="chart-label" style="color: ${teamColor}">${t.name}</div>
                         <div class="chart-track">
-                            <div class="chart-fill" style="width: ${pct}%"></div>
+                            <div class="chart-fill" style="width: ${pct}%; background: ${teamColor}"></div>
                         </div>
                         <div class="chart-val">${t.score}</div>
                     </div>`;
