@@ -908,6 +908,16 @@
             <header>
                 <h1>Katil <span>Kim?</span></h1>
                 <p class="subtitle">"Şüphe, gerçeğin gölgesidir..."</p>
+                <!-- Mevcut kullanıcı bilgisi -->
+                <div id="currentUserInfo" style="margin-top: 15px; display: none;">
+                    <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; display: inline-flex; align-items: center; gap: 10px;">
+                        <span style="color: var(--text-muted); font-size: 13px;">Giriş yapıldı:</span>
+                        <span id="currentUserNick" style="color: var(--gold); font-weight: 600;"></span>
+                        <button onclick="USER.logout()" style="background: transparent; border: 1px solid #444; color: #888; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 10px;">
+                            Çıkış Yap
+                        </button>
+                    </div>
+                </div>
             </header>
 
             <!-- Ana Giriş Seçenekleri -->
@@ -1448,6 +1458,18 @@
                 document.getElementById(id).classList.add('active');
             }
 
+            function updateCurrentUserDisplay() {
+                var userInfo = document.getElementById('currentUserInfo');
+                var userNick = document.getElementById('currentUserNick');
+
+                if (currentUser && currentUser.nickname) {
+                    userNick.textContent = currentUser.nickname;
+                    userInfo.style.display = 'block';
+                } else {
+                    userInfo.style.display = 'none';
+                }
+            }
+
             // Global Fonksiyonlar (HTML onclick için)
             window.adminScore = function(teamId, amount) {
                 if (isProcessing) return;
@@ -1465,6 +1487,18 @@
                     socket.emit('delete-team', teamId, function(res) {
                         isProcessing = false;
                         if (res.success) toast('Takım silindi.');
+                        else toast(res.error, true);
+                    });
+                }
+            };
+
+            window.adminDeleteUser = function(userId, nickname) {
+                if (isProcessing) return;
+                if (confirm(nickname + ' kullanıcısını silmek istiyor musunuz? Bu işlem geri alınamaz.')) {
+                    isProcessing = true;
+                    socket.emit('delete-user', userId, function(res) {
+                        isProcessing = false;
+                        if (res.success) toast('Kullanıcı silindi.');
                         else toast(res.error, true);
                     });
                 }
@@ -1493,12 +1527,28 @@
                         if (res.success) {
                             currentUser = { userId: res.userId, nickname: res.nickname };
                             localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                            updateCurrentUserDisplay();
                             showPage('pgLobby');
                             toast('Hoşgeldin, ' + res.nickname + '!');
                         } else {
                             toast(res.error, true);
                         }
                     });
+                },
+
+                logout: function() {
+                    if (confirm('Çıkış yapmak istediğinize emin misiniz?')) {
+                        // LocalStorage'ı temizle
+                        currentUser = null;
+                        currentTeamId = null;
+                        localStorage.removeItem('currentUser');
+                        localStorage.removeItem('currentTeamId');
+
+                        // Nick giriş sayfasına yönlendir
+                        showPage('pgNickname');
+                        updateCurrentUserDisplay();
+                        toast('Çıkış yapıldı.');
+                    }
                 }
             };
 
@@ -2334,10 +2384,13 @@
                                 ${group.users.map(u => `
                                     <div style="background: #222; padding: 12px 15px; border-radius: 6px; display: flex; align-items: center; gap: 10px;">
                                         ${u.is_captain ? '<span style="font-size: 20px;">👑</span>' : '<span style="font-size: 20px;">👤</span>'}
-                                        <span style="color: white; font-weight: ${u.is_captain ? 'bold' : 'normal'};">
+                                        <span style="color: white; font-weight: ${u.is_captain ? 'bold' : 'normal'}; flex: 1;">
                                             ${htmlEscape(u.nickname)}
                                         </span>
-                                        ${u.is_captain ? '<span style="color: #fbbf24; font-size: 12px; margin-left: auto;">(Kaptan)</span>' : ''}
+                                        ${u.is_captain ? '<span style="color: #fbbf24; font-size: 12px;">(Kaptan)</span>' : ''}
+                                        <button onclick="adminDeleteUser('${u.id}', '${htmlEscape(u.nickname)}')" style="background: #500; border: 1px solid #800; color: #faa; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-left: 10px;">
+                                            🗑️ Sil
+                                        </button>
                                     </div>
                                 `).join('')}
                             </div>
@@ -2356,7 +2409,10 @@
                                 ${usersWithoutTeam.map(u => `
                                     <div style="background: #222; padding: 12px 15px; border-radius: 6px; display: flex; align-items: center; gap: 10px;">
                                         <span style="font-size: 20px;">👤</span>
-                                        <span style="color: white;">${htmlEscape(u.nickname)}</span>
+                                        <span style="color: white; flex: 1;">${htmlEscape(u.nickname)}</span>
+                                        <button onclick="adminDeleteUser('${u.id}', '${htmlEscape(u.nickname)}')" style="background: #500; border: 1px solid #800; color: #faa; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                            🗑️ Sil
+                                        </button>
                                     </div>
                                 `).join('')}
                             </div>
@@ -2633,10 +2689,25 @@
                 toast('Oyun bitti!');
             });
 
+            // Kullanıcı silindi (admin tarafından)
+            socket.on('user-deleted', function() {
+                // LocalStorage'ı temizle
+                currentUser = null;
+                currentTeamId = null;
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('currentTeamId');
+
+                // Nick giriş sayfasına yönlendir
+                showPage('pgNickname');
+                updateCurrentUserDisplay();
+                toast('Hesabınız yönetici tarafından silindi.', true);
+            });
+
             // Init
             window.onload = function() {
                 NOTIF.updateBadge(); // Bildirim badge'ini güncelle
                 renderMainCredits(); // Ana sayfa emeği geçenler listesini render et
+                updateCurrentUserDisplay(); // Kullanıcı bilgisi display'ini güncelle
 
                 // Başlangıç kontrolü
                 if (!currentUser) {

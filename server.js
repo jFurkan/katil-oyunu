@@ -764,6 +764,39 @@ io.on('connection', async (socket) => {
         }
     });
 
+    // Kullanıcı sil (admin)
+    socket.on('delete-user', async (userId, callback) => {
+        try {
+            const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING nickname, socket_id', [userId]);
+
+            if (result.rowCount === 0) {
+                callback({ success: false, error: 'Kullanıcı bulunamadı!' });
+                return;
+            }
+
+            const user = result.rows[0];
+            callback({ success: true });
+
+            // Silinen kullanıcıya bildirim gönder (eğer online ise)
+            if (user.socket_id) {
+                io.to(user.socket_id).emit('user-deleted');
+            }
+
+            // Kullanıcı listesini güncelle
+            const users = await getUsersByTeam();
+            io.emit('users-update', users);
+
+            // Takım listesini güncelle (eğer kullanıcı bir takımdaysa, takım güncellensin)
+            const teams = await getAllTeams();
+            io.emit('teams-update', teams);
+
+            console.log('Kullanıcı silindi:', user.nickname);
+        } catch (err) {
+            console.error('Kullanıcı silme hatası:', err);
+            callback({ success: false, error: 'Kullanıcı silinemedi!' });
+        }
+    });
+
     // Oyunu sıfırla (admin)
     socket.on('reset-game', async (callback) => {
         try {
