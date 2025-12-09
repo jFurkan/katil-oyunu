@@ -3,16 +3,68 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const { pool, initDatabase } = require('./database');
 
 const app = express();
 const server = http.createServer(app);
+
+// CORS ayarları - production'da kısıtla
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
+
 const io = new Server(server, {
     cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
+        origin: ALLOWED_ORIGIN,
+        methods: ["GET", "POST"],
+        credentials: true
     }
 });
+
+// Güvenlik middleware'leri
+// 1. Helmet - Güvenlik başlıkları
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.socket.io"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'", "wss:", "ws:"],
+            frameSrc: ["'none'"],
+            objectSrc: ["'none'"]
+        }
+    },
+    hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+    }
+}));
+
+// 2. Rate Limiting - DDoS koruması
+const limiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 dakika
+    max: 100, // IP başına max 100 request
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: 'Çok fazla istek gönderdiniz, lütfen 1 dakika sonra tekrar deneyin.'
+});
+
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 dakika
+    max: 10, // IP başına max 10 login/register denemesi
+    skipSuccessfulRequests: true,
+    message: 'Çok fazla giriş denemesi, 15 dakika sonra tekrar deneyin.'
+});
+
+app.use('/api/', limiter);
+app.use(limiter);
+
+// 3. Body size limits - Büyük payload saldırılarını önle
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
 // Statik dosyalar
 app.use(express.static(path.join(__dirname, 'public')));
@@ -160,9 +212,34 @@ async function getUsersByTeam() {
     return result.rows;
 }
 
+// WebSocket güvenlik middleware'i
+io.use((socket, next) => {
+    const origin = socket.handshake.headers.origin;
+    const referer = socket.handshake.headers.referer;
+
+    // Development'da origin kontrolü atla
+    if (process.env.NODE_ENV === 'production' && ALLOWED_ORIGIN !== '*') {
+        if (!origin || (origin !== ALLOWED_ORIGIN && !referer?.startsWith(ALLOWED_ORIGIN))) {
+            console.log('❌ WebSocket bağlantısı reddedildi - geçersiz origin:', origin);
+            return next(new Error('Origin not allowed'));
+        }
+    }
+
+    // Bağlantı sayısı limiti (DDoS koruması)
+    const clientCount = io.engine.clientsCount;
+    const MAX_CONNECTIONS = parseInt(process.env.MAX_CONNECTIONS) || 1000;
+
+    if (clientCount >= MAX_CONNECTIONS) {
+        console.log('❌ WebSocket bağlantısı reddedildi - maksimum bağlantı sayısına ulaşıldı');
+        return next(new Error('Server full'));
+    }
+
+    next();
+});
+
 // Socket.io bağlantıları
 io.on('connection', async (socket) => {
-    console.log('Kullanıcı bağlandı:', socket.id);
+    console.log('✓ Kullanıcı bağlandı:', socket.id, '- Toplam:', io.engine.clientsCount);
 
     // Takım listesini gönder
     const teams = await getAllTeams();
@@ -852,7 +929,7 @@ io.on('connection', async (socket) => {
 
     // Bağlantı koptu
     socket.on('disconnect', async () => {
-        console.log('Kullanıcı ayrıldı:', socket.id);
+        console.log('✓ Kullanıcı ayrıldı:', socket.id, '- Kalan:', io.engine.clientsCount - 1);
 
         // Kullanıcıyı offline yap
         try {
