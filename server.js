@@ -35,9 +35,23 @@ app.get('/health', (req, res) => {
     res.status(200).send('OK');
 });
 
+// Favicon
+app.get('/favicon.ico', (req, res) => {
+    res.status(204).end();
+});
+
 // Socket.IO
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
     console.log('User connected:', socket.id);
+
+    // İlk bağlantıda teams listesini gönder
+    try {
+        const teamsResult = await pool.query('SELECT * FROM teams ORDER BY created_at');
+        socket.emit('teams-update', teamsResult.rows);
+    } catch (err) {
+        console.error('Initial teams fetch error:', err);
+        socket.emit('teams-update', []);
+    }
 
     // Get all teams
     socket.on('get-teams', async (callback) => {
@@ -162,6 +176,16 @@ io.on('connection', (socket) => {
         } catch (err) {
             console.error('Update score error:', err);
             callback({ success: false, error: 'Puan güncellenemedi!' });
+        }
+    });
+
+    // Admin login
+    socket.on('admin-login', (password, callback) => {
+        if (password === ADMIN_PASSWORD) {
+            callback({ success: true });
+            console.log('Admin logged in:', socket.id);
+        } else {
+            callback({ success: false, error: 'Yanlış şifre!' });
         }
     });
 
