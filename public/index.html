@@ -840,29 +840,7 @@
             }
         }
 
-        /* ===== AVATAR VE RENK SEÇİCİ ===== */
-        .avatar-option {
-            font-size: 28px;
-            padding: 8px;
-            cursor: pointer;
-            border: 2px solid transparent;
-            border-radius: 8px;
-            transition: all 0.2s;
-            text-align: center;
-            background: rgba(255,255,255,0.02);
-        }
-
-        .avatar-option:hover {
-            transform: scale(1.2);
-            background: rgba(255,255,255,0.1);
-        }
-
-        .avatar-option.selected {
-            border-color: var(--gold);
-            background: rgba(212,175,55,0.15);
-            transform: scale(1.1);
-        }
-
+        /* ===== RENK SEÇİCİ ===== */
         .color-option {
             width: 100%;
             height: 40px;
@@ -940,18 +918,6 @@
                 <h3 style="margin-bottom:15px; color:white;">Yeni Takım</h3>
                 <input type="text" id="inpNewTeam" placeholder="Takım adı..." maxlength="20">
                 <input type="password" id="inpNewTeamPassword" placeholder="Takım şifresi..." maxlength="20">
-
-                <!-- Avatar Seçimi -->
-                <div style="margin: 15px 0;">
-                    <label style="color: #888; font-size: 12px; margin-bottom: 8px; display: block;">Avatar Seç</label>
-                    <div id="avatarGrid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; max-height: 150px; overflow-y: auto; padding: 10px; background: #000; border: 1px solid var(--border-color); border-radius: 6px;">
-                        <!-- Avatarlar JavaScript ile doldurulacak -->
-                    </div>
-                    <div style="margin-top: 8px; text-align: center;">
-                        <span style="color: #666; font-size: 11px;">Seçili: </span>
-                        <span id="selectedAvatar" style="font-size: 32px;">🕵️</span>
-                    </div>
-                </div>
 
                 <!-- Renk Seçimi -->
                 <div style="margin: 15px 0;">
@@ -1352,41 +1318,12 @@
 
         NOTIFICATION.init();
 
-        // Avatar ve Renk Özelleştirme Sistemi
+        // Renk Özelleştirme Sistemi
         var CUSTOMIZE = {
-            selectedAvatar: '🕵️',
             selectedColor: '#3b82f6',
-            avatars: ['🕵️', '🦹', '🥷', '👮', '💂', '🧙', '🧛', '🧟', '👻', '👽', '🤖', '🎭', '🎩', '👑', '💀', '☠️', '🔍', '🔎', '📛', '🎯', '🔥', '⚡', '💎', '🏆'],
 
             init: function() {
-                this.renderAvatars();
-                this.selectAvatar(this.selectedAvatar);
                 this.selectColor(this.selectedColor);
-            },
-
-            renderAvatars: function() {
-                var grid = document.getElementById('avatarGrid');
-                if (!grid) return;
-
-                var html = '';
-                this.avatars.forEach(function(avatar) {
-                    html += '<div class="avatar-option" onclick="CUSTOMIZE.selectAvatar(\'' + avatar + '\')">' + avatar + '</div>';
-                });
-                grid.innerHTML = html;
-            },
-
-            selectAvatar: function(avatar) {
-                this.selectedAvatar = avatar;
-                document.getElementById('selectedAvatar').textContent = avatar;
-
-                // Tüm avatar seçeneklerini güncelle
-                var options = document.querySelectorAll('.avatar-option');
-                options.forEach(function(opt) {
-                    opt.classList.remove('selected');
-                    if (opt.textContent === avatar) {
-                        opt.classList.add('selected');
-                    }
-                });
             },
 
             selectColor: function(color) {
@@ -1524,7 +1461,6 @@
                     socket.emit('create-team', {
                         name: name,
                         password: password,
-                        avatar: CUSTOMIZE.selectedAvatar,
                         color: CUSTOMIZE.selectedColor
                     }, function(res) {
                         if (res.success) {
