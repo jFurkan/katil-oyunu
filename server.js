@@ -1178,6 +1178,61 @@ io.on('connection', async (socket) => {
         }
     });
 
+    // IP Loglarını getir (admin)
+    socket.on('get-ip-logs', async (callback) => {
+        try {
+            const result = await pool.query(`
+                SELECT
+                    ip_address,
+                    action,
+                    COUNT(*) as count,
+                    MAX(created_at) as last_activity
+                FROM ip_activity
+                WHERE created_at > NOW() - INTERVAL '24 hours'
+                GROUP BY ip_address, action
+                ORDER BY last_activity DESC
+            `);
+
+            callback({ success: true, logs: result.rows });
+            console.log('IP logları getirildi:', result.rows.length, 'kayıt');
+        } catch (err) {
+            console.error('IP logları getirme hatası:', err);
+            callback({ success: false, error: 'Loglar getirilemedi!' });
+        }
+    });
+
+    // IP loglarını sıfırla (admin)
+    socket.on('clear-ip-logs', async (data, callback) => {
+        try {
+            let result;
+
+            if (data.ipAddress && data.action) {
+                // Belirli IP ve action için sil
+                result = await pool.query(
+                    'DELETE FROM ip_activity WHERE ip_address = $1 AND action = $2',
+                    [data.ipAddress, data.action]
+                );
+                console.log(`IP log sıfırlandı: ${data.ipAddress} - ${data.action}`);
+            } else if (data.ipAddress) {
+                // Belirli IP için tüm logları sil
+                result = await pool.query(
+                    'DELETE FROM ip_activity WHERE ip_address = $1',
+                    [data.ipAddress]
+                );
+                console.log(`IP'nin tüm logları sıfırlandı: ${data.ipAddress}`);
+            } else {
+                // Tüm logları sil
+                result = await pool.query('DELETE FROM ip_activity');
+                console.log('Tüm IP logları sıfırlandı');
+            }
+
+            callback({ success: true, deletedCount: result.rowCount });
+        } catch (err) {
+            console.error('IP log sıfırlama hatası:', err);
+            callback({ success: false, error: 'Loglar sıfırlanamadı!' });
+        }
+    });
+
     // Bağlantı koptu
     socket.on('disconnect', async () => {
         console.log('✓ Kullanıcı ayrıldı:', socket.id, '- Kalan:', io.engine.clientsCount - 1);

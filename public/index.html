@@ -1071,12 +1071,13 @@
             </div>
 
             <!-- Admin Menü Butonları -->
-            <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:15px; margin-bottom:30px;">
+            <div style="display:grid; grid-template-columns:repeat(6, 1fr); gap:15px; margin-bottom:30px;">
                 <button class="btn btn-primary" onclick="ADMIN.showSection('game')">⏱️ Oyun Kontrolü</button>
                 <button class="btn" onclick="ADMIN.showSection('users')">👤 Kullanıcılar</button>
                 <button class="btn" onclick="ADMIN.showSection('scoring')">🎯 Puanlama</button>
                 <button class="btn" onclick="ADMIN.showSection('notifications')">📢 Bildirimler</button>
                 <button class="btn" onclick="ADMIN.showSection('credits')">👥 Emeği Geçenler</button>
+                <button class="btn" onclick="ADMIN.showSection('iplogs')">🔍 IP Logları</button>
             </div>
 
             <!-- Oyun Kontrol Bölümü -->
@@ -1178,6 +1179,35 @@
                         <span id="creditsCount" style="color:#666; font-size:12px;">0 kişi</span>
                     </div>
                     <div id="creditsList" style="display:flex; flex-direction:column; gap:15px; min-height:100px;"></div>
+                </div>
+            </div>
+
+            <!-- IP Logları Bölümü -->
+            <div id="adminSectionIplogs" class="admin-section" style="display:none;">
+                <h3 style="color:var(--gold); font-size:18px; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">🔍 IP Aktivite Logları</h3>
+
+                <!-- Bilgilendirme -->
+                <div style="background:#1a1a1a; border-left:4px solid var(--gold); padding:15px; margin-bottom:20px; border-radius:8px;">
+                    <p style="color:#aaa; font-size:13px; line-height:1.6; margin:0;">
+                        Son 24 saat içinde IP bazlı aktiviteler. Bir IP'den çok fazla kullanıcı/takım oluşturulmasını engellemek için bu limitler vardır.
+                        <br><strong style="color:var(--gold);">Kullanıcı Kaydı:</strong> Aynı IP'den 24 saatte maksimum 3 kayıt
+                        <br><strong style="color:var(--gold);">Takım Oluşturma:</strong> Aynı IP'den 24 saatte maksimum 2 takım
+                    </p>
+                </div>
+
+                <!-- Yenile ve Tümünü Sıfırla Butonları -->
+                <div style="display:flex; gap:10px; margin-bottom:20px;">
+                    <button class="btn btn-primary" style="width:auto; padding:12px 24px; margin:0;" onclick="IP_LOGS.loadLogs()">🔄 Yenile</button>
+                    <button class="btn" style="width:auto; padding:12px 24px; margin:0; background:#500; color:#faa; border:1px solid #700;" onclick="IP_LOGS.clearAll()">🗑️ Tüm Logları Sıfırla</button>
+                </div>
+
+                <!-- Loglar Tablosu -->
+                <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h3 style="color:#888; font-size:13px; text-transform:uppercase; letter-spacing:1px;">Aktivite Logları</h3>
+                        <span id="ipLogsCount" style="color:#666; font-size:12px;">0 kayıt</span>
+                    </div>
+                    <div id="ipLogsList" style="display:flex; flex-direction:column; gap:12px; min-height:100px;"></div>
                 </div>
             </div>
         </div>
@@ -1957,6 +1987,7 @@
                     else if (section === 'scoring') buttons[2].classList.add('btn-primary');
                     else if (section === 'notifications') buttons[3].classList.add('btn-primary');
                     else if (section === 'credits') buttons[4].classList.add('btn-primary');
+                    else if (section === 'iplogs') buttons[5].classList.add('btn-primary');
 
                     this.currentSection = section;
 
@@ -1968,6 +1999,11 @@
                     // Emeği geçenler bölümü açıldıysa listeyi render et
                     if (section === 'credits') {
                         renderCreditsList();
+                    }
+
+                    // IP Logları bölümü açıldıysa logları yükle
+                    if (section === 'iplogs') {
+                        IP_LOGS.loadLogs();
                     }
                 },
 
@@ -2173,6 +2209,127 @@
                     }, function(res) {
                         if (res.success) {
                             toast('İçerik güncellendi');
+                        } else {
+                            toast(res.error, true);
+                        }
+                    });
+                }
+            };
+
+            // IP LOGS FONKSİYONLARI
+            window.IP_LOGS = {
+                logs: [],
+
+                loadLogs: function() {
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
+                    socket.emit('get-ip-logs', function(res) {
+                        if (res.success) {
+                            IP_LOGS.logs = res.logs;
+                            IP_LOGS.render();
+                            toast('Loglar yüklendi');
+                        } else {
+                            toast(res.error, true);
+                        }
+                    });
+                },
+
+                render: function() {
+                    var container = document.getElementById('ipLogsList');
+                    var countEl = document.getElementById('ipLogsCount');
+
+                    if (!container) return;
+
+                    countEl.textContent = this.logs.length + ' kayıt';
+
+                    if (this.logs.length === 0) {
+                        container.innerHTML = '<div style="color:#666; text-align:center; padding:30px;">Son 24 saatte aktivite yok</div>';
+                        return;
+                    }
+
+                    var html = '';
+                    this.logs.forEach(function(log) {
+                        var actionText = log.action === 'register-user' ? 'Kullanıcı Kaydı' : 'Takım Oluşturma';
+                        var actionColor = log.action === 'register-user' ? '#3b82f6' : '#8b5cf6';
+                        var maxCount = log.action === 'register-user' ? 3 : 2;
+                        var isNearLimit = parseInt(log.count) >= maxCount;
+                        var date = new Date(log.last_activity);
+                        var timeStr = date.toLocaleString('tr-TR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+
+                        html += `
+                        <div style="background:#1a1a1a; border:1px solid ${isNearLimit ? '#ff4444' : '#333'}; border-radius:8px; padding:15px;">
+                            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
+                                <div style="flex:1;">
+                                    <div style="color:#fff; font-weight:600; margin-bottom:5px;">
+                                        ${htmlEscape(log.ip_address)}
+                                    </div>
+                                    <div style="display:flex; gap:10px; align-items:center; margin-bottom:5px;">
+                                        <span style="background:${actionColor}; color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;">
+                                            ${actionText}
+                                        </span>
+                                        <span style="color:${isNearLimit ? '#ff4444' : '#888'}; font-size:13px; font-weight:600;">
+                                            ${log.count} / ${maxCount} ${isNearLimit ? '⚠️' : ''}
+                                        </span>
+                                    </div>
+                                    <div style="color:#666; font-size:12px;">
+                                        Son: ${timeStr}
+                                    </div>
+                                </div>
+                                <button class="btn" style="width:auto; padding:8px 16px; margin:0; font-size:12px;"
+                                    onclick="IP_LOGS.clearSpecific('${log.ip_address}', '${log.action}')">
+                                    🗑️ Sıfırla
+                                </button>
+                            </div>
+                        </div>
+                        `;
+                    });
+
+                    container.innerHTML = html;
+                },
+
+                clearSpecific: function(ipAddress, action) {
+                    var actionText = action === 'register-user' ? 'Kullanıcı Kaydı' : 'Takım Oluşturma';
+                    if (!confirm(`${ipAddress} IP'sinin "${actionText}" logunu sıfırlamak istediğinize emin misiniz?`)) {
+                        return;
+                    }
+
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
+                    socket.emit('clear-ip-logs', { ipAddress: ipAddress, action: action }, function(res) {
+                        if (res.success) {
+                            toast('Log sıfırlandı: ' + res.deletedCount + ' kayıt silindi');
+                            IP_LOGS.loadLogs();
+                        } else {
+                            toast(res.error, true);
+                        }
+                    });
+                },
+
+                clearAll: function() {
+                    if (!confirm('TÜM IP loglarını sıfırlamak istediğinize emin misiniz? Bu işlem geri alınamaz!')) {
+                        return;
+                    }
+
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
+                    socket.emit('clear-ip-logs', {}, function(res) {
+                        if (res.success) {
+                            toast('Tüm loglar sıfırlandı: ' + res.deletedCount + ' kayıt silindi');
+                            IP_LOGS.loadLogs();
                         } else {
                             toast(res.error, true);
                         }
