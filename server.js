@@ -191,20 +191,13 @@ io.on('connection', async (socket) => {
                 [teamId, data.name, data.password, avatar, color]
             );
 
-            // Tam team objesini badges ve clues ile birlikte al
-            const teamResult = await pool.query(`
-                SELECT t.*,
-                       COALESCE(json_agg(DISTINCT jsonb_build_object('text', c.text, 'time', c.time)) FILTER (WHERE c.id IS NOT NULL), '[]') as clues,
-                       COALESCE(json_agg(DISTINCT jsonb_build_object('id', b.id, 'name', b.name, 'icon', b.icon, 'color', b.color)) FILTER (WHERE b.id IS NOT NULL), '[]') as badges
-                FROM teams t
-                LEFT JOIN clues c ON t.id = c.team_id
-                LEFT JOIN team_badges tb ON t.id = tb.team_id
-                LEFT JOIN badges b ON tb.badge_id = b.id
-                WHERE t.id = $1
-                GROUP BY t.id
-            `, [teamId]);
-
+            // Yeni oluşan takımı al (basitleştirilmiş)
+            const teamResult = await pool.query('SELECT * FROM teams WHERE id = $1', [teamId]);
             const team = teamResult.rows[0];
+
+            // Clues ve badges boş array olarak ekle
+            team.clues = [];
+            team.badges = [];
 
             callback({ success: true, team: team });
 
