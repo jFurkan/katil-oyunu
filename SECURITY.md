@@ -18,6 +18,14 @@
   - Auth: 10 deneme/15 dakika
 - ✅ WebSocket bağlantı limiti (default: 1000)
 - ✅ Body size limitleri (100kb)
+- ✅ **Socket.IO Event Rate Limiting (Spam Koruması)**
+  - register-user: 5 deneme/dakika
+  - create-team: 3 takım/dakika
+  - add-clue: 10 ipucu/dakika
+  - send-general-clue: 20/dakika (admin)
+  - send-announcement: 10/dakika (admin)
+  - Otomatik cleanup (her dakika)
+  - Socket disconnect'te otomatik temizlik
 
 ### 4. **HTTP Güvenlik Header'ları (Helmet)**
 - ✅ HSTS (HTTP Strict Transport Security)

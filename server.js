@@ -212,6 +212,66 @@ async function getUsersByTeam() {
     return result.rows;
 }
 
+// Socket.IO Event Rate Limiter (Spam koruması)
+class SocketRateLimiter {
+    constructor() {
+        this.events = new Map(); // socketId -> { eventName -> timestamps[] }
+        this.cleanupInterval = setInterval(() => this.cleanup(), 60000); // Her dakika temizle
+    }
+
+    // Event'e izin ver mi?
+    check(socketId, eventName, limit = 10, windowMs = 60000) {
+        const now = Date.now();
+        const key = `${socketId}:${eventName}`;
+
+        if (!this.events.has(key)) {
+            this.events.set(key, []);
+        }
+
+        const timestamps = this.events.get(key);
+
+        // Eski timestamp'leri temizle
+        const validTimestamps = timestamps.filter(t => now - t < windowMs);
+
+        // Limit aşıldı mı?
+        if (validTimestamps.length >= limit) {
+            return false;
+        }
+
+        // Yeni timestamp ekle
+        validTimestamps.push(now);
+        this.events.set(key, validTimestamps);
+
+        return true;
+    }
+
+    // Temizlik
+    cleanup() {
+        const now = Date.now();
+        for (const [key, timestamps] of this.events.entries()) {
+            const validTimestamps = timestamps.filter(t => now - t < 300000); // 5 dakikadan eski olanları sil
+            if (validTimestamps.length === 0) {
+                this.events.delete(key);
+            } else {
+                this.events.set(key, validTimestamps);
+            }
+        }
+    }
+
+    // Socket disconnect olduğunda temizle
+    clear(socketId) {
+        const keysToDelete = [];
+        for (const key of this.events.keys()) {
+            if (key.startsWith(socketId + ':')) {
+                keysToDelete.push(key);
+            }
+        }
+        keysToDelete.forEach(key => this.events.delete(key));
+    }
+}
+
+const rateLimiter = new SocketRateLimiter();
+
 // WebSocket güvenlik middleware'i
 io.use((socket, next) => {
     const origin = socket.handshake.headers.origin;
@@ -270,6 +330,13 @@ io.on('connection', async (socket) => {
 
     // Kullanıcı kaydı (nickname al)
     socket.on('register-user', async (nickname, callback) => {
+        // Rate limiting: 5 deneme/dakika
+        if (!rateLimiter.check(socket.id, 'register-user', 5, 60000)) {
+            callback({ success: false, error: 'Çok fazla kayıt denemesi! Lütfen 1 dakika bekleyin.' });
+            console.log('⚠️  Rate limit: register-user -', socket.id);
+            return;
+        }
+
         try {
             if (!nickname || nickname.trim() === '') {
                 callback({ success: false, error: 'Nick boş olamaz!' });
@@ -312,6 +379,13 @@ io.on('connection', async (socket) => {
 
     // Yeni takım oluştur
     socket.on('create-team', async (data, callback) => {
+        // Rate limiting: 3 takım/dakika
+        if (!rateLimiter.check(socket.id, 'create-team', 3, 60000)) {
+            callback({ success: false, error: 'Çok fazla takım oluşturma denemesi! Lütfen bekleyin.' });
+            console.log('⚠️  Rate limit: create-team -', socket.id);
+            return;
+        }
+
         try {
             // userId kontrolü
             if (!data.userId) {
@@ -466,6 +540,13 @@ io.on('connection', async (socket) => {
 
     // İpucu ekle
     socket.on('add-clue', async (data, callback) => {
+        // Rate limiting: 10 ipucu/dakika (spam önleme)
+        if (!rateLimiter.check(socket.id, 'add-clue', 10, 60000)) {
+            callback({ success: false, error: 'Çok hızlı ipucu gönderiyorsunuz! Biraz yavaşlayın.' });
+            console.log('⚠️  Rate limit: add-clue -', socket.id);
+            return;
+        }
+
         // Oyun başlamadıysa ipucu gönderilemez
         if (!gameState.started) {
             callback({ success: false, error: 'Oyun henüz başlamadı!' });
@@ -613,6 +694,13 @@ io.on('connection', async (socket) => {
 
     // Genel ipucu gönder (admin)
     socket.on('send-general-clue', async (clue, callback) => {
+        // Rate limiting: 20 ipucu/dakika (admin spam önleme)
+        if (!rateLimiter.check(socket.id, 'send-general-clue', 20, 60000)) {
+            callback({ success: false, error: 'Çok hızlı ipucu gönderiyorsunuz!' });
+            console.log('⚠️  Rate limit: send-general-clue -', socket.id);
+            return;
+        }
+
         if (!clue || clue.trim() === '') {
             callback({ success: false, error: 'İpucu metni boş olamaz!' });
             return;
@@ -647,6 +735,13 @@ io.on('connection', async (socket) => {
 
     // Duyuru gönder (admin)
     socket.on('send-announcement', (message, callback) => {
+        // Rate limiting: 10 duyuru/dakika
+        if (!rateLimiter.check(socket.id, 'send-announcement', 10, 60000)) {
+            callback({ success: false, error: 'Çok fazla duyuru gönderiyorsunuz!' });
+            console.log('⚠️  Rate limit: send-announcement -', socket.id);
+            return;
+        }
+
         if (!message || message.trim() === '') {
             callback({ success: false, error: 'Duyuru metni boş olamaz!' });
             return;
@@ -930,6 +1025,9 @@ io.on('connection', async (socket) => {
     // Bağlantı koptu
     socket.on('disconnect', async () => {
         console.log('✓ Kullanıcı ayrıldı:', socket.id, '- Kalan:', io.engine.clientsCount - 1);
+
+        // Rate limiter temizliği
+        rateLimiter.clear(socket.id);
 
         // Kullanıcıyı offline yap
         try {
