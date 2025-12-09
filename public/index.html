@@ -1381,6 +1381,7 @@
         (function() {
             window.socket = io(); // Global yapıyoruz
             var socket = window.socket;
+            var socketConnected = false; // Bağlantı durumu
             var teams = [];
             var users = [];
             var currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
@@ -1391,6 +1392,23 @@
             var currentTeamId = localStorage.getItem('currentTeamId');
             var selectedJoinId = null;
             var isProcessing = false;
+
+            // Socket bağlantı event'leri
+            socket.on('connect', function() {
+                socketConnected = true;
+                console.log('Socket bağlantısı kuruldu');
+            });
+
+            socket.on('disconnect', function() {
+                socketConnected = false;
+                console.log('Socket bağlantısı koptu');
+                toast('Bağlantı koptu. Yeniden bağlanıyor...', true);
+            });
+
+            socket.on('connect_error', function(err) {
+                console.error('Socket bağlantı hatası:', err);
+                toast('Bağlantı hatası!', true);
+            });
             var notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
             var generalClues = [];
             var popupTimeout = null;
@@ -1461,7 +1479,17 @@
                         return;
                     }
 
+                    // Socket bağlantısı kontrolü
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
+                    if (isProcessing) return;
+                    isProcessing = true;
+
                     socket.emit('register-user', nickname, function(res) {
+                        isProcessing = false;
                         if (res.success) {
                             currentUser = { userId: res.userId, nickname: res.nickname };
                             localStorage.setItem('currentUser', JSON.stringify(currentUser));
@@ -1522,16 +1550,26 @@
                         return;
                     }
 
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
                     var name = document.getElementById('inpNewTeam').value.trim();
                     var password = document.getElementById('inpNewTeamPassword').value.trim();
                     if (!name) { toast('İsim giriniz', true); return; }
                     if (!password) { toast('Şifre giriniz', true); return; }
+
+                    if (isProcessing) return;
+                    isProcessing = true;
+
                     socket.emit('create-team', {
                         name: name,
                         password: password,
                         color: CUSTOMIZE.selectedColor,
                         userId: currentUser.userId
                     }, function(res) {
+                        isProcessing = false;
                         if (res.success) {
                             currentTeamId = res.team.id;
                             localStorage.setItem('currentTeamId', currentTeamId);
@@ -1559,10 +1597,20 @@
                         return;
                     }
 
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
                     if (!selectedJoinId) { toast('Takım seçiniz', true); return; }
                     var password = document.getElementById('inpJoinPassword').value.trim();
                     if (!password) { toast('Şifre giriniz', true); return; }
+
+                    if (isProcessing) return;
+                    isProcessing = true;
+
                     socket.emit('join-team', { teamId: selectedJoinId, password: password, userId: currentUser.userId }, function(res) {
+                        isProcessing = false;
                         if (res.success) {
                             currentTeamId = selectedJoinId;
                             localStorage.setItem('currentTeamId', currentTeamId);
@@ -1574,10 +1622,20 @@
                     });
                 },
                 addClue: function() {
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
                     var inp = document.getElementById('inpClue');
                     var txt = inp.value.trim();
                     if (!txt) { toast('Boş ipucu gönderilemez', true); return; }
+
+                    if (isProcessing) return;
+                    isProcessing = true;
+
                     socket.emit('add-clue', { teamId: currentTeamId, clue: txt }, function(res) {
+                        isProcessing = false;
                         if (res.success) { inp.value = ''; toast('İpucu iletildi'); }
                         else { toast(res.error, true); }
                     });
@@ -1594,8 +1652,18 @@
                 },
                 hidePassModal: function() { document.getElementById('passModal').classList.remove('show'); },
                 checkPass: function() {
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
                     var pass = document.getElementById('inpPass').value;
+
+                    if (isProcessing) return;
+                    isProcessing = true;
+
                     socket.emit('admin-login', pass, function(res) {
+                        isProcessing = false;
                         if (res.success) {
                             GAME.hidePassModal();
                             showPage('pgAdmin');
@@ -1822,13 +1890,22 @@
                 },
 
                 sendGeneralClue: function() {
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
                     var text = document.getElementById('generalClueText').value.trim();
                     if (!text) {
                         toast('İpucu metni giriniz', true);
                         return;
                     }
                     if (confirm('Bu ipucu tüm takımlara gönderilecek. Emin misiniz?')) {
+                        if (isProcessing) return;
+                        isProcessing = true;
+
                         socket.emit('send-general-clue', text, function(res) {
+                            isProcessing = false;
                             if (res.success) {
                                 document.getElementById('generalClueText').value = '';
                                 toast('İpucu gönderildi');
@@ -1840,13 +1917,22 @@
                 },
 
                 sendAnnouncement: function() {
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
                     var text = document.getElementById('announcementText').value.trim();
                     if (!text) {
                         toast('Duyuru metni giriniz', true);
                         return;
                     }
                     if (confirm('Bu duyuru tüm takımlara gönderilecek. Emin misiniz?')) {
+                        if (isProcessing) return;
+                        isProcessing = true;
+
                         socket.emit('send-announcement', text, function(res) {
+                            isProcessing = false;
                             if (res.success) {
                                 document.getElementById('announcementText').value = '';
                                 toast('Duyuru gönderildi');
@@ -1876,6 +1962,11 @@
                 },
 
                 startGame: function() {
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
                     var minutes = parseInt(document.getElementById('gameMinutes').value);
                     var title = document.getElementById('gameTitle').value.trim();
 
@@ -1884,7 +1975,11 @@
                         return;
                     }
 
+                    if (isProcessing) return;
+                    isProcessing = true;
+
                     socket.emit('start-game', { minutes: minutes, title: title }, function(res) {
+                        isProcessing = false;
                         if (res.success) {
                             toast('Oyun başlatıldı!');
                             document.getElementById('gameMinutes').value = '';
@@ -1896,7 +1991,16 @@
                 },
 
                 addTime: function(seconds) {
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
+                    if (isProcessing) return;
+                    isProcessing = true;
+
                     socket.emit('add-time', seconds, function(res) {
+                        isProcessing = false;
                         if (res.success) {
                             var mins = Math.floor(seconds / 60);
                             toast(mins + ' dakika eklendi');
@@ -1907,8 +2011,17 @@
                 },
 
                 endGame: function() {
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
                     if (confirm('Oyunu bitirmek istediğinize emin misiniz?')) {
+                        if (isProcessing) return;
+                        isProcessing = true;
+
                         socket.emit('end-game', function(res) {
+                            isProcessing = false;
                             if (res.success) {
                                 toast('Oyun bitirildi!');
                             } else {
