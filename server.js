@@ -12,6 +12,29 @@ const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '260678';
 
+// Helper: Get teams with clues and badges
+async function getTeamsWithDetails() {
+    const teams = await pool.query('SELECT * FROM teams ORDER BY created_at');
+
+    for (let team of teams.rows) {
+        // Get clues
+        const cluesResult = await pool.query(
+            'SELECT text, time FROM clues WHERE team_id = $1 ORDER BY created_at',
+            [team.id]
+        );
+        team.clues = cluesResult.rows;
+
+        // Get badges
+        const badgesResult = await pool.query(
+            'SELECT b.id, b.name, b.icon, b.color FROM badges b JOIN team_badges tb ON b.id = tb.badge_id WHERE tb.team_id = $1',
+            [team.id]
+        );
+        team.badges = badgesResult.rows;
+    }
+
+    return teams.rows;
+}
+
 // Static files
 app.use(express.static('public'));
 
@@ -46,8 +69,8 @@ io.on('connection', async (socket) => {
 
     // İlk bağlantıda teams listesini gönder
     try {
-        const teamsResult = await pool.query('SELECT * FROM teams ORDER BY created_at');
-        socket.emit('teams-update', teamsResult.rows);
+        const teams = await getTeamsWithDetails();
+        socket.emit('teams-update', teams);
     } catch (err) {
         console.error('Initial teams fetch error:', err);
         socket.emit('teams-update', []);
@@ -56,8 +79,8 @@ io.on('connection', async (socket) => {
     // Get all teams
     socket.on('get-teams', async (callback) => {
         try {
-            const result = await pool.query('SELECT * FROM teams ORDER BY created_at');
-            callback(result.rows);
+            const teams = await getTeamsWithDetails();
+            callback(teams);
         } catch (err) {
             console.error('Get teams error:', err);
             callback([]);
@@ -92,8 +115,8 @@ io.on('connection', async (socket) => {
 
             callback({ success: true, team });
 
-            const allTeams = await pool.query('SELECT * FROM teams ORDER BY created_at');
-            io.emit('teams-update', allTeams.rows);
+            const allTeams = await getTeamsWithDetails();
+            io.emit('teams-update', allTeams);
 
             console.log('Team created:', name);
         } catch (err) {
@@ -146,8 +169,8 @@ io.on('connection', async (socket) => {
             callback({ success: true });
             io.to(teamId).emit('clue-added', { text, time });
 
-            const allTeams = await pool.query('SELECT * FROM teams ORDER BY created_at');
-            io.emit('teams-update', allTeams.rows);
+            const allTeams = await getTeamsWithDetails();
+            io.emit('teams-update', allTeams);
 
             console.log('Clue added to team:', teamId);
         } catch (err) {
@@ -169,8 +192,8 @@ io.on('connection', async (socket) => {
             callback({ success: true });
             io.emit('score-changed', { teamId, teamName: team.name, amount, newScore: team.score });
 
-            const allTeams = await pool.query('SELECT * FROM teams ORDER BY created_at');
-            io.emit('teams-update', allTeams.rows);
+            const allTeams = await getTeamsWithDetails();
+            io.emit('teams-update', allTeams);
 
             console.log('Score updated:', team.name, amount);
         } catch (err) {
