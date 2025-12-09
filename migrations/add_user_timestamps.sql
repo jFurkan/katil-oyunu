@@ -8,7 +8,9 @@ UPDATE users SET created_at = NOW() WHERE created_at IS NULL;
 
 -- Kullanıcı son aktivite zamanını takip et
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_activity TIMESTAMP DEFAULT NOW();
-UPDATE users SET last_activity = NOW() WHERE last_activity IS NULL;
+-- Mevcut kullanıcılar için last_activity = created_at (kayıt tarihi)
+-- NOT: NOW() kullanmıyoruz çünkü eski kullanıcılar aktif görünürdü
+UPDATE users SET last_activity = created_at WHERE last_activity IS NULL;
 
 -- Index ekle (performans için)
 CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);

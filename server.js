@@ -8,6 +8,8 @@ const rateLimit = require('express-rate-limit');
 const crypto = require('crypto'); // UUID üretmek için
 const validator = require('validator'); // Input validation için
 const escapeHtml = require('escape-html'); // XSS koruması için
+const cookieParser = require('cookie-parser'); // Cookie yönetimi için
+const session = require('express-session'); // Session yönetimi için
 const { pool, initDatabase } = require('./database');
 
 const app = express();
@@ -69,6 +71,25 @@ app.use(limiter);
 // 3. Body size limits - Büyük payload saldırılarını önle
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+
+// 4. Cookie parser - Güvenli cookie yönetimi
+app.use(cookieParser());
+
+// 5. Session yönetimi - HTTP-only cookie ile güvenli oturum
+const sessionMiddleware = session({
+    secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,        // XSS koruması: JavaScript erişimi yok
+        secure: process.env.NODE_ENV === 'production', // HTTPS'te zorunlu
+        sameSite: 'strict',    // CSRF koruması
+        maxAge: 7 * 24 * 60 * 60 * 1000  // 7 gün (otomatik temizlik ile aynı)
+    },
+    name: 'sessionId'          // Varsayılan 'connect.sid' yerine özel isim
+});
+
+app.use(sessionMiddleware);
 
 // Statik dosyalar
 app.use(express.static(path.join(__dirname, 'public')));
@@ -488,7 +509,8 @@ class UserCleanup {
         try {
             const result = await pool.query(
                 `DELETE FROM users
-                 WHERE last_activity < NOW() - INTERVAL '${this.inactiveDays} days'
+                 WHERE last_activity IS NULL
+                    OR last_activity < NOW() - INTERVAL '${this.inactiveDays} days'
                  RETURNING id, nickname`
             );
 
@@ -520,6 +542,11 @@ class UserCleanup {
 }
 
 const userCleanup = new UserCleanup(7); // 7 günden eski kullanıcıları sil
+
+// WebSocket session middleware - HTTP session'ı Socket.io'da kullan
+io.use((socket, next) => {
+    sessionMiddleware(socket.request, {}, next);
+});
 
 // WebSocket güvenlik middleware'i
 io.use((socket, next) => {
@@ -635,6 +662,12 @@ io.on('connection', async (socket) => {
             // GÜVENLİK: Socket session'a userId kaydet
             socket.data.userId = userId;
 
+            // HTTP-only cookie'ye userId kaydet (güvenli oturum)
+            socket.request.session.userId = userId;
+            socket.request.session.save((err) => {
+                if (err) console.error('Session save error:', err);
+            });
+
             callback({ success: true, userId: userId, nickname: trimmedNick });
 
             // Tüm kullanıcılara güncel listeyi gönder
@@ -651,14 +684,27 @@ io.on('connection', async (socket) => {
     // Kullanıcı reconnect (sayfa yenilendiğinde)
     socket.on('reconnect-user', async (userId, callback) => {
         try {
+            // GÜVENLİK: Session'dan userId kontrolü (HTTP-only cookie)
+            const sessionUserId = socket.request.session.userId;
+
+            // Eğer session'da userId varsa, client'ın gönderdiği ile eşleşmeli
+            if (sessionUserId && sessionUserId !== userId) {
+                console.log('⚠️  Güvenlik: Session userId ile client userId uyuşmuyor');
+                callback({ success: false, error: 'Oturum uyuşmazlığı!' });
+                return;
+            }
+
+            // Session'daki veya client'ın gönderdiği userId'yi kullan
+            const finalUserId = sessionUserId || userId;
+
             // GÜVENLİK: userId validasyonu
-            if (!userId || typeof userId !== 'string') {
+            if (!finalUserId || typeof finalUserId !== 'string') {
                 callback({ success: false, error: 'Geçersiz kullanıcı ID!' });
                 return;
             }
 
             // Kullanıcının var olup olmadığını kontrol et
-            const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+            const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [finalUserId]);
 
             if (userResult.rows.length === 0) {
                 callback({ success: false, error: 'Kullanıcı bulunamadı!' });
@@ -668,14 +714,22 @@ io.on('connection', async (socket) => {
             // Kullanıcının socket_id'sini güncelle ve online yap
             await pool.query(
                 'UPDATE users SET socket_id = $1, online = TRUE WHERE id = $2',
-                [socket.id, userId]
+                [socket.id, finalUserId]
             );
 
             // GÜVENLİK: Socket session'a userId kaydet
-            socket.data.userId = userId;
+            socket.data.userId = finalUserId;
+
+            // HTTP-only cookie'ye userId kaydet (eğer yoksa)
+            if (!sessionUserId) {
+                socket.request.session.userId = finalUserId;
+                socket.request.session.save((err) => {
+                    if (err) console.error('Session save error:', err);
+                });
+            }
 
             // Son aktivite zamanını güncelle
-            await userCleanup.updateActivity(userId);
+            await userCleanup.updateActivity(finalUserId);
 
             callback({ success: true });
 

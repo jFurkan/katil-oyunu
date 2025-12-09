@@ -23,6 +23,7 @@ Gerçek zamanlı çok oyunculu dedektif oyunu.
 
 6. Environment Variables (ZORUNLU):
    - `ADMIN_PASSWORD` = güçlü bir şifre belirle (örn: rastgele 12+ karakter)
+   - `SESSION_SECRET` = rastgele 32+ karakter (cookie güvenliği için)
 
 7. "Create Web Service" tıkla
 
