@@ -84,24 +84,18 @@ async function getAllTeams() {
     const result = await pool.query(`
         SELECT t.*,
                COALESCE(
-                   json_agg(
-                       json_build_object('text', c.text, 'time', c.time)
-                       ORDER BY c.id
-                   ) FILTER (WHERE c.id IS NOT NULL),
+                   (SELECT json_agg(json_build_object('text', text, 'time', time) ORDER BY id)
+                    FROM clues WHERE team_id = t.id),
                    '[]'
                ) as clues,
                COALESCE(
-                   json_agg(
-                       json_build_object('id', b.id, 'name', b.name, 'icon', b.icon, 'color', b.color)
-                       ORDER BY b.id
-                   ) FILTER (WHERE b.id IS NOT NULL),
+                   (SELECT json_agg(json_build_object('id', b2.id, 'name', b2.name, 'icon', b2.icon, 'color', b2.color) ORDER BY b2.id)
+                    FROM team_badges tb2
+                    JOIN badges b2 ON tb2.badge_id = b2.id
+                    WHERE tb2.team_id = t.id),
                    '[]'
                ) as badges
         FROM teams t
-        LEFT JOIN clues c ON t.id = c.team_id
-        LEFT JOIN team_badges tb ON t.id = tb.team_id
-        LEFT JOIN badges b ON tb.badge_id = b.id
-        GROUP BY t.id
         ORDER BY t.created_at
     `);
     return result.rows;
@@ -184,14 +178,25 @@ io.on('connection', async (socket) => {
             const color = data.color || '#3b82f6';
 
             // Takım oluştur
-            const result = await pool.query(
-                'INSERT INTO teams (id, name, password, score, avatar, color) VALUES ($1, $2, $3, 0, $4, $5) RETURNING *',
+            await pool.query(
+                'INSERT INTO teams (id, name, password, score, avatar, color) VALUES ($1, $2, $3, 0, $4, $5)',
                 [teamId, data.name, data.password, avatar, color]
             );
 
-            const team = result.rows[0];
-            team.clues = [];
-            team.badges = [];
+            // Tam team objesini badges ve clues ile birlikte al
+            const teamResult = await pool.query(`
+                SELECT t.*,
+                       COALESCE(json_agg(DISTINCT jsonb_build_object('text', c.text, 'time', c.time)) FILTER (WHERE c.id IS NOT NULL), '[]') as clues,
+                       COALESCE(json_agg(DISTINCT jsonb_build_object('id', b.id, 'name', b.name, 'icon', b.icon, 'color', b.color)) FILTER (WHERE b.id IS NOT NULL), '[]') as badges
+                FROM teams t
+                LEFT JOIN clues c ON t.id = c.team_id
+                LEFT JOIN team_badges tb ON t.id = tb.team_id
+                LEFT JOIN badges b ON tb.badge_id = b.id
+                WHERE t.id = $1
+                GROUP BY t.id
+            `, [teamId]);
+
+            const team = teamResult.rows[0];
 
             callback({ success: true, team: team });
 
@@ -210,16 +215,12 @@ io.on('connection', async (socket) => {
             const result = await pool.query(`
                 SELECT t.*,
                        COALESCE(
-                           json_agg(
-                               json_build_object('text', c.text, 'time', c.time)
-                               ORDER BY c.created_at
-                           ) FILTER (WHERE c.id IS NOT NULL),
+                           (SELECT json_agg(json_build_object('text', text, 'time', time) ORDER BY created_at)
+                            FROM clues WHERE team_id = t.id),
                            '[]'
                        ) as clues
                 FROM teams t
-                LEFT JOIN clues c ON t.id = c.team_id
                 WHERE t.id = $1
-                GROUP BY t.id
             `, [data.teamId]);
 
             const team = result.rows[0];
@@ -248,16 +249,12 @@ io.on('connection', async (socket) => {
             const result = await pool.query(`
                 SELECT t.*,
                        COALESCE(
-                           json_agg(
-                               json_build_object('text', c.text, 'time', c.time)
-                               ORDER BY c.created_at
-                           ) FILTER (WHERE c.id IS NOT NULL),
+                           (SELECT json_agg(json_build_object('text', text, 'time', time) ORDER BY created_at)
+                            FROM clues WHERE team_id = t.id),
                            '[]'
                        ) as clues
                 FROM teams t
-                LEFT JOIN clues c ON t.id = c.team_id
                 WHERE t.id = $1
-                GROUP BY t.id
             `, [teamId]);
 
             callback(result.rows[0] || null);
@@ -293,16 +290,12 @@ io.on('connection', async (socket) => {
             const teamResult = await pool.query(`
                 SELECT t.*,
                        COALESCE(
-                           json_agg(
-                               json_build_object('text', c.text, 'time', c.time)
-                               ORDER BY c.created_at
-                           ) FILTER (WHERE c.id IS NOT NULL),
+                           (SELECT json_agg(json_build_object('text', text, 'time', time) ORDER BY created_at)
+                            FROM clues WHERE team_id = t.id),
                            '[]'
                        ) as clues
                 FROM teams t
-                LEFT JOIN clues c ON t.id = c.team_id
                 WHERE t.id = $1
-                GROUP BY t.id
             `, [data.teamId]);
 
             io.to(data.teamId).emit('team-update', teamResult.rows[0]);
@@ -353,16 +346,12 @@ io.on('connection', async (socket) => {
             const updatedTeamResult = await pool.query(`
                 SELECT t.*,
                        COALESCE(
-                           json_agg(
-                               json_build_object('text', c.text, 'time', c.time)
-                               ORDER BY c.created_at
-                           ) FILTER (WHERE c.id IS NOT NULL),
+                           (SELECT json_agg(json_build_object('text', text, 'time', time) ORDER BY created_at)
+                            FROM clues WHERE team_id = t.id),
                            '[]'
                        ) as clues
                 FROM teams t
-                LEFT JOIN clues c ON t.id = c.team_id
                 WHERE t.id = $1
-                GROUP BY t.id
             `, [data.teamId]);
 
             io.to(data.teamId).emit('team-update', updatedTeamResult.rows[0]);
