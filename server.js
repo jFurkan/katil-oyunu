@@ -749,15 +749,14 @@ async function startServer() {
         // Veritabanını başlat
         await initDatabase();
 
-        // Sunucuyu başlat
-        server.listen(PORT, () => {
+        // Sunucuyu başlat (0.0.0.0 Railway için gerekli)
+        server.listen(PORT, '0.0.0.0', () => {
             console.log(`
 ╔════════════════════════════════════════╗
 ║         KATİL KİM? OYUNU               ║
 ║────────────────────────────────────────║
 ║  Sunucu çalışıyor!                     ║
-║  http://localhost:${PORT}                  ║
-║                                        ║
+║  Port: ${PORT}                             ║
 ║  Admin Şifresi: ${ADMIN_PASSWORD}                 ║
 ╚════════════════════════════════════════╝
             `);
