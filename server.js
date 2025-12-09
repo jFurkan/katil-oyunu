@@ -760,6 +760,7 @@ async function startServer() {
 ║  Admin Şifresi: ${ADMIN_PASSWORD}                 ║
 ╚════════════════════════════════════════╝
             `);
+            console.log('✓ Server ready and listening on', server.address());
         });
     } catch (err) {
         console.error('Sunucu başlatılamadı:', err);
