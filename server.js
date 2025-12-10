@@ -1775,8 +1775,16 @@ io.on('connection', async (socket) => {
     });
 
     // Kullanıcı logout (çıkış)
-    socket.on('logout-user', (callback) => {
+    socket.on('logout-user', async (callback) => {
         try {
+            const userId = socket.data.userId;
+
+            // Kullanıcıyı veritabanında offline yap (sayfa yenilemeden çıkış yapıldığında)
+            if (userId) {
+                await pool.query('UPDATE users SET online = FALSE WHERE id = $1', [userId]);
+                console.log('✓ Kullanıcı offline yapıldı:', userId);
+            }
+
             // GÜVENLİK: Session'ı temizle (HTTP-only cookie)
             socket.request.session.destroy((err) => {
                 if (err) {
@@ -1787,6 +1795,10 @@ io.on('connection', async (socket) => {
                 console.log('✓ Kullanıcı çıkış yaptı:', socket.id);
                 if (callback) callback({ success: true });
             });
+
+            // Kullanıcı listesini güncelle
+            const users = await getUsersByTeam();
+            io.emit('users-update', users);
         } catch (err) {
             console.error('Logout hatası:', err);
             if (callback) callback({ success: false });
