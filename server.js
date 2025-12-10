@@ -660,38 +660,42 @@ io.on('connection', async (socket) => {
 
             // UX İYİLEŞTİRME: Aynı nickname var mı kontrol et - FOR UPDATE ile lock
             const userCheckResult = await client.query(
-                'SELECT id, online FROM users WHERE LOWER(nickname) = LOWER($1) FOR UPDATE',
+                'SELECT id, online, socket_id FROM users WHERE LOWER(nickname) = LOWER($1) FOR UPDATE',
                 [trimmedNick]
             );
 
             if (userCheckResult.rows.length > 0) {
                 const existingUser = userCheckResult.rows[0];
 
-                if (existingUser.online) {
-                    // Kullanıcı hala online - kullanılamaz
+                // UX İYİLEŞTİRME: Online ama farklı socket_id ise (sayfa yenileme/timeout)
+                const isDifferentSocket = existingUser.socket_id !== socket.id;
+
+                if (existingUser.online && !isDifferentSocket) {
+                    // Kullanıcı gerçekten online ve aynı socket - kullanılamaz
                     await client.query('ROLLBACK');
                     callback({ success: false, error: 'Bu nick kullanımda!' });
                     return;
+                }
+
+                // Kullanıcı offline VEYA farklı socket (timeout/yenileme)
+                // GÜVENLİK: Aynı IP'den mi kontrol et
+                const ipCheckResult = await client.query(
+                    'SELECT COUNT(*) FROM ip_activity WHERE ip_address = $1 AND action = $2 AND created_at > NOW() - INTERVAL \'24 hours\'',
+                    [clientIP, 'register-user']
+                );
+
+                const sameIPRegistration = parseInt(ipCheckResult.rows[0].count) > 0;
+
+                if (sameIPRegistration) {
+                    // Aynı IP'den 24 saat içinde kayıt var - bu muhtemelen aynı kişi
+                    await client.query('DELETE FROM users WHERE id = $1', [existingUser.id]);
+                    console.log('✓ Kullanıcı kaydı yeniden oluşturuluyor:', trimmedNick, '- IP:', clientIP, '- Sebep:', existingUser.online ? 'timeout/yenileme' : 'offline');
+                    // Yeni kayıt oluşturulacak (kod devam edecek)
                 } else {
-                    // GÜVENLİK: Kullanıcı offline - aynı IP'den mi kontrol et
-                    const ipCheckResult = await client.query(
-                        'SELECT COUNT(*) FROM ip_activity WHERE ip_address = $1 AND action = $2 AND created_at > NOW() - INTERVAL \'24 hours\'',
-                        [clientIP, 'register-user']
-                    );
-
-                    const sameIPRegistration = parseInt(ipCheckResult.rows[0].count) > 0;
-
-                    if (sameIPRegistration) {
-                        // Aynı IP'den 24 saat içinde kayıt var - bu muhtemelen aynı kişi
-                        await client.query('DELETE FROM users WHERE id = $1', [existingUser.id]);
-                        console.log('✓ Offline kullanıcı kaydı yeniden oluşturuluyor (aynı IP):', trimmedNick, '- IP:', clientIP);
-                        // Yeni kayıt oluşturulacak (kod devam edecek)
-                    } else {
-                        // Farklı IP'den biri bu nickname'i kullanmaya çalışıyor
-                        await client.query('ROLLBACK');
-                        callback({ success: false, error: 'Bu nick başka bir IP adresinden kullanıldı!' });
-                        return;
-                    }
+                    // Farklı IP'den biri bu nickname'i kullanmaya çalışıyor
+                    await client.query('ROLLBACK');
+                    callback({ success: false, error: 'Bu nick başka bir IP adresinden kullanıldı!' });
+                    return;
                 }
             }
 
