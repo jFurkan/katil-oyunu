@@ -577,9 +577,14 @@ io.use((socket, next) => {
 io.on('connection', async (socket) => {
     console.log('✓ Kullanıcı bağlandı:', socket.id, '- Toplam:', io.engine.clientsCount);
 
-    // Session tracking - güvenlik için
-    socket.data.userId = null;      // Kullanıcının UUID'si
-    socket.data.isAdmin = false;    // Admin mi?
+    // Session tracking - güvenlik için (HTTP-only session'dan oku)
+    socket.data.userId = socket.request.session.userId || null;
+    socket.data.isAdmin = socket.request.session.isAdmin || false;
+
+    // Admin oturumu varsa logla
+    if (socket.data.isAdmin) {
+        console.log('✓ Admin oturumu devam ediyor:', socket.id);
+    }
 
     // Takım listesini gönder
     const teams = await getAllTeams();
@@ -636,15 +641,39 @@ io.on('connection', async (socket) => {
             }
             const trimmedNick = nickValidation.value;
 
-            // Aynı nickname var mı kontrol et (case insensitive)
-            const checkResult = await pool.query(
-                'SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(nickname) = LOWER($1))',
+            // UX İYİLEŞTİRME: Aynı nickname var mı kontrol et - offline ise yeniden kullanılabilir
+            const userCheckResult = await pool.query(
+                'SELECT id, online FROM users WHERE LOWER(nickname) = LOWER($1)',
                 [trimmedNick]
             );
 
-            if (checkResult.rows[0].exists) {
-                callback({ success: false, error: 'Bu nick kullanımda!' });
-                return;
+            if (userCheckResult.rows.length > 0) {
+                const existingUser = userCheckResult.rows[0];
+
+                if (existingUser.online) {
+                    // Kullanıcı hala online - kullanılamaz
+                    callback({ success: false, error: 'Bu nick kullanımda!' });
+                    return;
+                } else {
+                    // GÜVENLİK: Kullanıcı offline - aynı IP'den mi kontrol et
+                    const ipCheckResult = await pool.query(
+                        'SELECT COUNT(*) FROM ip_activity WHERE ip_address = $1 AND action = $2 AND created_at > NOW() - INTERVAL \'24 hours\'',
+                        [clientIP, 'register-user']
+                    );
+
+                    const sameIPRegistration = parseInt(ipCheckResult.rows[0].count) > 0;
+
+                    if (sameIPRegistration) {
+                        // Aynı IP'den 24 saat içinde kayıt var - bu muhtemelen aynı kişi
+                        await pool.query('DELETE FROM users WHERE id = $1', [existingUser.id]);
+                        console.log('✓ Offline kullanıcı kaydı yeniden oluşturuluyor (aynı IP):', trimmedNick, '- IP:', clientIP);
+                        // Yeni kayıt oluşturulacak (kod devam edecek)
+                    } else {
+                        // Farklı IP'den biri bu nickname'i kullanmaya çalışıyor
+                        callback({ success: false, error: 'Bu nick başka bir IP adresinden kullanıldı!' });
+                        return;
+                    }
+                }
             }
 
             // Güvenli UUID üret (sayfa yenilendiğinde değişmez)
@@ -659,85 +688,89 @@ io.on('connection', async (socket) => {
             // IP aktivitesini kaydet (başarılı kayıt)
             await botProtection.recordActivity(clientIP, 'register-user');
 
-            // GÜVENLİK: Socket session'a userId kaydet
-            socket.data.userId = userId;
+            // GÜVENLİK: Session Fixation saldırısını önle - yeni session oluştur
+            socket.request.session.regenerate((err) => {
+                if (err) {
+                    console.error('Session regenerate error:', err);
+                    callback({ success: false, error: 'Oturum oluşturulamadı!' });
+                    return;
+                }
 
-            // HTTP-only cookie'ye userId kaydet (güvenli oturum)
-            socket.request.session.userId = userId;
-            socket.request.session.save((err) => {
-                if (err) console.error('Session save error:', err);
+                // GÜVENLİK: Socket session'a userId kaydet
+                socket.data.userId = userId;
+
+                // HTTP-only cookie'ye userId kaydet (güvenli oturum)
+                socket.request.session.userId = userId;
+                socket.request.session.save((err) => {
+                    if (err) {
+                        console.error('Session save error:', err);
+                        callback({ success: false, error: 'Oturum kaydedilemedi!' });
+                        return;
+                    }
+
+                    callback({ success: true, userId: userId, nickname: trimmedNick });
+
+                    // Tüm kullanıcılara güncel listeyi gönder
+                    getUsersByTeam().then(users => {
+                        io.emit('users-update', users);
+                    });
+
+                    console.log('Kullanıcı kaydedildi:', trimmedNick, '- IP:', clientIP);
+                });
             });
-
-            callback({ success: true, userId: userId, nickname: trimmedNick });
-
-            // Tüm kullanıcılara güncel listeyi gönder
-            const users = await getUsersByTeam();
-            io.emit('users-update', users);
-
-            console.log('Kullanıcı kaydedildi:', trimmedNick, '- IP:', clientIP);
         } catch (err) {
             console.error('Kullanıcı kayıt hatası:', err);
             callback({ success: false, error: 'Kayıt oluşturulamadı!' });
         }
     });
 
-    // Kullanıcı reconnect (sayfa yenilendiğinde)
-    socket.on('reconnect-user', async (userId, callback) => {
+    // Kullanıcı reconnect (sayfa yenilendiğinde) - Session'dan otomatik oku
+    socket.on('reconnect-user', async (callback) => {
         try {
-            // GÜVENLİK: Session'dan userId kontrolü (HTTP-only cookie)
+            // GÜVENLİK: Sadece session'dan userId oku (HTTP-only cookie)
             const sessionUserId = socket.request.session.userId;
 
-            // Eğer session'da userId varsa, client'ın gönderdiği ile eşleşmeli
-            if (sessionUserId && sessionUserId !== userId) {
-                console.log('⚠️  Güvenlik: Session userId ile client userId uyuşmuyor');
-                callback({ success: false, error: 'Oturum uyuşmazlığı!' });
-                return;
-            }
-
-            // Session'daki veya client'ın gönderdiği userId'yi kullan
-            const finalUserId = sessionUserId || userId;
-
-            // GÜVENLİK: userId validasyonu
-            if (!finalUserId || typeof finalUserId !== 'string') {
-                callback({ success: false, error: 'Geçersiz kullanıcı ID!' });
+            if (!sessionUserId) {
+                callback({ success: false, error: 'Oturum bulunamadı!' });
                 return;
             }
 
             // Kullanıcının var olup olmadığını kontrol et
-            const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [finalUserId]);
+            const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [sessionUserId]);
 
             if (userResult.rows.length === 0) {
                 callback({ success: false, error: 'Kullanıcı bulunamadı!' });
                 return;
             }
 
+            const user = userResult.rows[0];
+
             // Kullanıcının socket_id'sini güncelle ve online yap
             await pool.query(
                 'UPDATE users SET socket_id = $1, online = TRUE WHERE id = $2',
-                [socket.id, finalUserId]
+                [socket.id, sessionUserId]
             );
 
             // GÜVENLİK: Socket session'a userId kaydet
-            socket.data.userId = finalUserId;
-
-            // HTTP-only cookie'ye userId kaydet (eğer yoksa)
-            if (!sessionUserId) {
-                socket.request.session.userId = finalUserId;
-                socket.request.session.save((err) => {
-                    if (err) console.error('Session save error:', err);
-                });
-            }
+            socket.data.userId = sessionUserId;
 
             // Son aktivite zamanını güncelle
-            await userCleanup.updateActivity(finalUserId);
+            await userCleanup.updateActivity(sessionUserId);
 
-            callback({ success: true });
+            // Kullanıcı bilgilerini döndür (nickname dahil)
+            callback({
+                success: true,
+                userId: user.id,
+                nickname: user.nickname,
+                teamId: user.team_id,
+                isCaptain: user.is_captain
+            });
 
             // Kullanıcı listesini güncelle
             const users = await getUsersByTeam();
             io.emit('users-update', users);
 
-            console.log('Kullanıcı reconnect edildi:', userResult.rows[0].nickname, '- Yeni socket:', socket.id);
+            console.log('Kullanıcı reconnect edildi:', user.nickname, '- Yeni socket:', socket.id);
         } catch (err) {
             console.error('Kullanıcı reconnect hatası:', err);
             callback({ success: false, error: 'Reconnect başarısız!' });
@@ -1008,10 +1041,33 @@ io.on('connection', async (socket) => {
     // Admin şifre kontrolü
     socket.on('admin-login', (password, callback) => {
         if (password === ADMIN_PASSWORD) {
-            // GÜVENLİK: Admin session'ı aktif et
-            socket.data.isAdmin = true;
-            callback({ success: true });
-            console.log('✓ Admin girişi yapıldı:', socket.id);
+            // GÜVENLİK: Session Fixation saldırısını önle - admin girişinde yeni session oluştur
+            socket.request.session.regenerate((err) => {
+                if (err) {
+                    console.error('Session regenerate error:', err);
+                    callback({ success: false, error: 'Oturum oluşturulamadı!' });
+                    return;
+                }
+
+                // GÜVENLİK: Admin session'ı aktif et (HTTP-only session'a kaydet)
+                socket.data.isAdmin = true;
+                socket.request.session.isAdmin = true;
+
+                // Eğer userId varsa onu da yeni session'a kopyala
+                if (socket.data.userId) {
+                    socket.request.session.userId = socket.data.userId;
+                }
+
+                socket.request.session.save((err) => {
+                    if (err) {
+                        console.error('Admin session save error:', err);
+                        callback({ success: false, error: 'Session kaydedilemedi!' });
+                    } else {
+                        callback({ success: true });
+                        console.log('✓ Admin girişi yapıldı:', socket.id);
+                    }
+                });
+            });
         } else {
             callback({ success: false, error: 'Yanlış şifre!' });
             console.log('⚠️  Başarısız admin girişi:', socket.id);
@@ -1686,6 +1742,25 @@ io.on('connection', async (socket) => {
         } catch (err) {
             console.error('IP log sıfırlama hatası:', err);
             callback({ success: false, error: 'Loglar sıfırlanamadı!' });
+        }
+    });
+
+    // Kullanıcı logout (çıkış)
+    socket.on('logout-user', (callback) => {
+        try {
+            // GÜVENLİK: Session'ı temizle (HTTP-only cookie)
+            socket.request.session.destroy((err) => {
+                if (err) {
+                    console.error('Session destroy error:', err);
+                }
+                socket.data.userId = null;
+                socket.data.isAdmin = false;
+                console.log('✓ Kullanıcı çıkış yaptı:', socket.id);
+                if (callback) callback({ success: true });
+            });
+        } catch (err) {
+            console.error('Logout hatası:', err);
+            if (callback) callback({ success: false });
         }
     });
 

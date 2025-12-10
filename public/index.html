@@ -942,7 +942,7 @@
             </header>
 
             <!-- Oyuncu Menüsü -->
-            <div style="max-width: 400px; margin: 0 auto;">
+            <div id="lobbyMenu" style="max-width: 400px; margin: 0 auto;">
                 <button class="btn" onclick="GAME.showCreateForm()">🎭 Yeni Takım Oluştur</button>
                 <button class="btn" onclick="GAME.showJoinForm()">🔑 Takıma Giriş Yap</button>
                 <button class="btn" onclick="GAME.showScoreboard()">🏆 Skor Tablosu</button>
@@ -954,7 +954,7 @@
             </div>
 
             <!-- Emeği Geçenler -->
-            <div class="credits">
+            <div id="lobbyCredits" class="credits">
                 <h3>Emeği Geçenler</h3>
                 <div class="credits-list" id="mainCreditsList">
                     <div class="credit-item">Furkan</div>
@@ -1085,8 +1085,8 @@
                 <button class="back-btn" onclick="GAME.goLobby()">Çıkış</button>
             </div>
 
-            <!-- Admin Menü Butonları -->
-            <div style="display:grid; grid-template-columns:repeat(6, 1fr); gap:15px; margin-bottom:30px;">
+            <!-- Admin Menü Butonları - RESPONSIVE -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:30px;">
                 <button class="btn btn-primary" onclick="ADMIN.showSection('game')">⏱️ Oyun Kontrolü</button>
                 <button class="btn" onclick="ADMIN.showSection('users')">👤 Kullanıcılar</button>
                 <button class="btn" onclick="ADMIN.showSection('scoring')">🎯 Puanlama</button>
@@ -1440,51 +1440,29 @@
             var socketConnected = false; // Bağlantı durumu
             var teams = [];
             var users = [];
-            var currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            var currentUser = null; // GÜVENLİK: localStorage yerine sadece memory'de tut
             var credits = [
                 { id: 'credit_1', name: 'Furkan', content: 'Oyunun tasarımı ve geliştirmesi' },
                 { id: 'credit_2', name: 'Claude', content: 'Kodlama ve teknik destek' }
             ];
-            var currentTeamId = localStorage.getItem('currentTeamId');
+            var currentTeamId = null; // GÜVENLİK: localStorage yerine server'dan al
             var selectedJoinId = null;
             var isProcessing = false;
+
+            // Navigation history - geri butonları için
+            var pageHistory = [];
 
             // Socket bağlantı event'leri
             socket.on('connect', function() {
                 socketConnected = true;
                 console.log('Socket bağlantısı kuruldu');
 
-                // Sayfa yenilendiyse veya bağlantı kopup tekrar bağlandıysa, kullanıcı bilgisini restore et
-                if (currentUser && currentUser.userId) {
-                    socket.emit('reconnect-user', currentUser.userId, function(res) {
-                        if (res.success) {
-                            console.log('Kullanıcı reconnect edildi:', currentUser.nickname);
-                            // Takım varsa takım bilgilerini al
-                            if (currentTeamId) {
-                                socket.emit('get-team', currentTeamId, function(team) {
-                                    if (!team) {
-                                        // Takım silinmiş
-                                        currentTeamId = null;
-                                        localStorage.removeItem('currentTeamId');
-                                        console.log('Takım bulunamadı, temizlendi');
-                                    }
-                                });
-                            }
-                        } else {
-                            // Kullanıcı veritabanında bulunamadı (silinmiş olabilir)
-                            console.log('Kullanıcı reconnect edilemedi, temizleniyor');
-                            currentUser = null;
-                            currentTeamId = null;
-                            localStorage.removeItem('currentUser');
-                            localStorage.removeItem('currentTeamId');
-                            updateCurrentUserDisplay();
-                            if (document.getElementById('pgNickname').classList.contains('active') === false) {
-                                showPage('pgNickname');
-                                toast('Oturumunuz sonlanmış. Lütfen tekrar giriş yapın.', true);
-                            }
-                        }
-                    });
-                }
+                // UX İYİLEŞTİRME: Her zaman nickname sayfasında başla
+                currentUser = null;
+                currentTeamId = null;
+                updateCurrentUserDisplay();
+                showPage('pgNickname', false); // History'ye ekleme
+                console.log('Giriş sayfasına yönlendirildi');
             });
 
             socket.on('disconnect', function() {
@@ -1531,9 +1509,43 @@
                 setTimeout(function() { t.className = ''; }, 2500);
             }
 
-            function showPage(id) {
+            function showPage(id, addToHistory = true) {
+                // Mevcut aktif sayfayı bul
+                var currentPage = document.querySelector('.page.active');
+                var currentPageId = currentPage ? currentPage.id : null;
+
+                // Eğer aynı sayfaya geçiş yapılıyorsa, history'ye ekleme
+                if (currentPageId === id) {
+                    return;
+                }
+
+                // History'ye ekle (geri butonları için)
+                if (addToHistory && currentPageId) {
+                    pageHistory.push(currentPageId);
+                    // Max 10 sayfa tutulur (memory overflow önleme)
+                    if (pageHistory.length > 10) {
+                        pageHistory.shift();
+                    }
+                }
+
+                // Sayfaları değiştir
                 document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
                 document.getElementById(id).classList.add('active');
+            }
+
+            // Geri git fonksiyonu
+            function goBack() {
+                if (pageHistory.length > 0) {
+                    var previousPage = pageHistory.pop();
+                    showPage(previousPage, false); // History'ye ekleme
+                } else {
+                    // History yoksa lobby'ye git
+                    if (currentUser) {
+                        showPage('pgLobby', false);
+                    } else {
+                        showPage('pgNickname', false);
+                    }
+                }
             }
 
             function updateCurrentUserDisplay() {
@@ -1549,8 +1561,17 @@
             }
 
             // Global Fonksiyonlar (HTML onclick için)
-            window.adminScore = function(teamId, amount) {
+            window.adminScore = function(teamId, amount, teamName) {
                 if (isProcessing) return;
+
+                // GÜVENLİK: Büyük puan değişiklikleri için onay iste (±50 ve üstü)
+                if (Math.abs(amount) >= 50) {
+                    var message = teamName + ' takımına ' + (amount > 0 ? '+' : '') + amount + ' puan vermek istiyor musunuz?';
+                    if (!confirm(message)) {
+                        return;
+                    }
+                }
+
                 isProcessing = true;
                 socket.emit('change-score', { teamId: teamId, amount: amount }, function(res) {
                     isProcessing = false;
@@ -1603,8 +1624,8 @@
                     socket.emit('register-user', nickname, function(res) {
                         isProcessing = false;
                         if (res.success) {
+                            // GÜVENLİK: localStorage'a kaydetme, sadece memory'de tut
                             currentUser = { userId: res.userId, nickname: res.nickname };
-                            localStorage.setItem('currentUser', JSON.stringify(currentUser));
                             updateCurrentUserDisplay();
                             showPage('pgLobby');
                             toast('Hoşgeldin, ' + res.nickname + '!');
@@ -1616,27 +1637,31 @@
 
                 logout: function() {
                     if (confirm('Çıkış yapmak istediğinize emin misiniz?')) {
-                        // LocalStorage'ı temizle
+                        // GÜVENLİK: Session'ı temizle
                         currentUser = null;
                         currentTeamId = null;
-                        localStorage.removeItem('currentUser');
-                        localStorage.removeItem('currentTeamId');
 
-                        // Nick giriş sayfasına yönlendir
-                        showPage('pgNickname');
-                        updateCurrentUserDisplay();
-                        toast('Çıkış yapıldı.');
+                        // Server'a logout isteği gönder (session'ı temizle)
+                        socket.emit('logout-user', function() {
+                            // Nick giriş sayfasına yönlendir
+                            showPage('pgNickname');
+                            updateCurrentUserDisplay();
+                            toast('Çıkış yapıldı.');
+                        });
                     }
                 }
             };
 
             window.GAME = {
                 backToMain: function() {
-                    // Ana sayfaya dön (pgNickname)
-                    showPage('pgNickname');
                     // Açık formları kapat
                     document.getElementById('createForm').style.display = 'none';
                     document.getElementById('joinForm').style.display = 'none';
+                    // Lobby menüsünü göster
+                    document.getElementById('lobbyMenu').style.display = 'block';
+                    document.getElementById('lobbyCredits').style.display = 'block';
+                    // UX İYİLEŞTİRME: Geri git - bir önceki sayfaya dön
+                    goBack();
                 },
                 showAdminLoginForm: function() {
                     // Admin şifre modalını göster
@@ -1645,13 +1670,24 @@
                     document.getElementById('inpPass').focus();
                 },
                 showCreateForm: function() {
+                    // UX İYİLEŞTİRME: Lobby menüsünü gizle, sadece formu göster
+                    document.getElementById('lobbyMenu').style.display = 'none';
+                    document.getElementById('lobbyCredits').style.display = 'none';
                     document.getElementById('createForm').style.display = 'block';
                     document.getElementById('joinForm').style.display = 'none';
                     CUSTOMIZE.init(); // Avatar ve renk seçiciyi başlat
                     document.getElementById('inpNewTeam').focus();
                 },
-                hideCreateForm: function() { document.getElementById('createForm').style.display = 'none'; },
+                hideCreateForm: function() {
+                    document.getElementById('createForm').style.display = 'none';
+                    // Lobby menüsünü geri göster
+                    document.getElementById('lobbyMenu').style.display = 'block';
+                    document.getElementById('lobbyCredits').style.display = 'block';
+                },
                 showJoinForm: function() {
+                    // UX İYİLEŞTİRME: Lobby menüsünü gizle, sadece takım listesini göster
+                    document.getElementById('lobbyMenu').style.display = 'none';
+                    document.getElementById('lobbyCredits').style.display = 'none';
                     document.getElementById('joinForm').style.display = 'block';
                     document.getElementById('createForm').style.display = 'none';
                     // Takım listesini göster, şifre kısmını gizle
@@ -1666,6 +1702,9 @@
                     document.getElementById('joinPasswordSection').style.display = 'none';
                     document.getElementById('inpJoinPassword').value = '';
                     selectedJoinId = null;
+                    // Lobby menüsünü geri göster
+                    document.getElementById('lobbyMenu').style.display = 'block';
+                    document.getElementById('lobbyCredits').style.display = 'block';
                 },
                 backToTeamList: function() {
                     document.getElementById('joinTeamList').style.display = 'block';
@@ -1701,8 +1740,8 @@
                     }, function(res) {
                         isProcessing = false;
                         if (res.success) {
+                            // GÜVENLİK: localStorage yerine sadece memory'de tut
                             currentTeamId = res.team.id;
-                            localStorage.setItem('currentTeamId', currentTeamId);
                             GAME.hideCreateForm();
                             document.getElementById('inpNewTeam').value = '';
                             document.getElementById('inpNewTeamPassword').value = '';
@@ -1742,8 +1781,8 @@
                     socket.emit('join-team', { teamId: selectedJoinId, password: password, userId: currentUser.userId }, function(res) {
                         isProcessing = false;
                         if (res.success) {
+                            // GÜVENLİK: localStorage yerine sadece memory'de tut
                             currentTeamId = selectedJoinId;
-                            localStorage.setItem('currentTeamId', currentTeamId);
                             GAME.hideJoinForm();
                             document.getElementById('inpJoinPassword').value = '';
                             showPage('pgTeam');
@@ -1772,7 +1811,6 @@
                 },
                 exitTeam: function() {
                     currentTeamId = null;
-                    localStorage.removeItem('currentTeamId');
                     showPage('pgLobby');
                 },
                 hidePassModal: function() { document.getElementById('passModal').classList.remove('show'); },
@@ -1799,9 +1837,8 @@
                     });
                 },
                 goLobby: function() {
+                    // UX İYİLEŞTİRME: Admin panelinden geri - lobby'ye dön
                     showPage('pgLobby');
-                    // Ana menüye dön (oyuncu menüsünü gizle)
-                    this.backToMain();
                 },
                 showScoreboard: function() { showPage('pgScoreboard'); renderScoreboard(); },
                 showNotifications: function() { showPage('pgNotifications'); NOTIF.render(); },
@@ -2506,10 +2543,10 @@
                         </div>
                         <div class="card-body">
                             <div class="controls-section">
-                                <button class="ctrl-btn btn-p10" onclick="adminScore('${t.id}', 10)">+10</button>
-                                <button class="ctrl-btn btn-p5" onclick="adminScore('${t.id}', 5)">+5</button>
-                                <button class="ctrl-btn btn-m5" onclick="adminScore('${t.id}', -5)">-5</button>
-                                <button class="ctrl-btn btn-m10" onclick="adminScore('${t.id}', -10)">-10</button>
+                                <button class="ctrl-btn btn-p10" onclick="adminScore('${t.id}', 10, '${safeName}')">+10</button>
+                                <button class="ctrl-btn btn-p5" onclick="adminScore('${t.id}', 5, '${safeName}')">+5</button>
+                                <button class="ctrl-btn btn-m5" onclick="adminScore('${t.id}', -5, '${safeName}')">-5</button>
+                                <button class="ctrl-btn btn-m10" onclick="adminScore('${t.id}', -10, '${safeName}')">-10</button>
                             </div>
 
                             <div class="clues-section" id="clues_${t.id}">
@@ -2766,7 +2803,6 @@
             socket.on('team-deleted', function(id) {
                 if (currentTeamId === id) {
                     currentTeamId = null;
-                    localStorage.removeItem('currentTeamId');
                     showPage('pgLobby');
                     toast('Takım silindi', true);
                 }
@@ -2777,7 +2813,6 @@
                 var isInAdminPanel = document.getElementById('pgAdmin').classList.contains('active');
                 if (!isInAdminPanel) {
                     currentTeamId = null;
-                    localStorage.removeItem('currentTeamId');
                     showPage('pgLobby');
                 }
             });
@@ -2894,11 +2929,9 @@
 
             // Kullanıcı silindi (admin tarafından)
             socket.on('user-deleted', function() {
-                // LocalStorage'ı temizle
+                // GÜVENLİK: Session temizliği
                 currentUser = null;
                 currentTeamId = null;
-                localStorage.removeItem('currentUser');
-                localStorage.removeItem('currentTeamId');
 
                 // Nick giriş sayfasına yönlendir
                 showPage('pgNickname');
@@ -2908,26 +2941,17 @@
 
             // Init
             window.onload = function() {
+                // UX İYİLEŞTİRME: Her zaman temiz bir başlangıç
+                currentUser = null;
+                currentTeamId = null;
+                pageHistory = [];
+
                 NOTIF.updateBadge(); // Bildirim badge'ini güncelle
                 renderMainCredits(); // Ana sayfa emeği geçenler listesini render et
                 updateCurrentUserDisplay(); // Kullanıcı bilgisi display'ini güncelle
 
-                // Başlangıç kontrolü
-                if (!currentUser) {
-                    // Nick alınmamışsa nickname sayfasında kal
-                    showPage('pgNickname');
-                } else {
-                    // Nick varsa lobby'ye geç
-                    showPage('pgLobby');
-
-                    // Takım varsa takım sayfasına geç
-                    if (currentTeamId) {
-                        socket.emit('get-team', currentTeamId, function(t) {
-                            if (t) { showPage('pgTeam'); renderTeamPage(t); }
-                            else { currentTeamId = null; localStorage.removeItem('currentTeamId'); }
-                        });
-                    }
-                }
+                // UX İYİLEŞTİRME: Her zaman nickname sayfasında başla
+                showPage('pgNickname', false);
             };
         })();
     </script>
