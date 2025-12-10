@@ -149,7 +149,13 @@ app.post('/api/cleanup-users', async (req, res) => {
     }
 });
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '260678';
+// GÜVENLİK: Admin şifresi ENV'den oku - yoksa uygulama başlamasın
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+if (!ADMIN_PASSWORD) {
+    console.error('❌ HATA: ADMIN_PASSWORD environment variable tanımlanmamış!');
+    console.error('   Lütfen .env dosyasında ADMIN_PASSWORD değerini ayarlayın.');
+    process.exit(1);
+}
 
 // Oyun durumu
 let gameState = {
@@ -398,13 +404,18 @@ const InputValidator = {
 
     // Sayı validation (puan, süre vs.)
     validateNumber(value, min = 0, max = 999999) {
-        const num = parseInt(value);
-        if (isNaN(num)) {
-            return { valid: false, error: 'Geçersiz sayı!' };
+        // GÜVENLİK: parseInt yerine Number kullan (parseInt "10.5" veya "10abc" gibi değerleri kabul eder)
+        const num = Number(value);
+
+        // Strict integer check
+        if (!Number.isInteger(num) || isNaN(num)) {
+            return { valid: false, error: 'Geçerli bir tam sayı girin!' };
         }
+
         if (num < min || num > max) {
             return { valid: false, error: `Sayı ${min} ile ${max} arasında olmalı!` };
         }
+
         return { valid: true, value: num };
     }
 };
@@ -632,18 +643,24 @@ io.on('connection', async (socket) => {
             return;
         }
 
+        // GÜVENLİK: Database transaction ile race condition önleme
+        const client = await pool.connect();
+
         try {
+            await client.query('BEGIN');
+
             // GÜVENLİK: Input validation & XSS koruması
             const nickValidation = InputValidator.validateNickname(nickname);
             if (!nickValidation.valid) {
+                await client.query('ROLLBACK');
                 callback({ success: false, error: nickValidation.error });
                 return;
             }
             const trimmedNick = nickValidation.value;
 
-            // UX İYİLEŞTİRME: Aynı nickname var mı kontrol et - offline ise yeniden kullanılabilir
-            const userCheckResult = await pool.query(
-                'SELECT id, online FROM users WHERE LOWER(nickname) = LOWER($1)',
+            // UX İYİLEŞTİRME: Aynı nickname var mı kontrol et - FOR UPDATE ile lock
+            const userCheckResult = await client.query(
+                'SELECT id, online FROM users WHERE LOWER(nickname) = LOWER($1) FOR UPDATE',
                 [trimmedNick]
             );
 
@@ -652,11 +669,12 @@ io.on('connection', async (socket) => {
 
                 if (existingUser.online) {
                     // Kullanıcı hala online - kullanılamaz
+                    await client.query('ROLLBACK');
                     callback({ success: false, error: 'Bu nick kullanımda!' });
                     return;
                 } else {
                     // GÜVENLİK: Kullanıcı offline - aynı IP'den mi kontrol et
-                    const ipCheckResult = await pool.query(
+                    const ipCheckResult = await client.query(
                         'SELECT COUNT(*) FROM ip_activity WHERE ip_address = $1 AND action = $2 AND created_at > NOW() - INTERVAL \'24 hours\'',
                         [clientIP, 'register-user']
                     );
@@ -665,11 +683,12 @@ io.on('connection', async (socket) => {
 
                     if (sameIPRegistration) {
                         // Aynı IP'den 24 saat içinde kayıt var - bu muhtemelen aynı kişi
-                        await pool.query('DELETE FROM users WHERE id = $1', [existingUser.id]);
+                        await client.query('DELETE FROM users WHERE id = $1', [existingUser.id]);
                         console.log('✓ Offline kullanıcı kaydı yeniden oluşturuluyor (aynı IP):', trimmedNick, '- IP:', clientIP);
                         // Yeni kayıt oluşturulacak (kod devam edecek)
                     } else {
                         // Farklı IP'den biri bu nickname'i kullanmaya çalışıyor
+                        await client.query('ROLLBACK');
                         callback({ success: false, error: 'Bu nick başka bir IP adresinden kullanıldı!' });
                         return;
                     }
@@ -680,13 +699,16 @@ io.on('connection', async (socket) => {
             const userId = crypto.randomUUID();
 
             // Kullanıcı oluştur
-            await pool.query(
+            await client.query(
                 'INSERT INTO users (id, nickname, socket_id, online) VALUES ($1, $2, $3, TRUE)',
                 [userId, trimmedNick, socket.id]
             );
 
             // IP aktivitesini kaydet (başarılı kayıt)
             await botProtection.recordActivity(clientIP, 'register-user');
+
+            // Transaction commit
+            await client.query('COMMIT');
 
             // GÜVENLİK: Session Fixation saldırısını önle - yeni session oluştur
             socket.request.session.regenerate((err) => {
@@ -719,8 +741,11 @@ io.on('connection', async (socket) => {
                 });
             });
         } catch (err) {
+            await client.query('ROLLBACK');
             console.error('Kullanıcı kayıt hatası:', err);
             callback({ success: false, error: 'Kayıt oluşturulamadı!' });
+        } finally {
+            client.release();
         }
     });
 

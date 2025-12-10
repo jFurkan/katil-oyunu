@@ -1312,7 +1312,8 @@
     <script>
         // Tema Yönetimi
         var THEME = {
-            current: localStorage.getItem('theme') || 'classic',
+            // GÜVENLİK: sessionStorage kullan (localStorage yerine) - oturum sonu temizlensin
+            current: sessionStorage.getItem('theme') || 'classic',
 
             init: function() {
                 this.applyTheme(this.current);
@@ -1320,7 +1321,7 @@
 
             setTheme: function(theme) {
                 this.current = theme;
-                localStorage.setItem('theme', theme);
+                sessionStorage.setItem('theme', theme);
                 this.applyTheme(theme);
                 this.updateActiveOption(theme);
                 this.closeMenu();
@@ -1370,17 +1371,42 @@
                 var notif = document.createElement('div');
                 notif.className = 'notification';
                 notif.id = id;
-                notif.innerHTML = `
-                    <div class="notification-header">
-                        <div class="notification-title">
-                            <span>🎯</span>
-                            <span>${title}</span>
-                        </div>
-                        <button class="notification-close" onclick="NOTIFICATION.close('${id}')">×</button>
-                    </div>
-                    <div class="notification-body">${message}</div>
-                    ${time ? `<div class="notification-time">${time}</div>` : ''}
-                `;
+
+                // GÜVENLİK: XSS koruması - innerHTML yerine DOM API kullan
+                var header = document.createElement('div');
+                header.className = 'notification-header';
+
+                var titleDiv = document.createElement('div');
+                titleDiv.className = 'notification-title';
+
+                var icon = document.createElement('span');
+                icon.textContent = '🎯';
+                titleDiv.appendChild(icon);
+
+                var titleSpan = document.createElement('span');
+                titleSpan.textContent = title;
+                titleDiv.appendChild(titleSpan);
+
+                var closeBtn = document.createElement('button');
+                closeBtn.className = 'notification-close';
+                closeBtn.textContent = '×';
+                closeBtn.addEventListener('click', () => this.close(id));
+
+                header.appendChild(titleDiv);
+                header.appendChild(closeBtn);
+                notif.appendChild(header);
+
+                var body = document.createElement('div');
+                body.className = 'notification-body';
+                body.textContent = message;
+                notif.appendChild(body);
+
+                if (time) {
+                    var timeDiv = document.createElement('div');
+                    timeDiv.className = 'notification-time';
+                    timeDiv.textContent = time;
+                    notif.appendChild(timeDiv);
+                }
 
                 this.container.appendChild(notif);
 
@@ -1475,7 +1501,8 @@
                 console.error('Socket bağlantı hatası:', err);
                 toast('Bağlantı hatası!', true);
             });
-            var notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+            // GÜVENLİK: sessionStorage kullan (localStorage yerine) - tarayıcı kapatılınca temizlensin
+            var notifications = JSON.parse(sessionStorage.getItem('notifications') || '[]');
             var generalClues = [];
             var popupTimeout = null;
 
@@ -1880,7 +1907,7 @@
                     };
                     notifications.unshift(notif);
                     if (notifications.length > 50) notifications = notifications.slice(0, 50); // Max 50 bildirim
-                    localStorage.setItem('notifications', JSON.stringify(notifications));
+                    sessionStorage.setItem('notifications', JSON.stringify(notifications));
                     this.updateBadge();
                     this.showPopup(notif, type);
                 },
@@ -1926,14 +1953,14 @@
 
                 markAllRead: function() {
                     notifications.forEach(n => n.unread = false);
-                    localStorage.setItem('notifications', JSON.stringify(notifications));
+                    sessionStorage.setItem('notifications', JSON.stringify(notifications));
                     this.updateBadge();
                     this.render();
                 },
 
                 clearAll: function() {
                     notifications = [];
-                    localStorage.setItem('notifications', JSON.stringify(notifications));
+                    sessionStorage.setItem('notifications', JSON.stringify(notifications));
                     this.updateBadge();
                     this.render();
                     this.renderAdminList();
@@ -1941,7 +1968,7 @@
 
                 deleteById: function(notifId) {
                     notifications = notifications.filter(n => n.id !== notifId);
-                    localStorage.setItem('notifications', JSON.stringify(notifications));
+                    sessionStorage.setItem('notifications', JSON.stringify(notifications));
                     this.updateBadge();
                     this.render();
                     this.renderAdminList();
@@ -1958,7 +1985,7 @@
 
                     // Bildirimleri okundu işaretle (sayfa açıldığında)
                     notifications.forEach(n => n.unread = false);
-                    localStorage.setItem('notifications', JSON.stringify(notifications));
+                    sessionStorage.setItem('notifications', JSON.stringify(notifications));
                     this.updateBadge();
 
                     var html = '';
@@ -1997,12 +2024,13 @@
                         var typeClass = n.type === 'announcement' ? 'announcement' : 'score';
                         var typeText = n.type === 'announcement' ? 'Duyuru' : 'Puan';
 
+                        // GÜVENLİK: XSS koruması - n.message escape et
                         html += `
                         <div class="admin-notif-item">
                             <div class="admin-notif-content">
                                 <span class="admin-notif-type ${typeClass}">${typeText}</span>
-                                <div class="admin-notif-message">${n.message}</div>
-                                <div class="admin-notif-time">${n.time}</div>
+                                <div class="admin-notif-message">${htmlEscape(n.message)}</div>
+                                <div class="admin-notif-time">${htmlEscape(n.time)}</div>
                             </div>
                             <button class="admin-notif-delete" onclick="ADMIN.deleteNotification(${n.id})">🗑️ Sil</button>
                         </div>`;
@@ -2314,6 +2342,10 @@
                             minute: '2-digit'
                         });
 
+                        // GÜVENLİK: onclick için JavaScript string escape
+                        var safeIP = log.ip_address.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                        var safeAction = log.action.replace(/'/g, "\\'").replace(/"/g, '\\"');
+
                         html += `
                         <div style="background:#1a1a1a; border:1px solid ${isNearLimit ? '#ff4444' : '#333'}; border-radius:8px; padding:15px;">
                             <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
@@ -2334,7 +2366,7 @@
                                     </div>
                                 </div>
                                 <button class="btn" style="width:auto; padding:8px 16px; margin:0; font-size:12px; ${isNearLimit ? 'background:#ff9800; border-color:#ff9800; color:#000; font-weight:600;' : ''}"
-                                    onclick="IP_LOGS.clearSpecific('${log.ip_address}', '${log.action}')"
+                                    onclick="IP_LOGS.clearSpecific('${safeIP}', '${safeAction}')"
                                     title="Bu IP'nin ${actionText} hakkını sıfırla">
                                     ${isNearLimit ? '🔄 Limiti Sıfırla' : '🗑️ Sıfırla'}
                                 </button>
@@ -2621,18 +2653,21 @@
                                 ${htmlEscape(group.teamName)}
                             </h4>
                             <div style="display: grid; gap: 10px;">
-                                ${group.users.map(u => `
+                                ${group.users.map(u => {
+                                    // GÜVENLİK: onclick için JavaScript string escape (htmlEscape yetersiz)
+                                    var safeNick = u.nickname.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                                    return `
                                     <div style="background: #222; padding: 12px 15px; border-radius: 6px; display: flex; align-items: center; gap: 10px;">
                                         ${u.is_captain ? '<span style="font-size: 20px;">👑</span>' : '<span style="font-size: 20px;">👤</span>'}
                                         <span style="color: white; font-weight: ${u.is_captain ? 'bold' : 'normal'}; flex: 1;">
                                             ${htmlEscape(u.nickname)}
                                         </span>
                                         ${u.is_captain ? '<span style="color: #fbbf24; font-size: 12px;">(Kaptan)</span>' : ''}
-                                        <button onclick="adminDeleteUser('${u.id}', '${htmlEscape(u.nickname)}')" style="background: #500; border: 1px solid #800; color: #faa; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-left: 10px;">
+                                        <button onclick="adminDeleteUser('${u.id}', '${safeNick}')" style="background: #500; border: 1px solid #800; color: #faa; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-left: 10px;">
                                             🗑️ Sil
                                         </button>
                                     </div>
-                                `).join('')}
+                                `}).join('')}
                             </div>
                         </div>
                     `;
@@ -2646,15 +2681,18 @@
                                 Takımsız Kullanıcılar
                             </h4>
                             <div style="display: grid; gap: 10px;">
-                                ${usersWithoutTeam.map(u => `
+                                ${usersWithoutTeam.map(u => {
+                                    // GÜVENLİK: onclick için JavaScript string escape (htmlEscape yetersiz)
+                                    var safeNick = u.nickname.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                                    return `
                                     <div style="background: #222; padding: 12px 15px; border-radius: 6px; display: flex; align-items: center; gap: 10px;">
                                         <span style="font-size: 20px;">👤</span>
                                         <span style="color: white; flex: 1;">${htmlEscape(u.nickname)}</span>
-                                        <button onclick="adminDeleteUser('${u.id}', '${htmlEscape(u.nickname)}')" style="background: #500; border: 1px solid #800; color: #faa; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                        <button onclick="adminDeleteUser('${u.id}', '${safeNick}')" style="background: #500; border: 1px solid #800; color: #faa; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
                                             🗑️ Sil
                                         </button>
                                     </div>
-                                `).join('')}
+                                `}).join('')}
                             </div>
                         </div>
                     `;

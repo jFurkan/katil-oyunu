@@ -106,6 +106,12 @@ async function initDatabase() {
             ON ip_activity(ip_address, action, created_at DESC)
         `);
 
+        // GÜVENLİK: Nickname case-insensitive unique index (John ve john aynı kabul edilsin)
+        await pool.query(`
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_users_nickname_lower
+            ON users (LOWER(nickname))
+        `);
+
         console.log('✓ Database initialized');
     } catch (err) {
         console.error('Database init error:', err);
