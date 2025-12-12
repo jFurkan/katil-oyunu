@@ -1246,9 +1246,10 @@
                         </p>
                     </div>
 
-                    <!-- Yenile Butonu -->
-                    <div style="margin-bottom:20px;">
+                    <!-- Yenile ve Hepsini Sil Butonları -->
+                    <div style="display:flex; gap:10px; margin-bottom:20px;">
                         <button class="btn btn-primary" style="width:auto; padding:12px 24px; margin:0;" onclick="IP_USERS.loadAllUsers()">🔄 Kullanıcıları Yenile</button>
+                        <button class="btn" style="width:auto; padding:12px 24px; margin:0; background:#dc2626; border-color:#dc2626; color:#fff;" onclick="IP_USERS.deleteAll()">🗑️ Hepsini Sil</button>
                     </div>
 
                     <!-- Kullanıcılar Listesi -->
@@ -2547,6 +2548,9 @@
 
                         var teamInfo = user.team_name ? `<span style="color:#8b5cf6;">👥 Takım: ${htmlEscape(user.team_name)}</span>` : '<span style="color:#666;">Takımsız</span>';
 
+                        // GÜVENLİK: onclick için JavaScript string escape
+                        var safeNickname = user.nickname.replace(/'/g, "\\'").replace(/"/g, '\\"');
+
                         html += `
                         <div style="background:#1a1a1a; border:1px solid #333; border-radius:8px; padding:15px;">
                             <div style="display:flex; justify-content:space-between; align-items:start;">
@@ -2566,7 +2570,7 @@
                                     </div>
                                 </div>
                                 <button class="btn" style="width:auto; padding:8px 16px; margin:0; font-size:12px; background:#dc2626; border-color:#dc2626; color:#fff;"
-                                    onclick="IP_USERS.deleteUser(${user.id}, '${htmlEscape(user.nickname).replace(/'/g, "\\'")}')"
+                                    onclick="IP_USERS.deleteUser('${user.id}', '${safeNickname}')"
                                     title="Bu kullanıcıyı sil">
                                     🗑️ Sil
                                 </button>
@@ -2594,6 +2598,32 @@
 
                             // Listeden çıkar
                             IP_USERS.users = IP_USERS.users.filter(u => u.id !== userId);
+                            IP_USERS.render();
+                        } else {
+                            toast(res.error, true);
+                        }
+                    });
+                },
+
+                deleteAll: function() {
+                    if (this.users.length === 0) {
+                        toast('Silinecek kullanıcı yok', true);
+                        return;
+                    }
+
+                    if (!confirm(`TÜM KULLANICILAR SİLİNECEK! (${this.users.length} kullanıcı)\n\nBu işlem geri alınamaz ve tüm nickname'ler serbest kalacak.\n\nEmin misiniz?`)) {
+                        return;
+                    }
+
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
+                    socket.emit('delete-all-users', function(res) {
+                        if (res.success) {
+                            toast('Tüm kullanıcılar silindi: ' + res.deletedCount + ' kayıt');
+                            IP_USERS.users = [];
                             IP_USERS.render();
                         } else {
                             toast(res.error, true);

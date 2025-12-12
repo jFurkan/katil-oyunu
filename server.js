@@ -1840,6 +1840,36 @@ io.on('connection', async (socket) => {
         }
     });
 
+    // Tüm kullanıcıları sil (admin)
+    socket.on('delete-all-users', async (callback) => {
+        // GÜVENLİK: Admin kontrolü
+        if (!socket.data.isAdmin) {
+            callback({ success: false, error: 'Yetkisiz işlem!' });
+            console.log('⚠️  Yetkisiz admin işlemi: delete-all-users -', socket.id);
+            return;
+        }
+
+        try {
+            // Tüm kullanıcıları sil
+            const result = await pool.query('DELETE FROM users RETURNING id');
+
+            if (result.rowCount > 0) {
+                console.log(`✓ Tüm kullanıcılar silindi: ${result.rowCount} kayıt`);
+
+                // Tüm kullanıcılara güncel listeyi gönder
+                const users = await getUsersByTeam();
+                io.emit('users-update', users);
+
+                callback({ success: true, deletedCount: result.rowCount });
+            } else {
+                callback({ success: false, error: 'Silinecek kullanıcı yok!' });
+            }
+        } catch (err) {
+            console.error('Tüm kullanıcılar silme hatası:', err);
+            callback({ success: false, error: 'Kullanıcılar silinemedi!' });
+        }
+    });
+
     // Kullanıcı logout (çıkış)
     socket.on('logout-user', async (callback) => {
         try {
