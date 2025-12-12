@@ -1774,17 +1774,17 @@ io.on('connection', async (socket) => {
         }
     });
 
-    // IP'ye göre kullanıcıları getir (admin)
-    socket.on('get-users-by-ip', async (ipAddress, callback) => {
+    // Tüm kullanıcıları getir (admin)
+    socket.on('get-all-users', async (callback) => {
         // GÜVENLİK: Admin kontrolü
         if (!socket.data.isAdmin) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
-            console.log('⚠️  Yetkisiz admin işlemi: get-users-by-ip -', socket.id);
+            console.log('⚠️  Yetkisiz admin işlemi: get-all-users -', socket.id);
             return;
         }
 
         try {
-            // IP'ye göre kullanıcıları getir (en son kaydolanlar en üstte)
+            // Tüm kullanıcıları getir (en son kaydolanlar en üstte)
             const result = await pool.query(`
                 SELECT
                     u.id,
@@ -1796,78 +1796,13 @@ io.on('connection', async (socket) => {
                     t.id as team_id
                 FROM users u
                 LEFT JOIN teams t ON u.team_id = t.id
-                WHERE u.ip_address = $1
                 ORDER BY u.created_at DESC
-            `, [ipAddress]);
+            `);
 
             callback({ success: true, users: result.rows });
         } catch (err) {
-            console.error('IP kullanıcıları getirme hatası:', err);
+            console.error('Tüm kullanıcılar getirme hatası:', err);
             callback({ success: false, error: 'Kullanıcılar getirilemedi!' });
-        }
-    });
-
-    // Tüm IP adreslerini getir (admin - dropdown için)
-    socket.on('get-all-ips', async (callback) => {
-        // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
-            callback({ success: false, error: 'Yetkisiz işlem!' });
-            console.log('⚠️  Yetkisiz admin işlemi: get-all-ips -', socket.id);
-            return;
-        }
-
-        try {
-            // Tüm benzersiz IP'leri getir (son aktiviteye göre sıralı)
-            const result = await pool.query(`
-                SELECT
-                    ip_address,
-                    COUNT(*) as user_count,
-                    MAX(created_at) as last_activity
-                FROM users
-                GROUP BY ip_address
-                ORDER BY last_activity DESC
-            `);
-
-            callback({ success: true, ips: result.rows });
-        } catch (err) {
-            console.error('IP listesi getirme hatası:', err);
-            callback({ success: false, error: 'IP listesi getirilemedi!' });
-        }
-    });
-
-    // Nickname ile kullanıcı ara (admin)
-    socket.on('get-user-by-nickname', async (nickname, callback) => {
-        // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
-            callback({ success: false, error: 'Yetkisiz işlem!' });
-            console.log('⚠️  Yetkisiz admin işlemi: get-user-by-nickname -', socket.id);
-            return;
-        }
-
-        try {
-            // Nickname ile kullanıcı ara (case-insensitive)
-            const result = await pool.query(`
-                SELECT
-                    u.id,
-                    u.nickname,
-                    u.ip_address,
-                    u.online,
-                    u.created_at,
-                    t.name as team_name,
-                    t.id as team_id
-                FROM users u
-                LEFT JOIN teams t ON u.team_id = t.id
-                WHERE LOWER(u.nickname) = LOWER($1)
-            `, [nickname]);
-
-            if (result.rows.length === 0) {
-                callback({ success: false, error: 'Bu nickname ile kullanıcı bulunamadı!' });
-            } else {
-                callback({ success: true, users: result.rows });
-            }
-        } catch (err) {
-            console.error('Nickname arama hatası:', err);
-            callback({ success: false, error: 'Kullanıcı aranamadı!' });
         }
     });
 
