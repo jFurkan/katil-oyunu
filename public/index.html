@@ -1864,8 +1864,17 @@
                     });
                 },
                 goLobby: function() {
-                    // UX İYİLEŞTİRME: Admin panelinden geri - lobby'ye dön
-                    showPage('pgLobby');
+                    // UX İYİLEŞTİRME: Admin panelinden çıkış - session temizle ve nickname ekranına dön
+                    currentUser = null;
+                    currentTeamId = null;
+
+                    // Server'a logout isteği gönder (session'ı temizle)
+                    socket.emit('logout-user', function() {
+                        // Nick giriş sayfasına yönlendir
+                        showPage('pgNickname');
+                        updateCurrentUserDisplay();
+                        toast('Çıkış yapıldı.');
+                    });
                 },
                 showScoreboard: function() { showPage('pgScoreboard'); renderScoreboard(); },
                 showNotifications: function() { showPage('pgNotifications'); NOTIF.render(); },
