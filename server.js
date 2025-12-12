@@ -1835,6 +1835,42 @@ io.on('connection', async (socket) => {
         }
     });
 
+    // Nickname ile kullanıcı ara (admin)
+    socket.on('get-user-by-nickname', async (nickname, callback) => {
+        // GÜVENLİK: Admin kontrolü
+        if (!socket.data.isAdmin) {
+            callback({ success: false, error: 'Yetkisiz işlem!' });
+            console.log('⚠️  Yetkisiz admin işlemi: get-user-by-nickname -', socket.id);
+            return;
+        }
+
+        try {
+            // Nickname ile kullanıcı ara (case-insensitive)
+            const result = await pool.query(`
+                SELECT
+                    u.id,
+                    u.nickname,
+                    u.ip_address,
+                    u.online,
+                    u.created_at,
+                    t.name as team_name,
+                    t.id as team_id
+                FROM users u
+                LEFT JOIN teams t ON u.team_id = t.id
+                WHERE LOWER(u.nickname) = LOWER($1)
+            `, [nickname]);
+
+            if (result.rows.length === 0) {
+                callback({ success: false, error: 'Bu nickname ile kullanıcı bulunamadı!' });
+            } else {
+                callback({ success: true, users: result.rows });
+            }
+        } catch (err) {
+            console.error('Nickname arama hatası:', err);
+            callback({ success: false, error: 'Kullanıcı aranamadı!' });
+        }
+    });
+
     // Kullanıcı sil (admin)
     socket.on('delete-user', async (userId, callback) => {
         // GÜVENLİK: Admin kontrolü

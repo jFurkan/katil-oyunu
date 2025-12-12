@@ -1240,20 +1240,35 @@
                     <!-- Bilgilendirme -->
                     <div style="background:#1a1a1a; border-left:4px solid #3b82f6; padding:15px; margin-bottom:20px; border-radius:8px;">
                         <p style="color:#aaa; font-size:13px; line-height:1.6; margin:0;">
-                            Bir IP adresinden kayıt olan tüm kullanıcıları görebilir ve silebilirsiniz.
+                            Kullanıcıları IP adresi veya nickname ile arayabilir ve silebilirsiniz.
                             <br><strong style="color:#3b82f6;">Kullanıcı Silme:</strong> Bir kullanıcıyı sildiğinizde, başka biri o nickname ile kaydolabilir.
                             <br><br><strong style="color:#ff9800;">💡 Not:</strong> Eğer birisi "furkan1" nickname'ini almak istiyorsa ama kullanımda ise, eski "furkan1" kullanıcısını buradan silebilirsiniz.
                         </p>
                     </div>
 
-                    <!-- IP Seçimi -->
-                    <div style="margin-bottom:20px;">
+                    <!-- Arama Türü Seçimi -->
+                    <div style="display:flex; gap:10px; margin-bottom:20px;">
+                        <button id="searchTypeIP" class="btn btn-primary" style="width:auto; padding:10px 20px; margin:0; font-size:13px;" onclick="IP_USERS.setSearchType('ip')">🌐 IP ile Ara</button>
+                        <button id="searchTypeNick" class="btn" style="width:auto; padding:10px 20px; margin:0; font-size:13px;" onclick="IP_USERS.setSearchType('nickname')">👤 Nickname ile Ara</button>
+                    </div>
+
+                    <!-- IP Arama -->
+                    <div id="searchByIP" style="margin-bottom:20px;">
                         <label style="color:#888; font-size:13px; display:block; margin-bottom:8px;">IP Adresi Seç:</label>
                         <div style="display:flex; gap:10px;">
                             <select id="ipSelect" style="flex:1; padding:12px; background:var(--card-bg); border:1px solid var(--border-color); border-radius:8px; color:#fff; font-size:14px;">
                                 <option value="">-- IP Seçin --</option>
                             </select>
-                            <button class="btn btn-primary" style="width:auto; padding:12px 24px; margin:0;" onclick="IP_USERS.loadUsers()">🔍 Kullanıcıları Getir</button>
+                            <button class="btn btn-primary" style="width:auto; padding:12px 24px; margin:0;" onclick="IP_USERS.searchByIP()">🔍 Kullanıcıları Getir</button>
+                        </div>
+                    </div>
+
+                    <!-- Nickname Arama -->
+                    <div id="searchByNickname" style="margin-bottom:20px; display:none;">
+                        <label style="color:#888; font-size:13px; display:block; margin-bottom:8px;">Nickname Girin:</label>
+                        <div style="display:flex; gap:10px;">
+                            <input type="text" id="nicknameInput" placeholder="Örn: furkan1" maxlength="20" style="flex:1; padding:12px; background:var(--card-bg); border:1px solid var(--border-color); border-radius:8px; color:#fff; font-size:14px;" onkeypress="if(event.key==='Enter') IP_USERS.searchByNickname()">
+                            <button class="btn btn-primary" style="width:auto; padding:12px 24px; margin:0;" onclick="IP_USERS.searchByNickname()">🔍 Kullanıcıyı Bul</button>
                         </div>
                     </div>
 
@@ -1264,7 +1279,7 @@
                             <span id="ipUsersCount" style="color:#666; font-size:12px;">0 kullanıcı</span>
                         </div>
                         <div id="ipUsersList" style="display:flex; flex-direction:column; gap:12px; min-height:100px;">
-                            <div style="color:#666; text-align:center; padding:30px;">IP adresi seçin ve "Kullanıcıları Getir" butonuna basın</div>
+                            <div style="color:#666; text-align:center; padding:30px;">IP adresi veya nickname ile arama yapın</div>
                         </div>
                     </div>
                 </div>
@@ -2508,6 +2523,36 @@
             window.IP_USERS = {
                 ips: [],
                 users: [],
+                searchType: 'ip', // 'ip' veya 'nickname'
+
+                setSearchType: function(type) {
+                    this.searchType = type;
+
+                    // Butonları güncelle
+                    var ipBtn = document.getElementById('searchTypeIP');
+                    var nickBtn = document.getElementById('searchTypeNick');
+
+                    ipBtn.classList.remove('btn-primary');
+                    ipBtn.classList.add('btn');
+                    nickBtn.classList.remove('btn-primary');
+                    nickBtn.classList.add('btn');
+
+                    if (type === 'ip') {
+                        ipBtn.classList.remove('btn');
+                        ipBtn.classList.add('btn-primary');
+                        document.getElementById('searchByIP').style.display = 'block';
+                        document.getElementById('searchByNickname').style.display = 'none';
+                    } else {
+                        nickBtn.classList.remove('btn');
+                        nickBtn.classList.add('btn-primary');
+                        document.getElementById('searchByIP').style.display = 'none';
+                        document.getElementById('searchByNickname').style.display = 'block';
+                    }
+
+                    // Listeyi temizle
+                    this.users = [];
+                    this.render();
+                },
 
                 loadIPList: function() {
                     if (!socketConnected) {
@@ -2544,7 +2589,7 @@
                     select.innerHTML = html;
                 },
 
-                loadUsers: function() {
+                searchByIP: function() {
                     var select = document.getElementById('ipSelect');
                     var ipAddress = select.value;
 
@@ -2569,6 +2614,33 @@
                     });
                 },
 
+                searchByNickname: function() {
+                    var input = document.getElementById('nicknameInput');
+                    var nickname = input.value.trim();
+
+                    if (!nickname) {
+                        toast('Lütfen bir nickname girin', true);
+                        return;
+                    }
+
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
+                    socket.emit('get-user-by-nickname', nickname, function(res) {
+                        if (res.success) {
+                            IP_USERS.users = res.users;
+                            IP_USERS.render();
+                            toast('Kullanıcı bulundu!');
+                        } else {
+                            IP_USERS.users = [];
+                            IP_USERS.render();
+                            toast(res.error, true);
+                        }
+                    });
+                },
+
                 render: function() {
                     var container = document.getElementById('ipUsersList');
                     var countEl = document.getElementById('ipUsersCount');
@@ -2578,7 +2650,10 @@
                     countEl.textContent = this.users.length + ' kullanıcı';
 
                     if (this.users.length === 0) {
-                        container.innerHTML = '<div style="color:#666; text-align:center; padding:30px;">Bu IP\'den kayıtlı kullanıcı yok</div>';
+                        var emptyMsg = this.searchType === 'nickname' ?
+                            'Kullanıcı bulunamadı veya zaten silinmiş' :
+                            'Bu IP\'den kayıtlı kullanıcı yok';
+                        container.innerHTML = '<div style="color:#666; text-align:center; padding:30px;">' + emptyMsg + '</div>';
                         return;
                     }
 
@@ -2612,7 +2687,7 @@
                                         📅 Kayıt: ${timeStr}
                                     </div>
                                     <div style="color:#888; font-size:11px; margin-top:5px;">
-                                        ID: ${user.id}
+                                        🌐 IP: ${htmlEscape(user.ip_address)} • ID: ${user.id}
                                     </div>
                                 </div>
                                 <button class="btn" style="width:auto; padding:8px 16px; margin:0; font-size:12px; background:#dc2626; border-color:#dc2626; color:#fff;"
@@ -2640,9 +2715,11 @@
 
                     socket.emit('delete-user', userId, function(res) {
                         if (res.success) {
-                            toast('Kullanıcı silindi: ' + res.user.nickname);
-                            // Listeyi yenile
-                            IP_USERS.loadUsers();
+                            toast('Kullanıcı silindi: ' + res.user.nickname + ' - Nickname artık kullanıma açık!');
+
+                            // Listeden çıkar
+                            IP_USERS.users = IP_USERS.users.filter(u => u.id !== userId);
+                            IP_USERS.render();
                         } else {
                             toast(res.error, true);
                         }
