@@ -589,7 +589,8 @@ io.use((socket, next) => {
 
 // Socket.io bağlantıları
 io.on('connection', async (socket) => {
-    console.log('✓ Kullanıcı bağlandı:', socket.id, '- Toplam:', io.engine.clientsCount);
+    const totalClients = io.sockets.sockets.size;
+    console.log('✓ Kullanıcı bağlandı:', socket.id, '- Toplam:', totalClients);
 
     // Session tracking - güvenlik için (HTTP-only session'dan oku)
     socket.data.userId = socket.request.session.userId || null;
@@ -629,16 +630,16 @@ io.on('connection', async (socket) => {
 
     // Kullanıcı kaydı (nickname al)
     socket.on('register-user', async (nickname, callback) => {
-        // Rate limiting: 5 deneme/dakika
-        if (!rateLimiter.check(socket.id, 'register-user', 5, 60000)) {
+        // Rate limiting: 10 deneme/dakika (reconnect ve test için yeterli)
+        if (!rateLimiter.check(socket.id, 'register-user', 10, 60000)) {
             callback({ success: false, error: 'Çok fazla kayıt denemesi! Lütfen 1 dakika bekleyin.' });
             console.log('⚠️  Rate limit: register-user -', socket.id);
             return;
         }
 
-        // Bot farm koruması: IP bazlı limit (24 saatte max 3 kullanıcı)
+        // Bot farm koruması: IP bazlı limit (24 saatte max 10 kullanıcı)
         const clientIP = botProtection.getClientIP(socket);
-        const ipAllowed = await botProtection.checkLimit(clientIP, 'register-user', 3, 24);
+        const ipAllowed = await botProtection.checkLimit(clientIP, 'register-user', 10, 24);
 
         if (!ipAllowed) {
             callback({ success: false, error: 'Bu IP adresinden çok fazla kayıt yapıldı. Lütfen daha sonra tekrar deneyin.' });
@@ -1220,45 +1221,7 @@ io.on('connection', async (socket) => {
         }
     });
 
-    // Kullanıcı sil (admin)
-    socket.on('delete-user', async (userId, callback) => {
-        // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
-            callback({ success: false, error: 'Yetkisiz işlem!' });
-            console.log('⚠️  Yetkisiz admin işlemi: delete-user -', socket.id);
-            return;
-        }
-
-        try {
-            const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING nickname, socket_id', [userId]);
-
-            if (result.rowCount === 0) {
-                callback({ success: false, error: 'Kullanıcı bulunamadı!' });
-                return;
-            }
-
-            const user = result.rows[0];
-            callback({ success: true });
-
-            // Silinen kullanıcıya bildirim gönder (eğer online ise)
-            if (user.socket_id) {
-                io.to(user.socket_id).emit('user-deleted');
-            }
-
-            // Kullanıcı listesini güncelle
-            const users = await getUsersByTeam();
-            io.emit('users-update', users);
-
-            // Takım listesini güncelle (eğer kullanıcı bir takımdaysa, takım güncellensin)
-            const teams = await getAllTeams();
-            io.emit('teams-update', teams);
-
-            console.log('Kullanıcı silindi:', user.nickname);
-        } catch (err) {
-            console.error('Kullanıcı silme hatası:', err);
-            callback({ success: false, error: 'Kullanıcı silinemedi!' });
-        }
-    });
+    // [REMOVED] Duplicate delete-user handler - see line 1835 for the correct implementation
 
     // Oyunu sıfırla (admin)
     socket.on('reset-game', async (callback) => {
@@ -1842,7 +1805,7 @@ io.on('connection', async (socket) => {
         try {
             // Kullanıcıyı sil
             const result = await pool.query(
-                'DELETE FROM users WHERE id = $1 RETURNING nickname, ip_address',
+                'DELETE FROM users WHERE id = $1 RETURNING nickname, ip_address, socket_id',
                 [userId]
             );
 
@@ -1850,9 +1813,22 @@ io.on('connection', async (socket) => {
                 const deletedUser = result.rows[0];
                 console.log(`✓ Kullanıcı silindi: ${deletedUser.nickname} (IP: ${deletedUser.ip_address})`);
 
+                // Silinen kullanıcıya bildirim gönder (eğer online ise VE admin değilse)
+                if (deletedUser.socket_id) {
+                    const targetSocket = io.sockets.sockets.get(deletedUser.socket_id);
+                    // Sadece admin olmayan kullanıcılara user-deleted eventi gönder
+                    if (targetSocket && !targetSocket.data.isAdmin) {
+                        io.to(deletedUser.socket_id).emit('user-deleted');
+                    }
+                }
+
                 // Tüm kullanıcılara güncel listeyi gönder
                 const users = await getUsersByTeam();
                 io.emit('users-update', users);
+
+                // Takım listesini güncelle (eğer kullanıcı bir takımdaysa, takım güncellensin)
+                const teams = await getAllTeams();
+                io.emit('teams-update', teams);
 
                 callback({ success: true, user: deletedUser });
             } else {
@@ -1935,7 +1911,9 @@ io.on('connection', async (socket) => {
 
     // Bağlantı koptu
     socket.on('disconnect', async () => {
-        console.log('✓ Kullanıcı ayrıldı:', socket.id, '- Kalan:', io.engine.clientsCount - 1);
+        // Disconnect olduğunda socket.io zaten bağlantıyı kesmişti, o yüzden mevcut sayı doğru
+        const remainingClients = io.sockets.sockets.size;
+        console.log('✓ Kullanıcı ayrıldı:', socket.id, '- Kalan:', remainingClients);
 
         // Rate limiter temizliği
         rateLimiter.clear(socket.id);

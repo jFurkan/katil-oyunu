@@ -1082,7 +1082,7 @@
                         <span id="statTeams">0</span> Takım • <span id="statClues">0</span> İpucu
                     </div>
                 </div>
-                <button class="back-btn" onclick="GAME.goLobby()">Çıkış</button>
+                <button class="back-btn" onclick="GAME.exitAdmin()">Çıkış</button>
             </div>
 
             <!-- Admin Menü Butonları - RESPONSIVE -->
@@ -1719,14 +1719,19 @@
 
             window.GAME = {
                 backToMain: function() {
-                    // Açık formları kapat
-                    document.getElementById('createForm').style.display = 'none';
-                    document.getElementById('joinForm').style.display = 'none';
-                    // Lobby menüsünü göster
-                    document.getElementById('lobbyMenu').style.display = 'block';
-                    document.getElementById('lobbyCredits').style.display = 'block';
-                    // UX İYİLEŞTİRME: Geri git - bir önceki sayfaya dön
-                    goBack();
+                    // UX İYİLEŞTİRME: Ana sayfaya dön - logout yap
+                    if (confirm('Ana sayfaya dönmek için çıkış yapılacak. Emin misiniz?')) {
+                        currentUser = null;
+                        currentTeamId = null;
+
+                        // Server'a logout isteği gönder (session'ı temizle)
+                        socket.emit('logout-user', function() {
+                            // Ana sayfaya yönlendir
+                            showPage('pgHome');
+                            updateCurrentUserDisplay();
+                            toast('Çıkış yapıldı.');
+                        });
+                    }
                 },
                 showAdminLoginForm: function() {
                     // Admin şifre modalını göster
@@ -1878,6 +1883,14 @@
                     currentTeamId = null;
                     showPage('pgLobby');
                 },
+                exitAdmin: function() {
+                    // Admin panelinden çıkış - kullanıcı varsa takım seçim ekranına, yoksa nickname ekranına
+                    if (currentUser) {
+                        showPage('pgLobby');
+                    } else {
+                        showPage('pgNickname');
+                    }
+                },
                 hidePassModal: function() { document.getElementById('passModal').classList.remove('show'); },
                 checkPass: function() {
                     if (!socketConnected) {
@@ -1902,17 +1915,31 @@
                     });
                 },
                 goLobby: function() {
-                    // UX İYİLEŞTİRME: Admin panelinden çıkış - session temizle ve nickname ekranına dön
-                    currentUser = null;
-                    currentTeamId = null;
-
-                    // Server'a logout isteği gönder (session'ı temizle)
-                    socket.emit('logout-user', function() {
-                        // Nick giriş sayfasına yönlendir
+                    // UX İYİLEŞTİRME: Geri dön - kullanıcı varsa takım seçim ekranına, yoksa nickname ekranına
+                    if (currentUser) {
+                        // Kullanıcı giriş yapmış - takım seçim ekranına git (logout yapma)
+                        showPage('pgLobby');
+                        updateCurrentUserDisplay();
+                    } else {
+                        // Kullanıcı giriş yapmamış - nickname ekranına git
                         showPage('pgNickname');
                         updateCurrentUserDisplay();
-                        toast('Çıkış yapıldı.');
-                    });
+                    }
+                },
+                exitGame: function() {
+                    // Oyundan çıkış - logout yap
+                    if (confirm('Oyundan çıkmak istediğinize emin misiniz?')) {
+                        currentUser = null;
+                        currentTeamId = null;
+
+                        // Server'a logout isteği gönder (session'ı temizle)
+                        socket.emit('logout-user', function() {
+                            // Nick giriş sayfasına yönlendir
+                            showPage('pgNickname');
+                            updateCurrentUserDisplay();
+                            toast('Çıkış yapıldı.');
+                        });
+                    }
                 },
                 showScoreboard: function() { showPage('pgScoreboard'); renderScoreboard(); },
                 showNotifications: function() { showPage('pgNotifications'); NOTIF.render(); },
