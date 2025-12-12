@@ -704,8 +704,8 @@ io.on('connection', async (socket) => {
 
             // Kullanıcı oluştur
             await client.query(
-                'INSERT INTO users (id, nickname, socket_id, online) VALUES ($1, $2, $3, TRUE)',
-                [userId, trimmedNick, socket.id]
+                'INSERT INTO users (id, nickname, socket_id, online, ip_address, last_activity) VALUES ($1, $2, $3, TRUE, $4, NOW())',
+                [userId, trimmedNick, socket.id, clientIP]
             );
 
             // IP aktivitesini kaydet (başarılı kayıt)
@@ -714,36 +714,37 @@ io.on('connection', async (socket) => {
             // Transaction commit
             await client.query('COMMIT');
 
-            // GÜVENLİK: Session Fixation saldırısını önle - yeni session oluştur
-            socket.request.session.regenerate((err) => {
-                if (err) {
-                    console.error('Session regenerate error:', err);
-                    callback({ success: false, error: 'Oturum oluşturulamadı!' });
-                    return;
-                }
+            // GÜVENLİK: Socket session'a userId kaydet
+            socket.data.userId = userId;
 
-                // GÜVENLİK: Socket session'a userId kaydet
-                socket.data.userId = userId;
-
-                // HTTP-only cookie'ye userId kaydet (güvenli oturum)
-                socket.request.session.userId = userId;
-                socket.request.session.save((err) => {
+            // GÜVENLİK: Session kontrolü - eğer session varsa kaydet
+            if (socket.request.session) {
+                // Session Fixation saldırısını önle - yeni session oluştur
+                socket.request.session.regenerate((err) => {
                     if (err) {
-                        console.error('Session save error:', err);
-                        callback({ success: false, error: 'Oturum kaydedilemedi!' });
-                        return;
+                        console.error('Session regenerate error:', err);
+                        // Session hatası olsa bile kullanıcı oluştu, devam et
                     }
 
-                    callback({ success: true, userId: userId, nickname: trimmedNick });
-
-                    // Tüm kullanıcılara güncel listeyi gönder
-                    getUsersByTeam().then(users => {
-                        io.emit('users-update', users);
+                    // HTTP-only cookie'ye userId kaydet (güvenli oturum)
+                    socket.request.session.userId = userId;
+                    socket.request.session.save((saveErr) => {
+                        if (saveErr) {
+                            console.error('Session save error:', saveErr);
+                        }
                     });
-
-                    console.log('Kullanıcı kaydedildi:', trimmedNick, '- IP:', clientIP);
                 });
+            }
+
+            callback({ success: true, userId: userId, nickname: trimmedNick });
+
+            // Tüm kullanıcılara güncel listeyi gönder
+            getUsersByTeam().then(users => {
+                io.emit('users-update', users);
             });
+
+            console.log('Kullanıcı kaydedildi:', trimmedNick, '- IP:', clientIP);
+
         } catch (err) {
             await client.query('ROLLBACK');
             console.error('Kullanıcı kayıt hatası:', err);
