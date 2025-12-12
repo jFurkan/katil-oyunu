@@ -80,8 +80,21 @@ async function initDatabase() {
                 is_captain BOOLEAN DEFAULT FALSE,
                 socket_id TEXT,
                 online BOOLEAN DEFAULT TRUE,
+                ip_address VARCHAR(45),
+                last_activity TIMESTAMP DEFAULT NOW(),
                 created_at TIMESTAMP DEFAULT NOW()
             )
+        `);
+
+        // Migration: Eksik kolonları ekle (mevcut tablolar için)
+        await pool.query(`
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45)
+        `);
+
+        await pool.query(`
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS last_activity TIMESTAMP DEFAULT NOW()
         `);
 
         // Teams tablosuna captain_nickname ekle (eğer yoksa)
