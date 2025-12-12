@@ -664,6 +664,9 @@ io.on('connection', async (socket) => {
                 [trimmedNick]
             );
 
+            let userId;
+            let isReconnect = false;
+
             if (userCheckResult.rows.length > 0) {
                 const existingUser = userCheckResult.rows[0];
 
@@ -688,28 +691,34 @@ io.on('connection', async (socket) => {
 
                 if (sameIPRegistration) {
                     // Aynı IP'den 24 saat içinde kayıt var - bu muhtemelen aynı kişi
-                    await client.query('DELETE FROM users WHERE id = $1', [existingUser.id]);
-                    console.log('✓ Kullanıcı kaydı yeniden oluşturuluyor:', trimmedNick, '- IP:', clientIP, '- Sebep:', existingUser.online ? 'timeout/yenileme' : 'offline');
-                    // Yeni kayıt oluşturulacak (kod devam edecek)
+                    // YENİ: Mevcut kaydı güncelle, silme
+                    userId = existingUser.id;
+                    await client.query(
+                        'UPDATE users SET socket_id = $1, online = TRUE, last_activity = NOW() WHERE id = $2',
+                        [socket.id, userId]
+                    );
+                    isReconnect = true;
+                    console.log('✓ Kullanıcı tekrar bağlandı:', trimmedNick, '- IP:', clientIP, '- Sebep:', existingUser.online ? 'timeout/yenileme' : 'offline');
                 } else {
                     // Farklı IP'den biri bu nickname'i kullanmaya çalışıyor
                     await client.query('ROLLBACK');
                     callback({ success: false, error: 'Bu nick başka bir IP adresinden kullanıldı!' });
                     return;
                 }
+            } else {
+                // Yeni kullanıcı - UUID üret ve kayıt oluştur
+                userId = crypto.randomUUID();
+
+                await client.query(
+                    'INSERT INTO users (id, nickname, socket_id, online, ip_address, last_activity) VALUES ($1, $2, $3, TRUE, $4, NOW())',
+                    [userId, trimmedNick, socket.id, clientIP]
+                );
             }
 
-            // Güvenli UUID üret (sayfa yenilendiğinde değişmez)
-            const userId = crypto.randomUUID();
-
-            // Kullanıcı oluştur
-            await client.query(
-                'INSERT INTO users (id, nickname, socket_id, online, ip_address, last_activity) VALUES ($1, $2, $3, TRUE, $4, NOW())',
-                [userId, trimmedNick, socket.id, clientIP]
-            );
-
-            // IP aktivitesini kaydet (başarılı kayıt)
-            await botProtection.recordActivity(clientIP, 'register-user');
+            // IP aktivitesini kaydet (sadece yeni kayıtlar için)
+            if (!isReconnect) {
+                await botProtection.recordActivity(clientIP, 'register-user');
+            }
 
             // Transaction commit
             await client.query('COMMIT');
@@ -1071,33 +1080,39 @@ io.on('connection', async (socket) => {
     // Admin şifre kontrolü
     socket.on('admin-login', (password, callback) => {
         if (password === ADMIN_PASSWORD) {
-            // GÜVENLİK: Session Fixation saldırısını önle - admin girişinde yeni session oluştur
-            socket.request.session.regenerate((err) => {
-                if (err) {
-                    console.error('Session regenerate error:', err);
-                    callback({ success: false, error: 'Oturum oluşturulamadı!' });
-                    return;
-                }
+            // GÜVENLİK: Admin session'ı aktif et (socket.data)
+            socket.data.isAdmin = true;
 
-                // GÜVENLİK: Admin session'ı aktif et (HTTP-only session'a kaydet)
-                socket.data.isAdmin = true;
-                socket.request.session.isAdmin = true;
-
-                // Eğer userId varsa onu da yeni session'a kopyala
-                if (socket.data.userId) {
-                    socket.request.session.userId = socket.data.userId;
-                }
-
-                socket.request.session.save((err) => {
+            // GÜVENLİK: Session kontrolü - eğer session varsa kaydet
+            if (socket.request.session) {
+                // Session Fixation saldırısını önle - admin girişinde yeni session oluştur
+                socket.request.session.regenerate((err) => {
                     if (err) {
-                        console.error('Admin session save error:', err);
-                        callback({ success: false, error: 'Session kaydedilemedi!' });
-                    } else {
+                        console.error('Session regenerate error:', err);
+                        // Session hatası olsa bile admin girişi yapıldı
+                    }
+
+                    // HTTP-only session'a admin bilgisini kaydet
+                    socket.request.session.isAdmin = true;
+
+                    // Eğer userId varsa onu da yeni session'a kopyala
+                    if (socket.data.userId) {
+                        socket.request.session.userId = socket.data.userId;
+                    }
+
+                    socket.request.session.save((saveErr) => {
+                        if (saveErr) {
+                            console.error('Admin session save error:', saveErr);
+                        }
                         callback({ success: true });
                         console.log('✓ Admin girişi yapıldı:', socket.id);
-                    }
+                    });
                 });
-            });
+            } else {
+                // Session yoksa direkt callback
+                callback({ success: true });
+                console.log('✓ Admin girişi yapıldı (session yok):', socket.id);
+            }
         } else {
             callback({ success: false, error: 'Yanlış şifre!' });
             console.log('⚠️  Başarısız admin girişi:', socket.id);
