@@ -1726,8 +1726,8 @@
 
                         // Server'a logout isteği gönder (session'ı temizle)
                         socket.emit('logout-user', function() {
-                            // Ana sayfaya yönlendir
-                            showPage('pgHome');
+                            // Ana sayfaya yönlendir (nickname giriş ekranı)
+                            showPage('pgNickname');
                             updateCurrentUserDisplay();
                             toast('Çıkış yapıldı.');
                         });
