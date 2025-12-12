@@ -12,6 +12,25 @@ const cookieParser = require('cookie-parser'); // Cookie yönetimi için
 const session = require('express-session'); // Session yönetimi için
 const { pool, initDatabase } = require('./database');
 
+// GÜVENLİK: Environment variable validation
+const requiredEnvVars = ['DATABASE_URL', 'ADMIN_PASSWORD'];
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+    console.error('❌ HATA: Gerekli environment variable eksik:');
+    missingEnvVars.forEach(varName => console.error(`   - ${varName}`));
+    console.error('\nLütfen .env dosyasını kontrol edin veya Railway environment variables ayarlayın.');
+    process.exit(1);
+}
+
+// GÜVENLİK: Admin şifre kontrolü
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+if (ADMIN_PASSWORD.length < 8) {
+    console.warn('⚠️  UYARI: ADMIN_PASSWORD çok kısa! En az 8 karakter önerilir.');
+}
+
+console.log('✓ Admin password loaded from environment variables');
+
 const app = express();
 const server = http.createServer(app);
 
@@ -19,7 +38,11 @@ const server = http.createServer(app);
 app.set('trust proxy', 1); // Railway, Heroku gibi platformlar için gerekli
 
 // CORS ayarları - production'da kısıtla
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ||
+    (process.env.NODE_ENV === 'production'
+        ? process.env.RAILWAY_STATIC_URL ? `https://${process.env.RAILWAY_STATIC_URL}` : 'https://*.railway.app'
+        : '*'
+    );
 
 const io = new Server(server, {
     cors: {
@@ -49,7 +72,20 @@ app.use(helmet({
         maxAge: 31536000,
         includeSubDomains: true,
         preload: true
-    }
+    },
+    referrerPolicy: {
+        policy: 'strict-origin-when-cross-origin'
+    },
+    permissionsPolicy: {
+        features: {
+            camera: ["'none'"],
+            microphone: ["'none'"],
+            geolocation: ["'none'"],
+            payment: ["'none'"]
+        }
+    },
+    crossOriginEmbedderPolicy: false, // Socket.IO compatibility
+    crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
 // 2. Rate Limiting - DDoS koruması
@@ -151,14 +187,6 @@ app.post('/api/cleanup-users', async (req, res) => {
         });
     }
 });
-
-// GÜVENLİK: Admin şifresi ENV'den oku - yoksa uygulama başlamasın
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-if (!ADMIN_PASSWORD) {
-    console.error('❌ HATA: ADMIN_PASSWORD environment variable tanımlanmamış!');
-    console.error('   Lütfen .env dosyasında ADMIN_PASSWORD değerini ayarlayın.');
-    process.exit(1);
-}
 
 // Oyun durumu
 let gameState = {
@@ -556,6 +584,68 @@ class UserCleanup {
 }
 
 const userCleanup = new UserCleanup(7); // 7 günden eski kullanıcıları sil
+
+// Admin login rate limiter - Brute-force koruması
+class AdminLoginLimiter {
+    constructor() {
+        this.attempts = new Map(); // IP -> { count, resetAt }
+        this.MAX_ATTEMPTS = 5;
+        this.WINDOW_MS = 15 * 60 * 1000; // 15 dakika
+
+        // Her 1 saatte bir eski kayıtları temizle
+        setInterval(() => this.cleanup(), 60 * 60 * 1000);
+    }
+
+    check(ip) {
+        const now = Date.now();
+        const record = this.attempts.get(ip);
+
+        if (!record) return true;
+
+        // Reset zamanı geçtiyse temizle
+        if (now >= record.resetAt) {
+            this.attempts.delete(ip);
+            return true;
+        }
+
+        // Max attempt'e ulaşıldıysa engelle
+        return record.count < this.MAX_ATTEMPTS;
+    }
+
+    recordFailure(ip) {
+        const now = Date.now();
+        const record = this.attempts.get(ip) || { count: 0, resetAt: now + this.WINDOW_MS };
+
+        record.count++;
+        record.resetAt = now + this.WINDOW_MS;
+        this.attempts.set(ip, record);
+
+        console.log(`⚠️  Admin login başarısız: ${ip} - Deneme: ${record.count}/${this.MAX_ATTEMPTS}`);
+    }
+
+    recordSuccess(ip) {
+        this.attempts.delete(ip);
+    }
+
+    cleanup() {
+        const now = Date.now();
+        for (const [ip, record] of this.attempts.entries()) {
+            if (now >= record.resetAt) {
+                this.attempts.delete(ip);
+            }
+        }
+    }
+
+    getRemainingTime(ip) {
+        const record = this.attempts.get(ip);
+        if (!record) return 0;
+
+        const remaining = Math.ceil((record.resetAt - Date.now()) / 1000 / 60);
+        return Math.max(0, remaining);
+    }
+}
+
+const adminLoginLimiter = new AdminLoginLimiter();
 
 // WebSocket session middleware - HTTP session'ı Socket.io'da kullan
 io.use((socket, next) => {
@@ -1088,7 +1178,23 @@ io.on('connection', async (socket) => {
 
     // Admin şifre kontrolü
     socket.on('admin-login', (password, callback) => {
+        // GÜVENLİK: Brute-force koruması
+        const clientIP = botProtection.getClientIP(socket);
+
+        if (!adminLoginLimiter.check(clientIP)) {
+            const remainingMinutes = adminLoginLimiter.getRemainingTime(clientIP);
+            callback({
+                success: false,
+                error: `Çok fazla başarısız deneme! ${remainingMinutes} dakika sonra tekrar deneyin.`
+            });
+            console.log(`🛡️  Admin login engellendi (rate limit): ${clientIP} - ${remainingMinutes} dakika`);
+            return;
+        }
+
         if (password === ADMIN_PASSWORD) {
+            // Başarılı giriş - IP'yi temizle
+            adminLoginLimiter.recordSuccess(clientIP);
+
             // GÜVENLİK: Admin session'ı aktif et (socket.data)
             socket.data.isAdmin = true;
 
@@ -1114,17 +1220,20 @@ io.on('connection', async (socket) => {
                             console.error('Admin session save error:', saveErr);
                         }
                         callback({ success: true });
-                        console.log('✓ Admin girişi yapıldı:', socket.id);
+                        console.log('✓ Admin girişi yapıldı:', socket.id, '- IP:', clientIP);
                     });
                 });
             } else {
                 // Session yoksa direkt callback
                 callback({ success: true });
-                console.log('✓ Admin girişi yapıldı (session yok):', socket.id);
+                console.log('✓ Admin girişi yapıldı (session yok):', socket.id, '- IP:', clientIP);
             }
         } else {
+            // Başarısız giriş - kaydet
+            adminLoginLimiter.recordFailure(clientIP);
+
             callback({ success: false, error: 'Yanlış şifre!' });
-            console.log('⚠️  Başarısız admin girişi:', socket.id);
+            console.log('⚠️  Başarısız admin girişi:', socket.id, '- IP:', clientIP);
         }
     });
 
