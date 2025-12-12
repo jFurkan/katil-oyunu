@@ -15,6 +15,9 @@ const { pool, initDatabase } = require('./database');
 const app = express();
 const server = http.createServer(app);
 
+// Railway/Reverse proxy için trust proxy ayarı
+app.set('trust proxy', 1); // Railway, Heroku gibi platformlar için gerekli
+
 // CORS ayarları - production'da kısıtla
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
 
@@ -752,7 +755,12 @@ io.on('connection', async (socket) => {
                 io.emit('users-update', users);
             });
 
-            console.log('Kullanıcı kaydedildi:', trimmedNick, '- IP:', clientIP);
+            // Log mesajı - yeni kayıt mı yoksa reconnect mi?
+            if (isReconnect) {
+                console.log('✓ Kullanıcı yeniden bağlandı:', trimmedNick, '- IP:', clientIP, '- userId:', userId);
+            } else {
+                console.log('✓ Yeni kullanıcı kaydedildi:', trimmedNick, '- IP:', clientIP, '- userId:', userId);
+            }
 
         } catch (err) {
             await client.query('ROLLBACK');
@@ -1898,15 +1906,23 @@ io.on('connection', async (socket) => {
             }
 
             // GÜVENLİK: Session'ı temizle (HTTP-only cookie)
-            socket.request.session.destroy((err) => {
-                if (err) {
-                    console.error('Session destroy error:', err);
-                }
+            if (socket.request.session) {
+                socket.request.session.destroy((err) => {
+                    if (err) {
+                        console.error('Session destroy error:', err);
+                    }
+                    socket.data.userId = null;
+                    socket.data.isAdmin = false;
+                    console.log('✓ Kullanıcı çıkış yaptı:', socket.id);
+                    if (callback) callback({ success: true });
+                });
+            } else {
+                // Session yoksa direkt temizle
                 socket.data.userId = null;
                 socket.data.isAdmin = false;
-                console.log('✓ Kullanıcı çıkış yaptı:', socket.id);
+                console.log('✓ Kullanıcı çıkış yaptı (session yok):', socket.id);
                 if (callback) callback({ success: true });
-            });
+            }
 
             // Kullanıcı listesini güncelle
             const users = await getUsersByTeam();
