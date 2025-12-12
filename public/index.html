@@ -1199,31 +1199,74 @@
 
             <!-- IP Logları Bölümü -->
             <div id="adminSectionIplogs" class="admin-section" style="display:none;">
-                <h3 style="color:var(--gold); font-size:18px; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">🔍 IP Aktivite Logları</h3>
+                <h3 style="color:var(--gold); font-size:18px; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">🔍 IP Yönetimi</h3>
 
-                <!-- Bilgilendirme -->
-                <div style="background:#1a1a1a; border-left:4px solid var(--gold); padding:15px; margin-bottom:20px; border-radius:8px;">
-                    <p style="color:#aaa; font-size:13px; line-height:1.6; margin:0;">
-                        Son 24 saat içinde IP bazlı aktiviteler. Bir IP'den çok fazla kullanıcı/takım oluşturulmasını engellemek için bu limitler vardır.
-                        <br><strong style="color:var(--gold);">Kullanıcı Kaydı:</strong> Aynı IP'den 24 saatte maksimum 3 kayıt
-                        <br><strong style="color:var(--gold);">Takım Oluşturma:</strong> Aynı IP'den 24 saatte maksimum 2 takım
-                        <br><br><strong style="color:#ff9800;">💡 Not:</strong> Bir IP limiti dolduğunda (örn: 3/3), "Limiti Sıfırla" butonuyla o IP'nin hakkını yenileyebilirsin.
-                    </p>
-                </div>
-
-                <!-- Yenile ve Tümünü Sıfırla Butonları -->
+                <!-- Tab Butonları -->
                 <div style="display:flex; gap:10px; margin-bottom:20px;">
-                    <button class="btn btn-primary" style="width:auto; padding:12px 24px; margin:0;" onclick="IP_LOGS.loadLogs()">🔄 Yenile</button>
-                    <button class="btn" style="width:auto; padding:12px 24px; margin:0; background:#500; color:#faa; border:1px solid #700;" onclick="IP_LOGS.clearAll()">🗑️ Tüm Logları Sıfırla</button>
+                    <button id="ipTabLogs" class="btn btn-primary" style="width:auto; padding:12px 24px; margin:0;" onclick="IP_SECTION.showTab('logs')">📊 Aktivite Logları</button>
+                    <button id="ipTabUsers" class="btn" style="width:auto; padding:12px 24px; margin:0;" onclick="IP_SECTION.showTab('users')">👥 Kullanıcı Kayıtları</button>
                 </div>
 
-                <!-- Loglar Tablosu -->
-                <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:20px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                        <h3 style="color:#888; font-size:13px; text-transform:uppercase; letter-spacing:1px;">Aktivite Logları</h3>
-                        <span id="ipLogsCount" style="color:#666; font-size:12px;">0 kayıt</span>
+                <!-- TAB 1: Aktivite Logları -->
+                <div id="ipTabContentLogs" style="display:block;">
+                    <!-- Bilgilendirme -->
+                    <div style="background:#1a1a1a; border-left:4px solid var(--gold); padding:15px; margin-bottom:20px; border-radius:8px;">
+                        <p style="color:#aaa; font-size:13px; line-height:1.6; margin:0;">
+                            Son 24 saat içinde IP bazlı aktiviteler. Bir IP'den çok fazla kullanıcı/takım oluşturulmasını engellemek için bu limitler vardır.
+                            <br><strong style="color:var(--gold);">Kullanıcı Kaydı:</strong> Aynı IP'den 24 saatte maksimum 3 kayıt
+                            <br><strong style="color:var(--gold);">Takım Oluşturma:</strong> Aynı IP'den 24 saatte maksimum 2 takım
+                            <br><br><strong style="color:#ff9800;">💡 Not:</strong> Bir IP limiti dolduğunda (örn: 3/3), "Limiti Sıfırla" butonuyla o IP'nin hakkını yenileyebilirsin.
+                        </p>
                     </div>
-                    <div id="ipLogsList" style="display:flex; flex-direction:column; gap:12px; min-height:100px;"></div>
+
+                    <!-- Yenile ve Tümünü Sıfırla Butonları -->
+                    <div style="display:flex; gap:10px; margin-bottom:20px;">
+                        <button class="btn btn-primary" style="width:auto; padding:12px 24px; margin:0;" onclick="IP_LOGS.loadLogs()">🔄 Yenile</button>
+                        <button class="btn" style="width:auto; padding:12px 24px; margin:0; background:#500; color:#faa; border:1px solid #700;" onclick="IP_LOGS.clearAll()">🗑️ Tüm Logları Sıfırla</button>
+                    </div>
+
+                    <!-- Loglar Tablosu -->
+                    <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                            <h3 style="color:#888; font-size:13px; text-transform:uppercase; letter-spacing:1px;">Aktivite Logları</h3>
+                            <span id="ipLogsCount" style="color:#666; font-size:12px;">0 kayıt</span>
+                        </div>
+                        <div id="ipLogsList" style="display:flex; flex-direction:column; gap:12px; min-height:100px;"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Kullanıcı Kayıtları -->
+                <div id="ipTabContentUsers" style="display:none;">
+                    <!-- Bilgilendirme -->
+                    <div style="background:#1a1a1a; border-left:4px solid #3b82f6; padding:15px; margin-bottom:20px; border-radius:8px;">
+                        <p style="color:#aaa; font-size:13px; line-height:1.6; margin:0;">
+                            Bir IP adresinden kayıt olan tüm kullanıcıları görebilir ve silebilirsiniz.
+                            <br><strong style="color:#3b82f6;">Kullanıcı Silme:</strong> Bir kullanıcıyı sildiğinizde, başka biri o nickname ile kaydolabilir.
+                            <br><br><strong style="color:#ff9800;">💡 Not:</strong> Eğer birisi "furkan1" nickname'ini almak istiyorsa ama kullanımda ise, eski "furkan1" kullanıcısını buradan silebilirsiniz.
+                        </p>
+                    </div>
+
+                    <!-- IP Seçimi -->
+                    <div style="margin-bottom:20px;">
+                        <label style="color:#888; font-size:13px; display:block; margin-bottom:8px;">IP Adresi Seç:</label>
+                        <div style="display:flex; gap:10px;">
+                            <select id="ipSelect" style="flex:1; padding:12px; background:var(--card-bg); border:1px solid var(--border-color); border-radius:8px; color:#fff; font-size:14px;">
+                                <option value="">-- IP Seçin --</option>
+                            </select>
+                            <button class="btn btn-primary" style="width:auto; padding:12px 24px; margin:0;" onclick="IP_USERS.loadUsers()">🔍 Kullanıcıları Getir</button>
+                        </div>
+                    </div>
+
+                    <!-- Kullanıcılar Listesi -->
+                    <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                            <h3 style="color:#888; font-size:13px; text-transform:uppercase; letter-spacing:1px;">Kullanıcı Kayıtları</h3>
+                            <span id="ipUsersCount" style="color:#666; font-size:12px;">0 kullanıcı</span>
+                        </div>
+                        <div id="ipUsersList" style="display:flex; flex-direction:column; gap:12px; min-height:100px;">
+                            <div style="color:#666; text-align:center; padding:30px;">IP adresi seçin ve "Kullanıcıları Getir" butonuna basın</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2088,9 +2131,9 @@
                         renderCreditsList();
                     }
 
-                    // IP Logları bölümü açıldıysa logları yükle
+                    // IP Logları bölümü açıldıysa varsayılan tab'ı göster
                     if (section === 'iplogs') {
-                        IP_LOGS.loadLogs();
+                        IP_SECTION.showTab('logs');
                     }
                 },
 
@@ -2303,6 +2346,38 @@
                 }
             };
 
+            // IP SECTION FONKSİYONLARI (Tab Yönetimi)
+            window.IP_SECTION = {
+                currentTab: 'logs',
+
+                showTab: function(tab) {
+                    // Tab içeriklerini gizle/göster
+                    document.getElementById('ipTabContentLogs').style.display = tab === 'logs' ? 'block' : 'none';
+                    document.getElementById('ipTabContentUsers').style.display = tab === 'users' ? 'block' : 'none';
+
+                    // Tab butonlarını güncelle
+                    var logsBtn = document.getElementById('ipTabLogs');
+                    var usersBtn = document.getElementById('ipTabUsers');
+
+                    logsBtn.classList.remove('btn-primary');
+                    logsBtn.classList.add('btn');
+                    usersBtn.classList.remove('btn-primary');
+                    usersBtn.classList.add('btn');
+
+                    if (tab === 'logs') {
+                        logsBtn.classList.remove('btn');
+                        logsBtn.classList.add('btn-primary');
+                        IP_LOGS.loadLogs();
+                    } else if (tab === 'users') {
+                        usersBtn.classList.remove('btn');
+                        usersBtn.classList.add('btn-primary');
+                        IP_USERS.loadIPList();
+                    }
+
+                    this.currentTab = tab;
+                }
+            };
+
             // IP LOGS FONKSİYONLARI
             window.IP_LOGS = {
                 logs: [],
@@ -2422,6 +2497,152 @@
                         if (res.success) {
                             toast('Tüm loglar sıfırlandı: ' + res.deletedCount + ' kayıt silindi');
                             IP_LOGS.loadLogs();
+                        } else {
+                            toast(res.error, true);
+                        }
+                    });
+                }
+            };
+
+            // IP USERS FONKSİYONLARI (Kullanıcı Kayıtları)
+            window.IP_USERS = {
+                ips: [],
+                users: [],
+
+                loadIPList: function() {
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
+                    socket.emit('get-all-ips', function(res) {
+                        if (res.success) {
+                            IP_USERS.ips = res.ips;
+                            IP_USERS.renderIPDropdown();
+                        } else {
+                            toast(res.error, true);
+                        }
+                    });
+                },
+
+                renderIPDropdown: function() {
+                    var select = document.getElementById('ipSelect');
+                    if (!select) return;
+
+                    var html = '<option value="">-- IP Seçin --</option>';
+                    this.ips.forEach(function(ip) {
+                        var date = new Date(ip.last_activity);
+                        var timeStr = date.toLocaleString('tr-TR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        html += `<option value="${htmlEscape(ip.ip_address)}">${htmlEscape(ip.ip_address)} (${ip.user_count} kullanıcı - Son: ${timeStr})</option>`;
+                    });
+
+                    select.innerHTML = html;
+                },
+
+                loadUsers: function() {
+                    var select = document.getElementById('ipSelect');
+                    var ipAddress = select.value;
+
+                    if (!ipAddress) {
+                        toast('Lütfen bir IP adresi seçin', true);
+                        return;
+                    }
+
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
+                    socket.emit('get-users-by-ip', ipAddress, function(res) {
+                        if (res.success) {
+                            IP_USERS.users = res.users;
+                            IP_USERS.render();
+                            toast('Kullanıcılar yüklendi: ' + res.users.length + ' kayıt');
+                        } else {
+                            toast(res.error, true);
+                        }
+                    });
+                },
+
+                render: function() {
+                    var container = document.getElementById('ipUsersList');
+                    var countEl = document.getElementById('ipUsersCount');
+
+                    if (!container) return;
+
+                    countEl.textContent = this.users.length + ' kullanıcı';
+
+                    if (this.users.length === 0) {
+                        container.innerHTML = '<div style="color:#666; text-align:center; padding:30px;">Bu IP\'den kayıtlı kullanıcı yok</div>';
+                        return;
+                    }
+
+                    var html = '';
+                    this.users.forEach(function(user) {
+                        var onlineStatus = user.online ? '🟢 Online' : '⚫ Offline';
+                        var onlineColor = user.online ? '#10b981' : '#666';
+                        var date = new Date(user.created_at);
+                        var timeStr = date.toLocaleString('tr-TR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+
+                        var teamInfo = user.team_name ? `<span style="color:#8b5cf6;">👥 Takım: ${htmlEscape(user.team_name)}</span>` : '<span style="color:#666;">Takımsız</span>';
+
+                        html += `
+                        <div style="background:#1a1a1a; border:1px solid #333; border-radius:8px; padding:15px;">
+                            <div style="display:flex; justify-content:space-between; align-items:start;">
+                                <div style="flex:1;">
+                                    <div style="color:#fff; font-weight:600; font-size:16px; margin-bottom:8px;">
+                                        ${htmlEscape(user.nickname)}
+                                    </div>
+                                    <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom:8px;">
+                                        <span style="color:${onlineColor}; font-size:12px;">${onlineStatus}</span>
+                                        ${teamInfo}
+                                    </div>
+                                    <div style="color:#666; font-size:12px;">
+                                        📅 Kayıt: ${timeStr}
+                                    </div>
+                                    <div style="color:#888; font-size:11px; margin-top:5px;">
+                                        ID: ${user.id}
+                                    </div>
+                                </div>
+                                <button class="btn" style="width:auto; padding:8px 16px; margin:0; font-size:12px; background:#dc2626; border-color:#dc2626; color:#fff;"
+                                    onclick="IP_USERS.deleteUser(${user.id}, '${htmlEscape(user.nickname).replace(/'/g, "\\'")}')"
+                                    title="Bu kullanıcıyı sil">
+                                    🗑️ Sil
+                                </button>
+                            </div>
+                        </div>
+                        `;
+                    });
+
+                    container.innerHTML = html;
+                },
+
+                deleteUser: function(userId, nickname) {
+                    if (!confirm(`"${nickname}" kullanıcısını silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz ve başka biri bu nickname ile kaydolabilir.`)) {
+                        return;
+                    }
+
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
+                    socket.emit('delete-user', userId, function(res) {
+                        if (res.success) {
+                            toast('Kullanıcı silindi: ' + res.user.nickname);
+                            // Listeyi yenile
+                            IP_USERS.loadUsers();
                         } else {
                             toast(res.error, true);
                         }
