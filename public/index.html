@@ -917,10 +917,7 @@
             <!-- Emeği Geçenler -->
             <div class="credits">
                 <h3>Emeği Geçenler</h3>
-                <div class="credits-list" id="mainCreditsList">
-                    <div class="credit-item">Furkan</div>
-                    <div class="credit-item">Claude</div>
-                </div>
+                <div class="credits-list" id="nicknameCreditsList"></div>
                 <div class="credits-note">Bu oyun Katil Kim? dedektiflik oyunu için geliştirilmiştir.</div>
             </div>
         </div>
@@ -956,10 +953,7 @@
             <!-- Emeği Geçenler -->
             <div id="lobbyCredits" class="credits">
                 <h3>Emeği Geçenler</h3>
-                <div class="credits-list" id="mainCreditsList">
-                    <div class="credit-item">Furkan</div>
-                    <div class="credit-item">Claude</div>
-                </div>
+                <div class="credits-list" id="lobbyCreditsList"></div>
                 <div class="credits-note">Bu oyun Katil Kim? dedektiflik oyunu için geliştirilmiştir.</div>
             </div>
 
@@ -3020,19 +3014,21 @@
 
             // Ana sayfa emeği geçenler listesini render et
             function renderMainCredits() {
-                var container = document.getElementById('mainCreditsList');
-                if (!container) return;
-
-                if (credits.length === 0) {
-                    container.innerHTML = '<div class="credit-item">-</div>';
-                    return;
-                }
+                var nicknameContainer = document.getElementById('nicknameCreditsList');
+                var lobbyContainer = document.getElementById('lobbyCreditsList');
 
                 var html = '';
-                credits.forEach(function(credit) {
-                    html += `<div class="credit-item" onclick="GAME.showCreditDetail('${credit.id}')">${htmlEscape(credit.name)}</div>`;
-                });
-                container.innerHTML = html;
+                if (credits.length === 0) {
+                    html = '<div class="credit-item">-</div>';
+                } else {
+                    credits.forEach(function(credit) {
+                        html += `<div class="credit-item" onclick="GAME.showCreditDetail('${credit.id}')">${htmlEscape(credit.name)}</div>`;
+                    });
+                }
+
+                // Her iki listeyi de güncelle
+                if (nicknameContainer) nicknameContainer.innerHTML = html;
+                if (lobbyContainer) lobbyContainer.innerHTML = html;
             }
 
             // Socket Listeners
