@@ -1523,6 +1523,16 @@
             // Route 1: Login/Nickname page
             router.register('/', () => {
                 showPage('pgNickname');
+
+                return {
+                    cleanup: () => {
+                        // Cleanup: Form inputlarını temizle
+                        var nicknameInput = document.getElementById('inpNickname');
+                        if (nicknameInput) {
+                            nicknameInput.value = '';
+                        }
+                    }
+                };
             });
 
             // Route 2: Lobby - requires authentication
@@ -1532,6 +1542,14 @@
                     return;
                 }
                 showPage('pgLobby');
+
+                return {
+                    cleanup: () => {
+                        // Cleanup: Modal'ları kapat
+                        GAME.hideCreateForm();
+                        GAME.hideJoinForm();
+                    }
+                };
             });
 
             // Route 3: Team page - requires authentication and team ID
@@ -1552,6 +1570,13 @@
                         router.navigate('/lobby');
                     }
                 });
+
+                return {
+                    cleanup: () => {
+                        // Cleanup: Takım ID'sini temizle (sadece başka bir route'a gidiyorsa)
+                        // currentTeamId = null; // exitTeam fonksiyonu bunu yapıyor
+                    }
+                };
             });
 
             // Route 4: Admin panel main page
@@ -1563,6 +1588,16 @@
                 showPage('pgAdmin');
                 renderAdminList();
                 ADMIN.showSection('game'); // Default section
+
+                return {
+                    cleanup: () => {
+                        // Cleanup: Admin panel form'larını temizle
+                        var generalClueInput = document.getElementById('inpGeneralClue');
+                        if (generalClueInput) {
+                            generalClueInput.value = '';
+                        }
+                    }
+                };
             });
 
             // Route 5: Admin panel sections
@@ -1574,12 +1609,28 @@
                 showPage('pgAdmin');
                 renderAdminList();
                 ADMIN.showSection(section);
+
+                return {
+                    cleanup: () => {
+                        // Cleanup: Admin panel form'larını temizle
+                        var generalClueInput = document.getElementById('inpGeneralClue');
+                        if (generalClueInput) {
+                            generalClueInput.value = '';
+                        }
+                    }
+                };
             });
 
             // Route 6: Public scoreboard
             router.register('/scoreboard', () => {
                 showPage('pgScoreboard');
                 renderScoreboard();
+
+                return {
+                    cleanup: () => {
+                        // Cleanup: Scoreboard sayfasında özel temizlik yok
+                    }
+                };
             });
 
             // Route 7: Notifications - requires authentication
@@ -1590,6 +1641,12 @@
                 }
                 showPage('pgNotifications');
                 NOTIF.render();
+
+                return {
+                    cleanup: () => {
+                        // Cleanup: Notification sayfasında özel temizlik yok
+                    }
+                };
             });
 
             // Socket bağlantı event'leri
@@ -1658,6 +1715,23 @@
             var notifications = JSON.parse(sessionStorage.getItem('notifications') || '[]');
             var generalClues = [];
             var popupTimeout = null;
+
+            // Global timeout tracking - Memory leak önleme
+            var activeTimeouts = [];
+            function trackTimeout(timeoutId) {
+                activeTimeouts.push(timeoutId);
+                return timeoutId;
+            }
+            function clearAllTimeouts() {
+                activeTimeouts.forEach(function(id) {
+                    clearTimeout(id);
+                });
+                activeTimeouts = [];
+                if (popupTimeout) {
+                    clearTimeout(popupTimeout);
+                    popupTimeout = null;
+                }
+            }
 
             // Oyun durumu
             var gameState = {
@@ -1818,6 +1892,9 @@
 
                 logout: function() {
                     if (confirm('Çıkış yapmak istediğinize emin misiniz?')) {
+                        // Cleanup: Tüm timeout'ları temizle
+                        clearAllTimeouts();
+
                         // GÜVENLİK: Session'ı temizle
                         currentUser = null;
                         currentTeamId = null;
@@ -1837,6 +1914,9 @@
                 backToMain: function() {
                     // UX İYİLEŞTİRME: Ana sayfaya dön - logout yap
                     if (confirm('Ana sayfaya dönmek için çıkış yapılacak. Emin misiniz?')) {
+                        // Cleanup: Tüm timeout'ları temizle
+                        clearAllTimeouts();
+
                         currentUser = null;
                         currentTeamId = null;
 
@@ -2040,6 +2120,9 @@
                 exitGame: function() {
                     // Oyundan çıkış - logout yap
                     if (confirm('Oyundan çıkmak istediğinize emin misiniz?')) {
+                        // Cleanup: Tüm timeout'ları temizle
+                        clearAllTimeouts();
+
                         currentUser = null;
                         currentTeamId = null;
 
@@ -3327,6 +3410,9 @@
 
             // Kullanıcı silindi (admin tarafından)
             socket.on('user-deleted', function() {
+                // Cleanup: Tüm timeout'ları temizle
+                clearAllTimeouts();
+
                 // GÜVENLİK: Session temizliği
                 currentUser = null;
                 currentTeamId = null;
