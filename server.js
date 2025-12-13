@@ -2097,3 +2097,67 @@ async function startServer() {
 }
 
 startServer();
+
+// ========================================
+// GRACEFUL SHUTDOWN - Deploy sırasında veri kaybını önle
+// ========================================
+
+let isShuttingDown = false;
+
+// SIGTERM: Railway/Heroku deployment sinyali
+process.on('SIGTERM', gracefulShutdown);
+
+// SIGINT: Ctrl+C (local development)
+process.on('SIGINT', gracefulShutdown);
+
+async function gracefulShutdown(signal) {
+    if (isShuttingDown) {
+        console.log('⏳ Zaten kapatılıyor, lütfen bekleyin...');
+        return;
+    }
+
+    isShuttingDown = true;
+    console.log(`\n🛑 ${signal} sinyali alındı - Güvenli kapatılıyor...`);
+
+    // 1. Yeni HTTP bağlantılarını reddet
+    server.close(() => {
+        console.log('✓ HTTP server kapatıldı (yeni bağlantılar reddediliyor)');
+    });
+
+    // 2. Tüm WebSocket bağlantılarını bilgilendir ve kapat
+    console.log(`⏳ ${io.sockets.sockets.size} WebSocket bağlantısı kapatılıyor...`);
+    io.sockets.sockets.forEach((socket) => {
+        socket.emit('server-shutdown', { message: 'Sunucu güncelleniyor, lütfen sayfayı yenileyin.' });
+        socket.disconnect(true);
+    });
+    console.log('✓ Tüm WebSocket bağlantıları kapatıldı');
+
+    // 3. Aktif countdown'ları durdur
+    if (gameState.countdownInterval) {
+        clearInterval(gameState.countdownInterval);
+        console.log('✓ Oyun countdown\'ı durduruldu');
+    }
+
+    // 4. Database pool'u temiz kapat
+    try {
+        await pool.end();
+        console.log('✓ Database connection pool kapatıldı');
+    } catch (err) {
+        console.error('❌ Database pool kapatma hatası:', err);
+    }
+
+    // 5. Temiz çıkış
+    console.log('✓ Güvenli kapatma tamamlandı!\n');
+    process.exit(0);
+}
+
+// Yakalanmamış hata durumunda da graceful shutdown
+process.on('uncaughtException', (err) => {
+    console.error('❌ Yakalanmamış hata:', err);
+    gracefulShutdown('UNCAUGHT_EXCEPTION');
+});
+
+process.on('unhandledRejection', (reason) => {
+    console.error('❌ Yakalanmamış promise rejection:', reason);
+    gracefulShutdown('UNHANDLED_REJECTION');
+});

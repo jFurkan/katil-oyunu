@@ -3212,6 +3212,14 @@
                 toast('Hesabınız yönetici tarafından silindi.', true);
             });
 
+            // Server kapatılıyor (deployment/güncelleme)
+            socket.on('server-shutdown', function(data) {
+                toast('Sunucu güncelleniyor... Sayfa 3 saniye sonra yenilenecek.', false);
+                setTimeout(function() {
+                    window.location.reload();
+                }, 3000);
+            });
+
             // Init
             window.onload = function() {
                 // UX İYİLEŞTİRME: Her zaman temiz bir başlangıç
