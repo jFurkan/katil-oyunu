@@ -1884,7 +1884,12 @@
                             currentUser = { userId: res.userId, nickname: res.nickname };
                             updateCurrentUserDisplay();
                             console.log('✅ Kayıt başarılı! UserId:', res.userId);
-                            router.navigate('/lobby');
+
+                            // ÖNCE sayfayı değiştir
+                            showPage('pgLobby');
+                            // SONRA URL'i güncelle (history'ye ekleme)
+                            history.pushState(null, null, '/lobby');
+
                             toast('Hoşgeldin, ' + res.nickname + '!');
                         } else {
                             toast(res.error, true);
@@ -2015,7 +2020,12 @@
                             GAME.hideCreateForm();
                             document.getElementById('inpNewTeam').value = '';
                             document.getElementById('inpNewTeamPassword').value = '';
-                            router.navigate('/team/' + res.team.id);
+
+                            // ÖNCE sayfayı değiştir ve render et
+                            showPage('pgTeam');
+                            renderTeamPage(res.team);
+                            // SONRA URL'i güncelle
+                            history.pushState(null, null, '/team/' + res.team.id);
                         } else { toast(res.error, true); }
                     });
                 },
@@ -2054,7 +2064,12 @@
                             currentTeamId = selectedJoinId;
                             GAME.hideJoinForm();
                             document.getElementById('inpJoinPassword').value = '';
-                            router.navigate('/team/' + selectedJoinId);
+
+                            // ÖNCE sayfayı değiştir ve render et
+                            showPage('pgTeam');
+                            renderTeamPage(res.team);
+                            // SONRA URL'i güncelle
+                            history.pushState(null, null, '/team/' + selectedJoinId);
                         } else { toast(res.error, true); }
                     });
                 },
@@ -2106,7 +2121,13 @@
                         if (res.success) {
                             isAdmin = true; // Admin yetkisini set et
                             GAME.hidePassModal();
-                            router.navigate('/admin');
+
+                            // ÖNCE sayfayı değiştir
+                            showPage('pgAdmin');
+                            renderAdminList();
+                            ADMIN.showSection('game');
+                            // SONRA URL'i güncelle
+                            history.pushState(null, null, '/admin');
                         } else { toast('Hatalı şifre', true); }
                     });
                 },
