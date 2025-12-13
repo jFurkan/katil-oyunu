@@ -1665,38 +1665,33 @@
                         };
                         updateCurrentUserDisplay();
 
-                        // URL'e göre yönlendirme (mevcut sayfayı koru)
-                        var currentPath = window.location.pathname;
-
-                        if (currentPath === '/' || currentPath === '') {
-                            // Ana sayfadaysa, session'a göre yönlendir
-                            if (response.teamId) {
-                                currentTeamId = response.teamId;
-                                router.navigate('/team/' + response.teamId, false);
-                            } else {
-                                router.navigate('/lobby', false);
-                            }
-                        } else {
-                            // Mevcut URL'i koru, sadece route handler'ı çalıştır
-                            if (response.teamId) {
-                                currentTeamId = response.teamId;
-                            }
-                            router.handleRoute(currentPath);
+                        // Takım ID'sini restore et
+                        if (response.teamId) {
+                            currentTeamId = response.teamId;
                         }
 
                         console.log('✅ Session restore edildi:', response.nickname);
                     } else {
-                        // Session yok veya süresi dolmuş - giriş sayfasına yönlendir (normal durum)
+                        // Session yok veya süresi dolmuş
                         currentUser = null;
                         currentTeamId = null;
                         updateCurrentUserDisplay();
+                        console.log('ℹ️  Session bulunamadı');
+                    }
 
-                        // Sadece login sayfası dışındaysa yönlendir
-                        if (window.location.pathname !== '/') {
-                            router.navigate('/', false);
+                    // ROUTING: Session restore sonrası, mevcut URL'e göre sayfa göster
+                    var currentPath = window.location.pathname;
+
+                    // Ana sayfadaysa ve session varsa, uygun sayfaya yönlendir
+                    if ((currentPath === '/' || currentPath === '') && currentUser) {
+                        if (currentTeamId) {
+                            router.navigate('/team/' + currentTeamId, false);
+                        } else {
+                            router.navigate('/lobby', false);
                         }
-
-                        console.log('ℹ️  Session bulunamadı, giriş sayfasına yönlendirildi');
+                    } else {
+                        // Mevcut URL'i handle et (route handler'lar auth check yapacak)
+                        router.handleRoute(currentPath);
                     }
                 });
             });
@@ -3442,8 +3437,9 @@
                 renderMainCredits(); // Ana sayfa emeği geçenler listesini render et
                 updateCurrentUserDisplay(); // Kullanıcı bilgisi display'ini güncelle
 
-                // ROUTING: URL'e göre ilgili sayfayı göster
-                router.init();
+                // ROUTING: Socket connect'ten sonra yapılacak (session restore sonrası)
+                // Loading durumu göster (nickname sayfası default olarak aktif)
+                showPage('pgNickname', false);
             };
         })();
     </script>
