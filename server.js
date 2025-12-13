@@ -347,6 +347,21 @@ async function getUsersByTeam() {
     return result.rows;
 }
 
+// Team messages fonksiyonları
+async function getTeamMessages(limit = 50, offset = 0) {
+    const result = await pool.query(`
+        SELECT * FROM team_messages
+        ORDER BY created_at DESC
+        LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+    return result.rows.reverse(); // Eskiden yeniye sıralı döndür
+}
+
+async function getTeamMessagesCount() {
+    const result = await pool.query('SELECT COUNT(*) FROM team_messages');
+    return parseInt(result.rows[0].count);
+}
+
 // Socket.IO Event Rate Limiter (Spam koruması)
 class SocketRateLimiter {
     constructor() {
@@ -1629,6 +1644,93 @@ io.on('connection', async (socket) => {
 
         callback({ success: true });
         console.log('Duyuru gönderildi:', messageValidation.value);
+    });
+
+    // Takımlar arası mesaj gönder
+    socket.on('send-team-message', async (message, callback) => {
+        // GÜVENLİK: Kullanıcı kontrolü
+        if (!socket.data.userId) {
+            callback({ success: false, error: 'Önce giriş yapmalısınız!' });
+            return;
+        }
+
+        // Rate limiting: 20 mesaj/dakika
+        if (!rateLimiter.check(socket.id, 'send-team-message', 20, 60000)) {
+            callback({ success: false, error: 'Çok hızlı mesaj gönderiyorsunuz!' });
+            console.log('⚠️  Rate limit: send-team-message -', socket.id);
+            return;
+        }
+
+        // GÜVENLİK: Input validation & XSS koruması
+        const messageValidation = InputValidator.validateMessage(message, 500);
+        if (!messageValidation.valid) {
+            callback({ success: false, error: messageValidation.error });
+            return;
+        }
+
+        try {
+            // Kullanıcı bilgilerini al
+            const userResult = await pool.query(
+                'SELECT u.id, u.nickname, u.team_id, t.name as team_name FROM users u LEFT JOIN teams t ON u.team_id = t.id WHERE u.id = $1',
+                [socket.data.userId]
+            );
+
+            if (userResult.rows.length === 0) {
+                callback({ success: false, error: 'Kullanıcı bulunamadı!' });
+                return;
+            }
+
+            const user = userResult.rows[0];
+
+            if (!user.team_id) {
+                callback({ success: false, error: 'Takıma katılmalısınız!' });
+                return;
+            }
+
+            // Mesajı veritabanına kaydet
+            const insertResult = await pool.query(
+                'INSERT INTO team_messages (team_id, user_id, nickname, team_name, message) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+                [user.team_id, user.id, user.nickname, user.team_name, messageValidation.value]
+            );
+
+            const newMessage = insertResult.rows[0];
+
+            // Tüm kullanıcılara mesajı gönder
+            io.emit('new-team-message', newMessage);
+
+            callback({ success: true, message: newMessage });
+            console.log(`💬 ${user.nickname} (${user.team_name}): ${messageValidation.value.substring(0, 50)}...`);
+        } catch (err) {
+            console.error('Mesaj gönderme hatası:', err);
+            callback({ success: false, error: 'Mesaj gönderilemedi!' });
+        }
+    });
+
+    // Takım mesajlarını yükle (pagination)
+    socket.on('load-team-messages', async (data, callback) => {
+        try {
+            const page = data?.page || 1;
+            const limit = 50;
+            const offset = (page - 1) * limit;
+
+            const messages = await getTeamMessages(limit, offset);
+            const totalCount = await getTeamMessagesCount();
+            const totalPages = Math.ceil(totalCount / limit);
+
+            callback({
+                success: true,
+                messages: messages,
+                pagination: {
+                    currentPage: page,
+                    totalPages: totalPages,
+                    totalMessages: totalCount,
+                    hasMore: page < totalPages
+                }
+            });
+        } catch (err) {
+            console.error('Mesaj yükleme hatası:', err);
+            callback({ success: false, error: 'Mesajlar yüklenemedi!' });
+        }
     });
 
     // Oyunu başlat (admin)

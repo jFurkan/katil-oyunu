@@ -109,6 +109,25 @@ async function initDatabase() {
             ADD COLUMN IF NOT EXISTS captain_nickname TEXT
         `);
 
+        // Team messages tablosu (takımlar arası chat)
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS team_messages (
+                id SERIAL PRIMARY KEY,
+                team_id TEXT REFERENCES teams(id) ON DELETE CASCADE,
+                user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+                nickname TEXT NOT NULL,
+                team_name TEXT NOT NULL,
+                message TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        `);
+
+        // Team messages index (pagination için)
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_team_messages_created_at
+            ON team_messages(created_at DESC)
+        `);
+
         // IP Activity tracking tablosu (Bot farm koruması)
         await pool.query(`
             CREATE TABLE IF NOT EXISTS ip_activity (
