@@ -1561,6 +1561,7 @@
                     return;
                 }
                 showPage('pgAdmin');
+                renderAdminList();
                 ADMIN.showSection('game'); // Default section
             });
 
@@ -1571,6 +1572,7 @@
                     return;
                 }
                 showPage('pgAdmin');
+                renderAdminList();
                 ADMIN.showSection(section);
             });
 
@@ -1606,18 +1608,23 @@
                         };
                         updateCurrentUserDisplay();
 
-                        // Eğer takımı varsa takım sayfasına yönlendir
-                        if (response.teamId) {
-                            currentTeamId = response.teamId;
-                            var team = teams.find(t => t.id === response.teamId);
-                            if (team) {
-                                showPage('pgTeam');
+                        // URL'e göre yönlendirme (mevcut sayfayı koru)
+                        var currentPath = window.location.pathname;
+
+                        if (currentPath === '/' || currentPath === '') {
+                            // Ana sayfadaysa, session'a göre yönlendir
+                            if (response.teamId) {
+                                currentTeamId = response.teamId;
+                                router.navigate('/team/' + response.teamId, false);
                             } else {
-                                showPage('pgLobby');
+                                router.navigate('/lobby', false);
                             }
                         } else {
-                            // Takımı yoksa lobby'ye git
-                            showPage('pgLobby');
+                            // Mevcut URL'i koru, sadece route handler'ı çalıştır
+                            if (response.teamId) {
+                                currentTeamId = response.teamId;
+                            }
+                            router.handleRoute(currentPath);
                         }
 
                         console.log('✅ Session restore edildi:', response.nickname);
@@ -1626,7 +1633,12 @@
                         currentUser = null;
                         currentTeamId = null;
                         updateCurrentUserDisplay();
-                        showPage('pgNickname', false);
+
+                        // Sadece login sayfası dışındaysa yönlendir
+                        if (window.location.pathname !== '/') {
+                            router.navigate('/', false);
+                        }
+
                         console.log('ℹ️  Session bulunamadı, giriş sayfasına yönlendirildi');
                     }
                 });
@@ -1796,7 +1808,7 @@
                             currentUser = { userId: res.userId, nickname: res.nickname };
                             updateCurrentUserDisplay();
                             console.log('✅ Kayıt başarılı! UserId:', res.userId);
-                            showPage('pgLobby');
+                            router.navigate('/lobby');
                             toast('Hoşgeldin, ' + res.nickname + '!');
                         } else {
                             toast(res.error, true);
@@ -1813,7 +1825,7 @@
                         // Server'a logout isteği gönder (session'ı temizle)
                         socket.emit('logout-user', function() {
                             // Nick giriş sayfasına yönlendir
-                            showPage('pgNickname');
+                            router.navigate('/');
                             updateCurrentUserDisplay();
                             toast('Çıkış yapıldı.');
                         });
@@ -1831,7 +1843,7 @@
                         // Server'a logout isteği gönder (session'ı temizle)
                         socket.emit('logout-user', function() {
                             // Ana sayfaya yönlendir (nickname giriş ekranı)
-                            showPage('pgNickname');
+                            router.navigate('/');
                             updateCurrentUserDisplay();
                             toast('Çıkış yapıldı.');
                         });
@@ -1919,8 +1931,7 @@
                             GAME.hideCreateForm();
                             document.getElementById('inpNewTeam').value = '';
                             document.getElementById('inpNewTeamPassword').value = '';
-                            showPage('pgTeam');
-                            renderTeamPage(res.team);
+                            router.navigate('/team/' + res.team.id);
                         } else { toast(res.error, true); }
                     });
                 },
@@ -1959,8 +1970,7 @@
                             currentTeamId = selectedJoinId;
                             GAME.hideJoinForm();
                             document.getElementById('inpJoinPassword').value = '';
-                            showPage('pgTeam');
-                            renderTeamPage(res.team);
+                            router.navigate('/team/' + selectedJoinId);
                         } else { toast(res.error, true); }
                     });
                 },
@@ -1985,14 +1995,14 @@
                 },
                 exitTeam: function() {
                     currentTeamId = null;
-                    showPage('pgLobby');
+                    router.navigate('/lobby');
                 },
                 exitAdmin: function() {
                     // Admin panelinden çıkış - kullanıcı varsa takım seçim ekranına, yoksa nickname ekranına
                     if (currentUser) {
-                        showPage('pgLobby');
+                        router.navigate('/lobby');
                     } else {
-                        showPage('pgNickname');
+                        router.navigate('/');
                     }
                 },
                 hidePassModal: function() { document.getElementById('passModal').classList.remove('show'); },
@@ -2011,10 +2021,7 @@
                         isProcessing = false;
                         if (res.success) {
                             GAME.hidePassModal();
-                            showPage('pgAdmin');
-                            renderAdminList();
-                            // Varsayılan olarak oyun kontrolü bölümünü göster
-                            ADMIN.showSection('game');
+                            router.navigate('/admin');
                         } else { toast('Hatalı şifre', true); }
                     });
                 },
@@ -2022,11 +2029,11 @@
                     // UX İYİLEŞTİRME: Geri dön - kullanıcı varsa takım seçim ekranına, yoksa nickname ekranına
                     if (currentUser) {
                         // Kullanıcı giriş yapmış - takım seçim ekranına git (logout yapma)
-                        showPage('pgLobby');
+                        router.navigate('/lobby');
                         updateCurrentUserDisplay();
                     } else {
                         // Kullanıcı giriş yapmamış - nickname ekranına git
-                        showPage('pgNickname');
+                        router.navigate('/');
                         updateCurrentUserDisplay();
                     }
                 },
@@ -2039,14 +2046,14 @@
                         // Server'a logout isteği gönder (session'ı temizle)
                         socket.emit('logout-user', function() {
                             // Nick giriş sayfasına yönlendir
-                            showPage('pgNickname');
+                            router.navigate('/');
                             updateCurrentUserDisplay();
                             toast('Çıkış yapıldı.');
                         });
                     }
                 },
-                showScoreboard: function() { showPage('pgScoreboard'); renderScoreboard(); },
-                showNotifications: function() { showPage('pgNotifications'); NOTIF.render(); },
+                showScoreboard: function() { router.navigate('/scoreboard'); },
+                showNotifications: function() { router.navigate('/notifications'); },
                 showCreditDetail: function(creditId) {
                     var credit = credits.find(c => c.id === creditId);
                     if (!credit) {
@@ -3194,7 +3201,7 @@
             socket.on('team-deleted', function(id) {
                 if (currentTeamId === id) {
                     currentTeamId = null;
-                    showPage('pgLobby');
+                    router.navigate('/lobby');
                     toast('Takım silindi', true);
                 }
             });
@@ -3204,7 +3211,7 @@
                 var isInAdminPanel = document.getElementById('pgAdmin').classList.contains('active');
                 if (!isInAdminPanel) {
                     currentTeamId = null;
-                    showPage('pgLobby');
+                    router.navigate('/lobby');
                 }
             });
 
@@ -3325,7 +3332,7 @@
                 currentTeamId = null;
 
                 // Nick giriş sayfasına yönlendir
-                showPage('pgNickname');
+                router.navigate('/');
                 updateCurrentUserDisplay();
                 toast('Hesabınız yönetici tarafından silindi.', true);
             });
