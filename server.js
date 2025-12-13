@@ -197,6 +197,37 @@ app.post('/api/cleanup-users', async (req, res) => {
     }
 });
 
+// ========================================
+// SPA CLIENT-SIDE ROUTING
+// ========================================
+
+// Catch-all route - Tüm client-side route'lar index.html'i serve eder
+// NOT: Bu route en sonda olmalı, diğer tüm route'lardan sonra
+app.get('*', (req, res) => {
+    // API route'ları hariç tut
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({
+            success: false,
+            error: 'API endpoint not found'
+        });
+    }
+
+    // Static dosyalar hariç (favicon, css, js, vb.)
+    const staticExtensions = ['.css', '.js', '.jpg', '.jpeg', '.png', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf'];
+    if (staticExtensions.some(ext => req.path.endsWith(ext))) {
+        return res.status(404).send('File not found');
+    }
+
+    // Client-side route - index.html serve et
+    console.log('📄 SPA route:', req.path, {
+        sessionID: req.sessionID || 'yok',
+        userId: req.session?.userId,
+        hasCookie: !!req.headers.cookie
+    });
+
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Oyun durumu
 let gameState = {
     started: false,

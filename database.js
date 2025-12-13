@@ -1,9 +1,15 @@
 const { Pool } = require('pg');
 
 // Railway DATABASE_URL kullan, yoksa local
+const connectionString = process.env.DATABASE_URL || `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || '123'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'katil_oyunu'}`;
+
+// SSL sadece production'da (Railway) kullan
+const isProduction = process.env.NODE_ENV === 'production';
+const isLocalhost = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL || `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || '123'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'katil_oyunu'}`,
-    ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+    connectionString,
+    ssl: (isProduction && !isLocalhost) ? { rejectUnauthorized: false } : false
 });
 
 async function initDatabase() {

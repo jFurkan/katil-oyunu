@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Katil Kim? - Yönetici Paneli</title>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/router.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1514,6 +1515,80 @@
 
             // Navigation history - geri butonları için
             var pageHistory = [];
+
+            // ========================================
+            // CLIENT-SIDE ROUTING
+            // ========================================
+
+            // Route 1: Login/Nickname page
+            router.register('/', () => {
+                showPage('pgNickname');
+            });
+
+            // Route 2: Lobby - requires authentication
+            router.register('/lobby', () => {
+                if (!currentUser) {
+                    router.navigate('/');
+                    return;
+                }
+                showPage('pgLobby');
+            });
+
+            // Route 3: Team page - requires authentication and team ID
+            router.register('/team/:teamId', ({ teamId }) => {
+                if (!currentUser) {
+                    router.navigate('/');
+                    return;
+                }
+                currentTeamId = teamId;
+
+                // Takım bilgilerini al ve sayfayı render et
+                socket.emit('get-team', teamId, (team) => {
+                    if (team) {
+                        showPage('pgTeam');
+                        renderTeamPage(team);
+                    } else {
+                        // Takım bulunamadı, lobby'ye dön
+                        router.navigate('/lobby');
+                    }
+                });
+            });
+
+            // Route 4: Admin panel main page
+            router.register('/admin', () => {
+                if (!socket.data || !socket.data.isAdmin) {
+                    router.navigate('/');
+                    return;
+                }
+                showPage('pgAdmin');
+                ADMIN.showSection('game'); // Default section
+            });
+
+            // Route 5: Admin panel sections
+            router.register('/admin/:section', ({ section }) => {
+                if (!socket.data || !socket.data.isAdmin) {
+                    router.navigate('/');
+                    return;
+                }
+                showPage('pgAdmin');
+                ADMIN.showSection(section);
+            });
+
+            // Route 6: Public scoreboard
+            router.register('/scoreboard', () => {
+                showPage('pgScoreboard');
+                renderScoreboard();
+            });
+
+            // Route 7: Notifications - requires authentication
+            router.register('/notifications', () => {
+                if (!currentUser) {
+                    router.navigate('/');
+                    return;
+                }
+                showPage('pgNotifications');
+                NOTIF.render();
+            });
 
             // Socket bağlantı event'leri
             socket.on('connect', function() {
@@ -3274,8 +3349,8 @@
                 renderMainCredits(); // Ana sayfa emeği geçenler listesini render et
                 updateCurrentUserDisplay(); // Kullanıcı bilgisi display'ini güncelle
 
-                // UX İYİLEŞTİRME: Her zaman nickname sayfasında başla
-                showPage('pgNickname', false);
+                // ROUTING: URL'e göre ilgili sayfayı göster
+                router.init();
             };
         })();
     </script>
