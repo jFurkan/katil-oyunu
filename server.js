@@ -37,16 +37,12 @@ const server = http.createServer(app);
 // Railway/Reverse proxy için trust proxy ayarı
 app.set('trust proxy', 1); // Railway, Heroku gibi platformlar için gerekli
 
-// CORS ayarları - production'da kısıtla
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ||
-    (process.env.NODE_ENV === 'production'
-        ? process.env.RAILWAY_STATIC_URL ? `https://${process.env.RAILWAY_STATIC_URL}` : 'https://*.railway.app'
-        : '*'
-    );
+// CORS ayarları - TEST İÇİN GEÇİCİ GEVŞEK
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*'; // GEÇICI: Tüm origin'lere izin
 
 const io = new Server(server, {
     cors: {
-        origin: ALLOWED_ORIGIN,
+        origin: true, // GEÇICI: Tüm origin'lere izin (credentials için gerekli)
         methods: ["GET", "POST"],
         credentials: true
     }
