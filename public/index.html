@@ -1721,6 +1721,17 @@
                             currentUser = { userId: res.userId, nickname: res.nickname };
                             updateCurrentUserDisplay();
                             console.log('✅ Kayıt başarılı! Cookie kontrol:', document.cookie || 'yok');
+
+                            // Session sync - Cookie'yi güncellemek için HTTP request
+                            fetch('/api/session-sync', {
+                                method: 'GET',
+                                credentials: 'include'
+                            }).then(r => r.json()).then(data => {
+                                console.log('🔄 Session sync response:', data);
+                            }).catch(err => {
+                                console.error('Session sync error:', err);
+                            });
+
                             showPage('pgLobby');
                             toast('Hoşgeldin, ' + res.nickname + '!');
                         } else {

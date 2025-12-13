@@ -162,6 +162,30 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 // Keep alive - Railway health check
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
+// Session sync endpoint - Socket event'lerinden sonra cookie güncellemesi için
+app.get('/api/session-sync', (req, res) => {
+    console.log('🔄 Session sync request:', {
+        sessionID: req.sessionID,
+        userId: req.session?.userId,
+        hasCookie: !!req.headers.cookie
+    });
+
+    // Session'ı zorla kaydet (cookie header'ı günceller)
+    req.session.save((err) => {
+        if (err) {
+            console.error('❌ Session sync save error:', err);
+            res.status(500).json({ success: false, error: 'Session sync failed' });
+        } else {
+            console.log('✅ Session synced, Set-Cookie header sent');
+            res.json({
+                success: true,
+                sessionID: req.sessionID,
+                userId: req.session?.userId
+            });
+        }
+    });
+});
+
 // Veritabanı test endpoint'i
 app.get('/api/health', async (req, res) => {
     try {
@@ -866,35 +890,37 @@ io.on('connection', async (socket) => {
 
             // GÜVENLİK: Session kontrolü - eğer session varsa kaydet
             if (socket.request.session) {
-                // Session Fixation saldırısını önle - yeni session oluştur
-                socket.request.session.regenerate((err) => {
-                    if (err) {
-                        console.error('Session regenerate error:', err);
-                        // Session hatası olsa bile kullanıcı oluştu, devam et
+                // HTTP-only cookie'ye userId kaydet (güvenli oturum)
+                // NOT: Socket.IO'da session.regenerate() kullanmıyoruz çünkü Set-Cookie header gönderilemez
+                socket.request.session.userId = userId;
+
+                console.log('💾 Session\'a userId kaydediliyor:', {
+                    sessionID: socket.request.sessionID,
+                    userId: userId,
+                    nickname: trimmedNick
+                });
+
+                socket.request.session.save((saveErr) => {
+                    if (saveErr) {
+                        console.error('❌ Session save error:', saveErr);
+                    } else {
+                        console.log('✅ Session kaydedildi:', socket.request.sessionID);
                     }
 
-                    // HTTP-only cookie'ye userId kaydet (güvenli oturum)
-                    socket.request.session.userId = userId;
-                    socket.request.session.save((saveErr) => {
-                        if (saveErr) {
-                            console.error('Session save error:', saveErr);
-                        }
+                    // GÜVENLİK FIX: Callback'i session save SONRASINDA çağır
+                    callback({ success: true, userId: userId, nickname: trimmedNick });
 
-                        // GÜVENLİK FIX: Callback'i session save SONRASINDA çağır
-                        callback({ success: true, userId: userId, nickname: trimmedNick });
-
-                        // Tüm kullanıcılara güncel listeyi gönder
-                        getUsersByTeam().then(users => {
-                            io.emit('users-update', users);
-                        });
-
-                        // Log mesajı - yeni kayıt mı yoksa reconnect mi?
-                        if (isReconnect) {
-                            console.log('✓ Kullanıcı yeniden bağlandı:', trimmedNick, '- IP:', clientIP, '- userId:', userId);
-                        } else {
-                            console.log('✓ Yeni kullanıcı kaydedildi:', trimmedNick, '- IP:', clientIP, '- userId:', userId);
-                        }
+                    // Tüm kullanıcılara güncel listeyi gönder
+                    getUsersByTeam().then(users => {
+                        io.emit('users-update', users);
                     });
+
+                    // Log mesajı - yeni kayıt mı yoksa reconnect mi?
+                    if (isReconnect) {
+                        console.log('✓ Kullanıcı yeniden bağlandı:', trimmedNick, '- IP:', clientIP, '- userId:', userId);
+                    } else {
+                        console.log('✓ Yeni kullanıcı kaydedildi:', trimmedNick, '- IP:', clientIP, '- userId:', userId);
+                    }
                 });
             } else {
                 // Session yoksa direkt callback
