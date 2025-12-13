@@ -2779,8 +2779,9 @@
                     else if (section === 'users') buttons[1].classList.add('btn-primary');
                     else if (section === 'scoring') buttons[2].classList.add('btn-primary');
                     else if (section === 'notifications') buttons[3].classList.add('btn-primary');
-                    else if (section === 'credits') buttons[4].classList.add('btn-primary');
-                    else if (section === 'iplogs') buttons[5].classList.add('btn-primary');
+                    else if (section === 'chat') buttons[4].classList.add('btn-primary');
+                    else if (section === 'credits') buttons[5].classList.add('btn-primary');
+                    else if (section === 'iplogs') buttons[6].classList.add('btn-primary');
 
                     this.currentSection = section;
 
@@ -2795,6 +2796,11 @@
                         } else {
                             renderUsersList();
                         }
+                    }
+
+                    // Chat İzleme bölümü açıldıysa dropdown'ı doldur
+                    if (section === 'chat') {
+                        ADMIN.updateChatTeamSelector();
                     }
 
                     // Emeği geçenler bölümü açıldıysa listeyi render et
