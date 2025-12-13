@@ -1006,7 +1006,8 @@ io.on('connection', async (socket) => {
                 userId: user.id,
                 nickname: user.nickname,
                 teamId: user.team_id,
-                isCaptain: user.is_captain
+                isCaptain: user.is_captain,
+                isAdmin: socket.request.session?.isAdmin || false
             });
 
             // Kullanıcı listesini güncelle

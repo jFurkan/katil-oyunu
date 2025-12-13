@@ -1512,6 +1512,7 @@
             var currentTeamId = null; // GÜVENLİK: localStorage yerine server'dan al
             var selectedJoinId = null;
             var isProcessing = false;
+            var isAdmin = false; // Admin panel erişimi için
 
             // Navigation history - geri butonları için
             var pageHistory = [];
@@ -1581,8 +1582,9 @@
 
             // Route 4: Admin panel main page
             router.register('/admin', () => {
-                if (!socket.data || !socket.data.isAdmin) {
+                if (!isAdmin) {
                     router.navigate('/');
+                    toast('Admin yetkisi gereklidir', true);
                     return;
                 }
                 showPage('pgAdmin');
@@ -1602,8 +1604,9 @@
 
             // Route 5: Admin panel sections
             router.register('/admin/:section', ({ section }) => {
-                if (!socket.data || !socket.data.isAdmin) {
+                if (!isAdmin) {
                     router.navigate('/');
+                    toast('Admin yetkisi gereklidir', true);
                     return;
                 }
                 showPage('pgAdmin');
@@ -1670,11 +1673,15 @@
                             currentTeamId = response.teamId;
                         }
 
-                        console.log('✅ Session restore edildi:', response.nickname);
+                        // Admin yetkisini restore et
+                        isAdmin = response.isAdmin || false;
+
+                        console.log('✅ Session restore edildi:', response.nickname, '- Admin:', isAdmin);
                     } else {
                         // Session yok veya süresi dolmuş
                         currentUser = null;
                         currentTeamId = null;
+                        isAdmin = false;
                         updateCurrentUserDisplay();
                         console.log('ℹ️  Session bulunamadı');
                     }
@@ -1893,6 +1900,7 @@
                         // GÜVENLİK: Session'ı temizle
                         currentUser = null;
                         currentTeamId = null;
+                        isAdmin = false;
 
                         // Server'a logout isteği gönder (session'ı temizle)
                         socket.emit('logout-user', function() {
@@ -1914,6 +1922,7 @@
 
                         currentUser = null;
                         currentTeamId = null;
+                        isAdmin = false;
 
                         // Server'a logout isteği gönder (session'ı temizle)
                         socket.emit('logout-user', function() {
@@ -2095,6 +2104,7 @@
                     socket.emit('admin-login', pass, function(res) {
                         isProcessing = false;
                         if (res.success) {
+                            isAdmin = true; // Admin yetkisini set et
                             GAME.hidePassModal();
                             router.navigate('/admin');
                         } else { toast('Hatalı şifre', true); }
@@ -2120,6 +2130,7 @@
 
                         currentUser = null;
                         currentTeamId = null;
+                        isAdmin = false;
 
                         // Server'a logout isteği gönder (session'ı temizle)
                         socket.emit('logout-user', function() {
@@ -3411,6 +3422,7 @@
                 // GÜVENLİK: Session temizliği
                 currentUser = null;
                 currentTeamId = null;
+                isAdmin = false;
 
                 // Nick giriş sayfasına yönlendir
                 router.navigate('/');
