@@ -128,6 +128,17 @@ async function initDatabase() {
             ON team_messages(created_at DESC)
         `);
 
+        // Migration: Özel mesajlar için target_team_id ekle
+        await pool.query(`
+            ALTER TABLE team_messages
+            ADD COLUMN IF NOT EXISTS target_team_id TEXT REFERENCES teams(id) ON DELETE CASCADE
+        `);
+
+        await pool.query(`
+            ALTER TABLE team_messages
+            ADD COLUMN IF NOT EXISTS target_team_name TEXT
+        `);
+
         // IP Activity tracking tablosu (Bot farm koruması)
         await pool.query(`
             CREATE TABLE IF NOT EXISTS ip_activity (

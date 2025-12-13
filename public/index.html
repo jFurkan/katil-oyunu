@@ -1095,6 +1095,17 @@
                     </div>
 
                     <!-- Mesaj Gönderme Alanı -->
+                    <div style="margin-bottom: 10px;">
+                        <div style="position: relative; display: inline-block;">
+                            <button id="btnTeamSelector" onclick="CHAT.toggleTeamDropdown()" style="background: #0a0a0a; border: 1px solid #1a4d4d; color: #4dd4d4; padding: 10px 40px 10px 16px; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 600; position: relative;">
+                                <span id="selectedTeamText">📢 Tüm Takımlar</span>
+                                <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%);">▼</span>
+                            </button>
+                            <div id="teamDropdown" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 5px; background: #0a0a0a; border: 1px solid #1a4d4d; border-radius: 6px; min-width: 200px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 1000; max-height: 300px; overflow-y: auto;">
+                                <!-- Dropdown içeriği JavaScript ile doldurulacak -->
+                            </div>
+                        </div>
+                    </div>
                     <div style="display: flex; gap: 10px;">
                         <input type="text" id="inpTeamChat" placeholder="Mesajınızı yazın..." maxlength="500" style="margin: 0; background: #000; border: 1px solid #1a4d4d; color: #fff; flex: 1;" onkeypress="if(event.key==='Enter') CHAT.sendMessage()">
                         <button class="btn btn-primary" style="width: auto; margin: 0; padding: 12px 24px; background: linear-gradient(135deg, #1a4d4d, #0d3333); border-color: #4dd4d4;" onclick="CHAT.sendMessage()">Gönder</button>
@@ -1543,6 +1554,13 @@
             if (!e.target.closest('.theme-switcher')) {
                 THEME.closeMenu();
             }
+
+            // Team dropdown dışına tıklandığında kapat
+            var teamDropdown = document.getElementById('teamDropdown');
+            var btnTeamSelector = document.getElementById('btnTeamSelector');
+            if (teamDropdown && !e.target.closest('#btnTeamSelector') && !e.target.closest('#teamDropdown')) {
+                teamDropdown.style.display = 'none';
+            }
         });
 
         (function() {
@@ -1716,7 +1734,8 @@
                         // Session var, kullanıcıyı restore et
                         currentUser = {
                             userId: response.userId,
-                            nickname: response.nickname
+                            nickname: response.nickname,
+                            teamId: response.teamId || null
                         };
                         updateCurrentUserDisplay();
 
@@ -1933,7 +1952,7 @@
                         isProcessing = false;
                         if (res.success) {
                             // GÜVENLİK: localStorage'a kaydetme, sadece memory'de tut
-                            currentUser = { userId: res.userId, nickname: res.nickname };
+                            currentUser = { userId: res.userId, nickname: res.nickname, teamId: null };
                             updateCurrentUserDisplay();
                             console.log('✅ Kayıt başarılı! UserId:', res.userId);
 
@@ -2069,6 +2088,7 @@
                         if (res.success) {
                             // GÜVENLİK: localStorage yerine sadece memory'de tut
                             currentTeamId = res.team.id;
+                            if (currentUser) currentUser.teamId = res.team.id;
                             GAME.hideCreateForm();
                             document.getElementById('inpNewTeam').value = '';
                             document.getElementById('inpNewTeamPassword').value = '';
@@ -2114,6 +2134,7 @@
                         if (res.success) {
                             // GÜVENLİK: localStorage yerine sadece memory'de tut
                             currentTeamId = selectedJoinId;
+                            if (currentUser) currentUser.teamId = selectedJoinId;
                             GAME.hideJoinForm();
                             document.getElementById('inpJoinPassword').value = '';
 
@@ -2391,6 +2412,76 @@
                 currentPage: 1,
                 totalPages: 1,
                 isLoading: false,
+                selectedTargetTeamId: null,
+                selectedTargetTeamName: null,
+                availableTeams: [],
+
+                // Takım dropdown'ını aç/kapat
+                toggleTeamDropdown: function() {
+                    var dropdown = document.getElementById('teamDropdown');
+                    if (dropdown.style.display === 'none') {
+                        CHAT.loadAvailableTeams();
+                        dropdown.style.display = 'block';
+                    } else {
+                        dropdown.style.display = 'none';
+                    }
+                },
+
+                // Mevcut takımları yükle
+                loadAvailableTeams: function() {
+                    var dropdown = document.getElementById('teamDropdown');
+                    if (!dropdown) return;
+
+                    var html = '';
+
+                    // "Tüm Takımlar" seçeneği
+                    html += `
+                        <div onclick="CHAT.selectTeam(null, 'Tüm Takımlar')" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #1a4d4d; color: ${!CHAT.selectedTargetTeamId ? '#4dd4d4' : '#999'}; font-weight: ${!CHAT.selectedTargetTeamId ? '700' : '400'}; transition: background 0.2s;" onmouseover="this.style.background='#1a4d4d'" onmouseout="this.style.background='transparent'">
+                            📢 Tüm Takımlar
+                        </div>`;
+
+                    // Diğer takımlar
+                    CHAT.availableTeams.forEach(function(team) {
+                        var isSelected = CHAT.selectedTargetTeamId === team.id;
+                        html += `
+                            <div onclick="CHAT.selectTeam('${team.id}', '${htmlEscape(team.name)}')" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #1a4d4d; color: ${isSelected ? '#4dd4d4' : '#ccc'}; font-weight: ${isSelected ? '700' : '400'}; transition: background 0.2s;" onmouseover="this.style.background='#1a4d4d'" onmouseout="this.style.background='transparent'">
+                                🔒 ${htmlEscape(team.name)}
+                            </div>`;
+                    });
+
+                    dropdown.innerHTML = html;
+                },
+
+                // Takım seç
+                selectTeam: function(teamId, teamName) {
+                    CHAT.selectedTargetTeamId = teamId;
+                    CHAT.selectedTargetTeamName = teamName;
+
+                    var textEl = document.getElementById('selectedTeamText');
+                    if (textEl) {
+                        if (teamId) {
+                            textEl.textContent = '🔒 ' + teamName;
+                        } else {
+                            textEl.textContent = '📢 Tüm Takımlar';
+                        }
+                    }
+
+                    // Dropdown'ı kapat
+                    var dropdown = document.getElementById('teamDropdown');
+                    if (dropdown) dropdown.style.display = 'none';
+                },
+
+                // Mevcut takımları güncelle
+                updateAvailableTeams: function(teams) {
+                    // Kendi takımını hariç tut
+                    if (currentUser && currentUser.teamId) {
+                        CHAT.availableTeams = teams.filter(function(team) {
+                            return team.id !== currentUser.teamId;
+                        });
+                    } else {
+                        CHAT.availableTeams = teams;
+                    }
+                },
 
                 // Mesaj gönder
                 sendMessage: function() {
@@ -2407,7 +2498,12 @@
                         return;
                     }
 
-                    socket.emit('send-team-message', message, function(res) {
+                    var data = {
+                        message: message,
+                        targetTeamId: CHAT.selectedTargetTeamId
+                    };
+
+                    socket.emit('send-team-message', data, function(res) {
                         if (res.success) {
                             input.value = '';
                             // Mesaj otomatik olarak 'new-team-message' event'i ile gelecek
@@ -2476,12 +2572,21 @@
                         var time = new Date(msg.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
                         var isOwnMessage = currentUser && msg.user_id === currentUser.userId;
 
+                        // Hedef takım etiketi
+                        var targetLabel = '';
+                        if (msg.target_team_name) {
+                            targetLabel = `<span style="color: #d4af37; font-size: 10px; background: rgba(212,175,55,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(212,175,55,0.3);">🔒 → ${htmlEscape(msg.target_team_name)}</span>`;
+                        } else {
+                            targetLabel = `<span style="color: #4dd4d4; font-size: 10px; background: rgba(77,212,212,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(77,212,212,0.3);">📢 Tüm Takımlar</span>`;
+                        }
+
                         html += `
                         <div style="margin-bottom: 15px; ${isOwnMessage ? 'text-align: right;' : ''}">
                             <div style="display: inline-block; max-width: 80%; text-align: left;">
-                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
                                     <span style="color: ${isOwnMessage ? '#4dd4d4' : '#ffa500'}; font-weight: 700; font-size: 13px;">${htmlEscape(msg.nickname)}</span>
                                     <span style="color: #666; font-size: 11px; font-weight: 600;">${htmlEscape(msg.team_name)}</span>
+                                    ${targetLabel}
                                     <span style="color: #444; font-size: 10px;">${time}</span>
                                 </div>
                                 <div style="background: ${isOwnMessage ? 'linear-gradient(135deg, #1a4d4d, #0d3333)' : '#1a1a1a'}; border: 1px solid ${isOwnMessage ? '#4dd4d4' : '#333'}; border-radius: 8px; padding: 10px 14px; color: #fff; font-size: 14px; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
@@ -2562,12 +2667,21 @@
                         var time = new Date(message.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
                         var isOwnMessage = currentUser && message.user_id === currentUser.userId;
 
+                        // Hedef takım etiketi
+                        var targetLabel = '';
+                        if (message.target_team_name) {
+                            targetLabel = `<span style="color: #d4af37; font-size: 10px; background: rgba(212,175,55,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(212,175,55,0.3);">🔒 → ${htmlEscape(message.target_team_name)}</span>`;
+                        } else {
+                            targetLabel = `<span style="color: #4dd4d4; font-size: 10px; background: rgba(77,212,212,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(77,212,212,0.3);">📢 Tüm Takımlar</span>`;
+                        }
+
                         var html = `
                         <div style="margin-bottom: 15px; ${isOwnMessage ? 'text-align: right;' : ''}">
                             <div style="display: inline-block; max-width: 80%; text-align: left;">
-                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
                                     <span style="color: ${isOwnMessage ? '#4dd4d4' : '#ffa500'}; font-weight: 700; font-size: 13px;">${htmlEscape(message.nickname)}</span>
                                     <span style="color: #666; font-size: 11px; font-weight: 600;">${htmlEscape(message.team_name)}</span>
+                                    ${targetLabel}
                                     <span style="color: #444; font-size: 10px;">${time}</span>
                                 </div>
                                 <div style="background: ${isOwnMessage ? 'linear-gradient(135deg, #1a4d4d, #0d3333)' : '#1a1a1a'}; border: 1px solid ${isOwnMessage ? '#4dd4d4' : '#333'}; border-radius: 8px; padding: 10px 14px; color: #fff; font-size: 14px; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
@@ -3596,7 +3710,10 @@
             socket.on('teams-update', function(newTeams) {
                 var oldLen = teams.length;
                 teams = newTeams;
-                
+
+                // Chat dropdown için takım listesini güncelle
+                CHAT.updateAvailableTeams(teams);
+
                 if (document.getElementById('pgAdmin').classList.contains('active')) {
                     // Takım sayısı değiştiyse full render, değişmediyse sadece skor güncelle (titremeyi önlemek için)
                     if (oldLen !== teams.length) renderAdminList();
@@ -3604,7 +3721,7 @@
                         // İpucu sayısı değişmiş mi kontrol et
                         // Basitlik için full render yapabiliriz ama UX için ayrıştırmak iyidir.
                         // Şimdilik temiz olması için full render yapalım, grid yapısı stabil zaten.
-                        renderAdminList(); 
+                        renderAdminList();
                     }
                 }
                 

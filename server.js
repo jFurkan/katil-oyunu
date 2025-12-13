@@ -348,17 +348,29 @@ async function getUsersByTeam() {
 }
 
 // Team messages fonksiyonları
-async function getTeamMessages(limit = 50, offset = 0) {
+async function getTeamMessages(teamId, limit = 50, offset = 0) {
+    // Kullanıcı görebileceği mesajlar:
+    // 1. Genel mesajlar (target_team_id IS NULL)
+    // 2. Kendi takımına gönderilen mesajlar (target_team_id = teamId)
+    // 3. Kendi takımının gönderdiği özel mesajlar (team_id = teamId AND target_team_id IS NOT NULL)
     const result = await pool.query(`
         SELECT * FROM team_messages
+        WHERE target_team_id IS NULL
+           OR target_team_id = $1
+           OR (team_id = $1 AND target_team_id IS NOT NULL)
         ORDER BY created_at DESC
-        LIMIT $1 OFFSET $2
-    `, [limit, offset]);
+        LIMIT $2 OFFSET $3
+    `, [teamId, limit, offset]);
     return result.rows.reverse(); // Eskiden yeniye sıralı döndür
 }
 
-async function getTeamMessagesCount() {
-    const result = await pool.query('SELECT COUNT(*) FROM team_messages');
+async function getTeamMessagesCount(teamId) {
+    const result = await pool.query(`
+        SELECT COUNT(*) FROM team_messages
+        WHERE target_team_id IS NULL
+           OR target_team_id = $1
+           OR (team_id = $1 AND target_team_id IS NOT NULL)
+    `, [teamId]);
     return parseInt(result.rows[0].count);
 }
 
@@ -1647,7 +1659,7 @@ io.on('connection', async (socket) => {
     });
 
     // Takımlar arası mesaj gönder
-    socket.on('send-team-message', async (message, callback) => {
+    socket.on('send-team-message', async (data, callback) => {
         // GÜVENLİK: Kullanıcı kontrolü
         if (!socket.data.userId) {
             callback({ success: false, error: 'Önce giriş yapmalısınız!' });
@@ -1660,6 +1672,9 @@ io.on('connection', async (socket) => {
             console.log('⚠️  Rate limit: send-team-message -', socket.id);
             return;
         }
+
+        const message = data.message || data; // Geriye dönük uyumluluk için
+        const targetTeamId = data.targetTeamId || null;
 
         // GÜVENLİK: Input validation & XSS koruması
         const messageValidation = InputValidator.validateMessage(message, 500);
@@ -1687,10 +1702,21 @@ io.on('connection', async (socket) => {
                 return;
             }
 
+            // Hedef takım bilgisi
+            let targetTeamName = null;
+            if (targetTeamId) {
+                const targetTeamResult = await pool.query('SELECT name FROM teams WHERE id = $1', [targetTeamId]);
+                if (targetTeamResult.rows.length === 0) {
+                    callback({ success: false, error: 'Hedef takım bulunamadı!' });
+                    return;
+                }
+                targetTeamName = targetTeamResult.rows[0].name;
+            }
+
             // Mesajı veritabanına kaydet
             const insertResult = await pool.query(
-                'INSERT INTO team_messages (team_id, user_id, nickname, team_name, message) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-                [user.team_id, user.id, user.nickname, user.team_name, messageValidation.value]
+                'INSERT INTO team_messages (team_id, user_id, nickname, team_name, message, target_team_id, target_team_name) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+                [user.team_id, user.id, user.nickname, user.team_name, messageValidation.value, targetTeamId, targetTeamName]
             );
 
             const newMessage = insertResult.rows[0];
@@ -1699,7 +1725,12 @@ io.on('connection', async (socket) => {
             io.emit('new-team-message', newMessage);
 
             callback({ success: true, message: newMessage });
-            console.log(`💬 ${user.nickname} (${user.team_name}): ${messageValidation.value.substring(0, 50)}...`);
+
+            if (targetTeamId) {
+                console.log(`💬 ${user.nickname} (${user.team_name}) → ${targetTeamName}: ${messageValidation.value.substring(0, 50)}...`);
+            } else {
+                console.log(`💬 ${user.nickname} (${user.team_name}) → HERKESE: ${messageValidation.value.substring(0, 50)}...`);
+            }
         } catch (err) {
             console.error('Mesaj gönderme hatası:', err);
             callback({ success: false, error: 'Mesaj gönderilemedi!' });
@@ -1709,12 +1740,21 @@ io.on('connection', async (socket) => {
     // Takım mesajlarını yükle (pagination)
     socket.on('load-team-messages', async (data, callback) => {
         try {
+            // Kullanıcının team_id'sini al
+            const userResult = await pool.query('SELECT team_id FROM users WHERE id = $1', [socket.data.userId]);
+
+            if (userResult.rows.length === 0 || !userResult.rows[0].team_id) {
+                callback({ success: false, error: 'Takıma katılmalısınız!' });
+                return;
+            }
+
+            const userTeamId = userResult.rows[0].team_id;
             const page = data?.page || 1;
             const limit = 50;
             const offset = (page - 1) * limit;
 
-            const messages = await getTeamMessages(limit, offset);
-            const totalCount = await getTeamMessagesCount();
+            const messages = await getTeamMessages(userTeamId, limit, offset);
+            const totalCount = await getTeamMessagesCount(userTeamId);
             const totalPages = Math.ceil(totalCount / limit);
 
             callback({
