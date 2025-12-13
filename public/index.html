@@ -1496,7 +1496,8 @@
             // Socket.IO bağlantısı - Cookie göndermesi için withCredentials gerekli
             window.socket = io({
                 withCredentials: true,  // Cookie gönder (session için kritik!)
-                transports: ['websocket', 'polling']
+                transports: ['polling'],  // GEÇICI: Sadece polling (websocket cookie kaybı test)
+                upgrade: false  // GEÇICI: WebSocket upgrade'i devre dışı
             });
             var socket = window.socket;
             var socketConnected = false; // Bağlantı durumu

@@ -645,9 +645,18 @@ const adminLoginLimiter = new AdminLoginLimiter();
 
 // WebSocket session middleware - HTTP session'ı Socket.io'da kullan
 io.use((socket, next) => {
-    sessionMiddleware(socket.request, {}, (err) => {
+    // Socket.request.res nesnesi oluştur (session middleware için gerekli)
+    if (!socket.request.res) {
+        socket.request.res = {
+            getHeader: () => {},
+            setHeader: () => {},
+            end: () => {}
+        };
+    }
+
+    sessionMiddleware(socket.request, socket.request.res, (err) => {
         if (err) {
-            console.error('Session middleware hatası:', err);
+            console.error('❌ Session middleware hatası:', err);
             return next(err);
         }
 
@@ -656,7 +665,8 @@ io.use((socket, next) => {
             sessionID: socket.request.sessionID,
             hasSession: !!socket.request.session,
             userId: socket.request.session?.userId,
-            cookie: socket.request.headers.cookie ? 'var' : 'yok'
+            cookieHeader: socket.request.headers.cookie || 'yok',
+            handshakeCookie: socket.handshake.headers.cookie || 'yok'
         });
 
         next();
