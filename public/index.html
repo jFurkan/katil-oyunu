@@ -1493,7 +1493,11 @@
         });
 
         (function() {
-            window.socket = io(); // Global yapıyoruz
+            // Socket.IO bağlantısı - Cookie göndermesi için withCredentials gerekli
+            window.socket = io({
+                withCredentials: true,  // Cookie gönder (session için kritik!)
+                transports: ['websocket', 'polling']
+            });
             var socket = window.socket;
             var socketConnected = false; // Bağlantı durumu
             var teams = [];
