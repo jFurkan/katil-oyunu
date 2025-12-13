@@ -1773,6 +1773,45 @@ io.on('connection', async (socket) => {
         }
     });
 
+    // Admin için herhangi bir takımın chat'ini yükle
+    socket.on('admin-load-team-chat', async (teamId, callback) => {
+        // GÜVENLİK: Admin kontrolü
+        if (!socket.data.isAdmin) {
+            callback({ success: false, error: 'Yetkisiz işlem!' });
+            console.log('⚠️  Yetkisiz admin işlemi: admin-load-team-chat -', socket.id);
+            return;
+        }
+
+        try {
+            // Takım var mı kontrol et
+            const teamResult = await pool.query('SELECT name FROM teams WHERE id = $1', [teamId]);
+            if (teamResult.rows.length === 0) {
+                callback({ success: false, error: 'Takım bulunamadı!' });
+                return;
+            }
+
+            const teamName = teamResult.rows[0].name;
+            const limit = 100; // Admin için daha fazla mesaj göster
+            const offset = 0;
+
+            // Takımın görebildiği tüm mesajları yükle
+            const messages = await getTeamMessages(teamId, limit, offset);
+            const totalCount = await getTeamMessagesCount(teamId);
+
+            callback({
+                success: true,
+                teamName: teamName,
+                messages: messages,
+                totalCount: totalCount
+            });
+
+            console.log(`👁️  Admin chat izleme: ${teamName} (${messages.length} mesaj)`);
+        } catch (err) {
+            console.error('Admin chat yükleme hatası:', err);
+            callback({ success: false, error: 'Chat yüklenemedi!' });
+        }
+    });
+
     // Oyunu başlat (admin)
     socket.on('start-game', (data, callback) => {
         // GÜVENLİK: Admin kontrolü
