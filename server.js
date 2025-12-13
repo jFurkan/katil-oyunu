@@ -30,6 +30,8 @@ if (ADMIN_PASSWORD.length < 8) {
 }
 
 console.log('✓ Admin password loaded from environment variables');
+console.log(`📋 Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`🔒 Cookie settings will be: secure=${process.env.NODE_ENV === 'production'}, sameSite=${process.env.NODE_ENV === 'production' ? 'none' : 'lax'}`);
 
 const app = express();
 const server = http.createServer(app);
@@ -114,14 +116,14 @@ app.use(cookieParser());
 const sessionMiddleware = session({
     secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true,  // GEÇİCİ TEST: Her request'te cookie set et
     cookie: {
         httpOnly: true,        // XSS koruması: JavaScript erişimi yok
         secure: process.env.NODE_ENV === 'production',  // Railway'de HTTPS için gerekli
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',  // Cross-site cookie için
         maxAge: 7 * 24 * 60 * 60 * 1000  // 7 gün (otomatik temizlik ile aynı)
-    }
-    // name yok - varsayılan 'connect.sid' kullan
+    },
+    name: 'connect.sid'  // Explicit cookie name
 });
 
 app.use(sessionMiddleware);
@@ -135,8 +137,22 @@ app.get('/', (req, res) => {
         sessionID: req.sessionID,
         hasSession: !!req.session,
         hasCookie: !!req.headers.cookie,
-        cookieValue: req.headers.cookie || 'yok'
+        cookieValue: req.headers.cookie || 'yok',
+        protocol: req.protocol,
+        secure: req.secure,
+        trustProxy: app.get('trust proxy')
     });
+
+    // Session'ı zorla kaydet (test)
+    req.session.test = Date.now();
+    req.session.save((err) => {
+        if (err) {
+            console.error('❌ Session save error on GET /:', err);
+        } else {
+            console.log('✅ Session saved on GET /, cookie should be set');
+        }
+    });
+
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
