@@ -13,7 +13,7 @@ const session = require('express-session'); // Session yönetimi için
 const { pool, initDatabase } = require('./database');
 
 // GÜVENLİK: Environment variable validation
-const requiredEnvVars = ['DATABASE_URL', 'ADMIN_PASSWORD'];
+const requiredEnvVars = ['DATABASE_URL', 'ADMIN_PASSWORD', 'SESSION_SECRET'];
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingEnvVars.length > 0) {
@@ -110,11 +110,13 @@ app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
 // 4. Cookie parser - Güvenli cookie yönetimi
-app.use(cookieParser());
+// Socket.IO için de kullanacağız, bu yüzden middleware'i değişkene atıyoruz
+const cookieParserMiddleware = cookieParser(process.env.SESSION_SECRET);
+app.use(cookieParserMiddleware);
 
 // 5. Session yönetimi - HTTP-only cookie ile güvenli oturum
 const sessionMiddleware = session({
-    secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
+    secret: process.env.SESSION_SECRET,  // Artık zorunlu (validation yukarıda)
     resave: false,
     saveUninitialized: false,  // FIX: Sadece gerçek veri yazıldığında session oluştur (boş session'ları engelle)
     cookie: {
@@ -656,7 +658,7 @@ const adminLoginLimiter = new AdminLoginLimiter();
 
 // WebSocket session middleware - HTTP session'ı Socket.io'da kullan
 io.use((socket, next) => {
-    // Socket.request.res nesnesi oluştur (session middleware için gerekli)
+    // Socket.request.res nesnesi oluştur (middleware'ler için gerekli)
     if (!socket.request.res) {
         socket.request.res = {
             getHeader: () => {},
@@ -665,22 +667,33 @@ io.use((socket, next) => {
         };
     }
 
-    sessionMiddleware(socket.request, socket.request.res, (err) => {
-        if (err) {
-            console.error('❌ Session middleware hatası:', err);
-            return next(err);
+    // ÖNEMLİ: Önce cookieParser, sonra session middleware çalışmalı
+    // cookieParser imzalı cookie'leri parse eder, session bunları kullanır
+    cookieParserMiddleware(socket.request, socket.request.res, (cookieErr) => {
+        if (cookieErr) {
+            console.error('❌ Cookie parser hatası:', cookieErr);
+            return next(cookieErr);
         }
 
-        // DEBUG: Session kontrolü
-        console.log('🔑 Session middleware çalıştı:', {
-            sessionID: socket.request.sessionID,
-            hasSession: !!socket.request.session,
-            userId: socket.request.session?.userId,
-            cookieHeader: socket.request.headers.cookie || 'yok',
-            handshakeCookie: socket.handshake.headers.cookie || 'yok'
-        });
+        // Cookie parse edildikten sonra session middleware'i çalıştır
+        sessionMiddleware(socket.request, socket.request.res, (sessionErr) => {
+            if (sessionErr) {
+                console.error('❌ Session middleware hatası:', sessionErr);
+                return next(sessionErr);
+            }
 
-        next();
+            // DEBUG: Session kontrolü
+            console.log('🔑 Session middleware çalıştı:', {
+                sessionID: socket.request.sessionID,
+                hasSession: !!socket.request.session,
+                userId: socket.request.session?.userId,
+                cookieHeader: socket.request.headers.cookie || 'yok',
+                cookies: socket.request.cookies ? 'parsed' : 'yok',
+                signedCookies: socket.request.signedCookies ? 'parsed' : 'yok'
+            });
+
+            next();
+        });
     });
 });
 
