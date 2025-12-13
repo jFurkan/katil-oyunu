@@ -1140,6 +1140,7 @@
                 <button class="btn" onclick="ADMIN.showSection('scoring')">🎯 Puanlama</button>
                 <button class="btn" onclick="ADMIN.showSection('notifications')">📢 Bildirimler</button>
                 <button class="btn" onclick="ADMIN.showSection('chat')">💬 Chat İzleme</button>
+                <button class="btn" onclick="ADMIN.showSection('stats')">📊 İstatistikler</button>
                 <button class="btn" onclick="ADMIN.showSection('credits')">👥 Emeği Geçenler</button>
                 <button class="btn" onclick="ADMIN.showSection('iplogs')">🔍 IP Logları</button>
             </div>
@@ -1280,6 +1281,71 @@
                     <div style="font-size:48px; margin-bottom:15px; opacity:0.5;">🔍</div>
                     <div style="font-size:16px; margin-bottom:8px;">Bir takım seçin</div>
                     <div style="font-size:13px; color:#444;">Seçtiğiniz takımın chat geçmişini görüntüleyebilirsiniz</div>
+                </div>
+            </div>
+
+            <!-- İstatistikler Bölümü -->
+            <div id="adminSectionStats" class="admin-section" style="display:none;">
+                <h3 style="color:var(--gold); font-size:18px; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <span>📊 Oyun İstatistikleri</span>
+                    <button class="btn btn-primary" style="width:auto; padding:8px 16px; margin:0; font-size:13px;" onclick="ADMIN.loadStatistics()">🔄 Yenile</button>
+                </h3>
+
+                <!-- Genel İstatistikler -->
+                <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:20px; margin-bottom:20px;">
+                    <h4 style="color:var(--gold); font-size:15px; margin-bottom:15px;">📈 Genel Özet</h4>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:15px;">
+                        <div style="background:#0a0a0a; padding:15px; border-radius:8px; text-align:center;">
+                            <div style="color:#888; font-size:11px; text-transform:uppercase;">Toplam Takım</div>
+                            <div id="statTotalTeams" style="color:var(--gold); font-size:32px; font-weight:700; margin-top:5px;">0</div>
+                        </div>
+                        <div style="background:#0a0a0a; padding:15px; border-radius:8px; text-align:center;">
+                            <div style="color:#888; font-size:11px; text-transform:uppercase;">Toplam Kullanıcı</div>
+                            <div id="statTotalUsers" style="color:#4dd4d4; font-size:32px; font-weight:700; margin-top:5px;">0</div>
+                        </div>
+                        <div style="background:#0a0a0a; padding:15px; border-radius:8px; text-align:center;">
+                            <div style="color:#888; font-size:11px; text-transform:uppercase;">Toplam Mesaj</div>
+                            <div id="statTotalMessages" style="color:#ffa500; font-size:32px; font-weight:700; margin-top:5px;">0</div>
+                        </div>
+                        <div style="background:#0a0a0a; padding:15px; border-radius:8px; text-align:center;">
+                            <div style="color:#888; font-size:11px; text-transform:uppercase;">Toplam İpucu</div>
+                            <div id="statTotalClues" style="color:#d4af37; font-size:32px; font-weight:700; margin-top:5px;">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mesajlaşma Analizi -->
+                <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:20px; margin-bottom:20px;">
+                    <h4 style="color:var(--gold); font-size:15px; margin-bottom:15px;">💬 Mesajlaşma Analizi</h4>
+                    <div id="statsMessaging" style="font-size:13px;"></div>
+                </div>
+
+                <!-- İpucu Analizi -->
+                <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:20px; margin-bottom:20px;">
+                    <h4 style="color:var(--gold); font-size:15px; margin-bottom:15px;">🔎 İpucu Analizi</h4>
+                    <div id="statsClues" style="font-size:13px;"></div>
+                </div>
+
+                <!-- Kullanıcı Aktivitesi -->
+                <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:20px; margin-bottom:20px;">
+                    <h4 style="color:var(--gold); font-size:15px; margin-bottom:15px;">👥 Kullanıcı Aktivitesi</h4>
+                    <div id="statsUsers" style="font-size:13px;"></div>
+                </div>
+
+                <!-- Puanlama Tablosu -->
+                <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:20px; margin-bottom:20px;">
+                    <h4 style="color:var(--gold); font-size:15px; margin-bottom:15px;">🎯 Puan Sıralaması</h4>
+                    <div id="statsScoring" style="font-size:13px;"></div>
+                </div>
+
+                <!-- Export Butonları -->
+                <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:20px;">
+                    <h4 style="color:var(--gold); font-size:15px; margin-bottom:15px;">📥 Dışa Aktar</h4>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button class="btn btn-primary" style="width:auto; padding:12px 24px; margin:0;" onclick="ADMIN.exportStats('json')">📄 JSON İndir</button>
+                        <button class="btn btn-primary" style="width:auto; padding:12px 24px; margin:0;" onclick="ADMIN.exportStats('csv')">📊 CSV İndir</button>
+                    </div>
+                    <div style="margin-top:10px; color:#666; font-size:12px;">Tüm istatistikler ve veri dışa aktarılacaktır.</div>
                 </div>
             </div>
 
@@ -2780,8 +2846,9 @@
                     else if (section === 'scoring') buttons[2].classList.add('btn-primary');
                     else if (section === 'notifications') buttons[3].classList.add('btn-primary');
                     else if (section === 'chat') buttons[4].classList.add('btn-primary');
-                    else if (section === 'credits') buttons[5].classList.add('btn-primary');
-                    else if (section === 'iplogs') buttons[6].classList.add('btn-primary');
+                    else if (section === 'stats') buttons[5].classList.add('btn-primary');
+                    else if (section === 'credits') buttons[6].classList.add('btn-primary');
+                    else if (section === 'iplogs') buttons[7].classList.add('btn-primary');
 
                     this.currentSection = section;
 
@@ -2811,6 +2878,11 @@
                     // IP Logları bölümü açıldıysa varsayılan tab'ı göster
                     if (section === 'iplogs') {
                         IP_SECTION.showTab('logs');
+                    }
+
+                    // İstatistikler bölümü açıldıysa verileri yükle
+                    if (section === 'stats') {
+                        ADMIN.loadStatistics();
                     }
                 },
 
@@ -3186,6 +3258,222 @@
                             toast(res.error, true);
                         }
                     });
+                },
+
+                // İSTATİSTİKLER FONKSİYONLARI
+                loadStatistics: function() {
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
+                    socket.emit('get-statistics', function(res) {
+                        if (res.success) {
+                            ADMIN.renderStatsOverview(res.stats.overview);
+                            ADMIN.renderStatsMessaging(res.stats.messaging);
+                            ADMIN.renderStatsClues(res.stats.clues);
+                            ADMIN.renderStatsUsers(res.stats.users);
+                            ADMIN.renderStatsScoring(res.stats.scoring);
+
+                            // Export için veriyi sakla
+                            window.statsData = res.stats;
+
+                            toast('İstatistikler yüklendi');
+                        } else {
+                            toast(res.error || 'İstatistikler yüklenemedi!', true);
+                        }
+                    });
+                },
+
+                renderStatsOverview: function(overview) {
+                    document.getElementById('statTotalTeams').textContent = overview.totalTeams;
+                    document.getElementById('statTotalUsers').textContent = overview.totalUsers;
+                    document.getElementById('statTotalMessages').textContent = overview.totalMessages;
+                    document.getElementById('statTotalClues').textContent = overview.totalClues;
+                },
+
+                renderStatsMessaging: function(messaging) {
+                    var container = document.getElementById('statMessagingList');
+                    if (!container) return;
+
+                    if (messaging.byTeam.length === 0) {
+                        container.innerHTML = '<div style="color:#666; text-align:center; padding:20px;">Henüz mesaj yok</div>';
+                        return;
+                    }
+
+                    var html = '';
+                    messaging.byTeam.forEach(function(team) {
+                        html += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 15px; background:#0a0a0a; border-radius:8px; margin-bottom:8px;">
+                            <span style="color:#fff; font-weight:600;">${htmlEscape(team.name)}</span>
+                            <span style="color:var(--gold); font-size:20px; font-weight:700;">${team.message_count}</span>
+                        </div>`;
+                    });
+
+                    html += `
+                    <div style="margin-top:15px; padding-top:15px; border-top:1px solid #333; text-align:center;">
+                        <span style="color:#888; font-size:12px;">Takım başına ortalama: </span>
+                        <span style="color:var(--gold); font-weight:700; font-size:16px;">${messaging.avgPerTeam}</span>
+                        <span style="color:#888; font-size:12px;"> mesaj</span>
+                    </div>`;
+
+                    container.innerHTML = html;
+                },
+
+                renderStatsClues: function(clues) {
+                    var container = document.getElementById('statCluesList');
+                    if (!container) return;
+
+                    if (clues.byTeam.length === 0) {
+                        container.innerHTML = '<div style="color:#666; text-align:center; padding:20px;">Henüz ipucu yok</div>';
+                        return;
+                    }
+
+                    var html = '';
+                    clues.byTeam.forEach(function(team) {
+                        html += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 15px; background:#0a0a0a; border-radius:8px; margin-bottom:8px;">
+                            <span style="color:#fff; font-weight:600;">${htmlEscape(team.name)}</span>
+                            <span style="color:var(--gold); font-size:20px; font-weight:700;">${team.clue_count}</span>
+                        </div>`;
+                    });
+
+                    html += `
+                    <div style="margin-top:15px; padding-top:15px; border-top:1px solid #333; text-align:center;">
+                        <span style="color:#888; font-size:12px;">Takım başına ortalama: </span>
+                        <span style="color:var(--gold); font-weight:700; font-size:16px;">${clues.avgPerTeam}</span>
+                        <span style="color:#888; font-size:12px;"> ipucu</span>
+                    </div>`;
+
+                    container.innerHTML = html;
+                },
+
+                renderStatsUsers: function(users) {
+                    var container = document.getElementById('statUsersList');
+                    if (!container) return;
+
+                    if (users.mostActive.length === 0) {
+                        container.innerHTML = '<div style="color:#666; text-align:center; padding:20px;">Henüz aktif kullanıcı yok</div>';
+                        return;
+                    }
+
+                    var html = '';
+                    users.mostActive.forEach(function(user, index) {
+                        var medal = '';
+                        if (index === 0) medal = '🥇';
+                        else if (index === 1) medal = '🥈';
+                        else if (index === 2) medal = '🥉';
+
+                        html += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 15px; background:#0a0a0a; border-radius:8px; margin-bottom:8px;">
+                            <div style="flex:1;">
+                                <span style="color:#fff; font-weight:600;">${medal} ${htmlEscape(user.nickname)}</span>
+                                <span style="color:#666; font-size:11px; margin-left:10px;">${htmlEscape(user.team_name || 'Takımsız')}</span>
+                            </div>
+                            <span style="color:var(--gold); font-size:18px; font-weight:700;">${user.message_count}</span>
+                        </div>`;
+                    });
+
+                    container.innerHTML = html;
+                },
+
+                renderStatsScoring: function(scoring) {
+                    var container = document.getElementById('statScoringList');
+                    if (!container) return;
+
+                    if (scoring.length === 0) {
+                        container.innerHTML = '<div style="color:#666; text-align:center; padding:20px;">Henüz takım yok</div>';
+                        return;
+                    }
+
+                    var html = '';
+                    scoring.forEach(function(team, index) {
+                        var medal = '';
+                        if (index === 0) medal = '🥇';
+                        else if (index === 1) medal = '🥈';
+                        else if (index === 2) medal = '🥉';
+
+                        var rank = index + 1;
+
+                        html += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:#0a0a0a; border-radius:8px; margin-bottom:8px;">
+                            <div style="display:flex; align-items:center; gap:15px;">
+                                <span style="color:#666; font-size:20px; font-weight:700; width:30px;">${rank}</span>
+                                <div style="width:40px; height:40px; border-radius:50%; background:${htmlEscape(team.color)}; display:flex; align-items:center; justify-content:center; font-size:20px;">
+                                    ${htmlEscape(team.avatar)}
+                                </div>
+                                <span style="color:#fff; font-weight:600; font-size:15px;">${htmlEscape(team.name)}</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                ${medal ? '<span style="font-size:24px;">' + medal + '</span>' : ''}
+                                <span style="color:var(--gold); font-size:24px; font-weight:700;">${team.score}</span>
+                            </div>
+                        </div>`;
+                    });
+
+                    container.innerHTML = html;
+                },
+
+                exportStats: function(format) {
+                    if (!window.statsData) {
+                        toast('Önce istatistikleri yükleyin', true);
+                        return;
+                    }
+
+                    if (format === 'json') {
+                        var dataStr = JSON.stringify(window.statsData, null, 2);
+                        var dataBlob = new Blob([dataStr], { type: 'application/json' });
+                        var url = URL.createObjectURL(dataBlob);
+                        var link = document.createElement('a');
+                        link.href = url;
+                        link.download = 'istatistikler_' + new Date().getTime() + '.json';
+                        link.click();
+                        URL.revokeObjectURL(url);
+                        toast('JSON dosyası indirildi');
+                    } else if (format === 'csv') {
+                        var csv = 'Kategori,Veri,Değer\n';
+
+                        // Genel Özet
+                        csv += 'Genel Özet,Toplam Takım,' + window.statsData.overview.totalTeams + '\n';
+                        csv += 'Genel Özet,Toplam Kullanıcı,' + window.statsData.overview.totalUsers + '\n';
+                        csv += 'Genel Özet,Toplam Mesaj,' + window.statsData.overview.totalMessages + '\n';
+                        csv += 'Genel Özet,Toplam İpucu,' + window.statsData.overview.totalClues + '\n';
+                        csv += '\n';
+
+                        // Mesajlaşma
+                        csv += 'Mesajlaşma,Takım Başına Ortalama,' + window.statsData.messaging.avgPerTeam + '\n';
+                        window.statsData.messaging.byTeam.forEach(function(team) {
+                            csv += 'Mesajlaşma,"' + team.name.replace(/"/g, '""') + '",' + team.message_count + '\n';
+                        });
+                        csv += '\n';
+
+                        // İpuçları
+                        csv += 'İpuçları,Takım Başına Ortalama,' + window.statsData.clues.avgPerTeam + '\n';
+                        window.statsData.clues.byTeam.forEach(function(team) {
+                            csv += 'İpuçları,"' + team.name.replace(/"/g, '""') + '",' + team.clue_count + '\n';
+                        });
+                        csv += '\n';
+
+                        // En Aktif Kullanıcılar
+                        window.statsData.users.mostActive.forEach(function(user, index) {
+                            csv += 'En Aktif Kullanıcılar,"' + user.nickname.replace(/"/g, '""') + ' (' + (user.team_name || 'Takımsız').replace(/"/g, '""') + ')",' + user.message_count + '\n';
+                        });
+                        csv += '\n';
+
+                        // Puan Sıralaması
+                        window.statsData.scoring.forEach(function(team, index) {
+                            csv += 'Puan Sıralaması,"' + (index + 1) + '. ' + team.name.replace(/"/g, '""') + '",' + team.score + '\n';
+                        });
+
+                        var csvBlob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+                        var url = URL.createObjectURL(csvBlob);
+                        var link = document.createElement('a');
+                        link.href = url;
+                        link.download = 'istatistikler_' + new Date().getTime() + '.csv';
+                        link.click();
+                        URL.revokeObjectURL(url);
+                        toast('CSV dosyası indirildi');
+                    }
                 }
             };
 
