@@ -1520,6 +1520,83 @@ io.on('connection', async (socket) => {
         }
     });
 
+    // Tek bir ipucunu sil (admin)
+    socket.on('delete-general-clue', async (clueId, callback) => {
+        // GÜVENLİK: Admin kontrolü
+        if (!socket.data.isAdmin) {
+            callback({ success: false, error: 'Yetkisiz işlem!' });
+            console.log('⚠️  Yetkisiz admin işlemi: delete-general-clue -', socket.id);
+            return;
+        }
+
+        // Rate limiting: 30 silme/dakika
+        if (!rateLimiter.check(socket.id, 'delete-general-clue', 30, 60000)) {
+            callback({ success: false, error: 'Çok hızlı silme işlemi yapıyorsunuz!' });
+            console.log('⚠️  Rate limit: delete-general-clue -', socket.id);
+            return;
+        }
+
+        // GÜVENLİK: ID validation
+        if (!Number.isInteger(clueId) || clueId <= 0) {
+            callback({ success: false, error: 'Geçersiz ipucu ID!' });
+            return;
+        }
+
+        try {
+            // Veritabanından sil
+            const result = await pool.query(
+                'DELETE FROM general_clues WHERE id = $1',
+                [clueId]
+            );
+
+            if (result.rowCount === 0) {
+                callback({ success: false, error: 'İpucu bulunamadı!' });
+                return;
+            }
+
+            // Güncel ipuçlarını tüm kullanıcılara gönder
+            const generalClues = await getAllGeneralClues();
+            io.emit('general-clues-update', generalClues);
+
+            callback({ success: true });
+            console.log('İpucu silindi: ID', clueId);
+        } catch (err) {
+            console.error('İpucu silme hatası:', err);
+            callback({ success: false, error: 'İpucu silinemedi!' });
+        }
+    });
+
+    // Tüm ipuçlarını sil (admin)
+    socket.on('clear-all-clues', async (callback) => {
+        // GÜVENLİK: Admin kontrolü
+        if (!socket.data.isAdmin) {
+            callback({ success: false, error: 'Yetkisiz işlem!' });
+            console.log('⚠️  Yetkisiz admin işlemi: clear-all-clues -', socket.id);
+            return;
+        }
+
+        // Rate limiting: 5 toplu silme/dakika (daha sıkı limit)
+        if (!rateLimiter.check(socket.id, 'clear-all-clues', 5, 60000)) {
+            callback({ success: false, error: 'Çok sık toplu silme işlemi yapıyorsunuz!' });
+            console.log('⚠️  Rate limit: clear-all-clues -', socket.id);
+            return;
+        }
+
+        try {
+            // Tüm ipuçlarını sil
+            const result = await pool.query('DELETE FROM general_clues');
+
+            // Tüm kullanıcılara boş liste gönder
+            io.emit('general-clues-update', []);
+
+            callback({ success: true });
+            console.log('Tüm ipuçları silindi! Toplam:', result.rowCount);
+        } catch (err) {
+            console.error('Toplu ipucu silme hatası:', err);
+            callback({ success: false, error: 'İpuçları silinemedi!' });
+        }
+    });
+
     // Duyuru gönder (admin)
     socket.on('send-announcement', (message, callback) => {
         // GÜVENLİK: Admin kontrolü
