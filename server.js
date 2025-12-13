@@ -114,8 +114,16 @@ app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 const cookieParserMiddleware = cookieParser(process.env.SESSION_SECRET);
 app.use(cookieParserMiddleware);
 
-// 5. Session yönetimi - HTTP-only cookie ile güvenli oturum
+// 5. Session yönetimi - PostgreSQL store ile production-ready
+const pgSession = require('connect-pg-simple')(session);
+
 const sessionMiddleware = session({
+    store: new pgSession({
+        pool,  // PostgreSQL connection pool'u kullan (database.js'den)
+        tableName: 'user_sessions',  // Session tablosu adı
+        createTableIfMissing: true,  // Tablo yoksa oluştur
+        ttl: 7 * 24 * 60 * 60  // 7 gün (saniye cinsinden)
+    }),
     secret: process.env.SESSION_SECRET,  // Artık zorunlu (validation yukarıda)
     resave: false,
     saveUninitialized: false,  // FIX: Sadece gerçek veri yazıldığında session oluştur (boş session'ları engelle)
