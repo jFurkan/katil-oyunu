@@ -37,12 +37,12 @@ const server = http.createServer(app);
 // Railway/Reverse proxy için trust proxy ayarı
 app.set('trust proxy', 1); // Railway, Heroku gibi platformlar için gerekli
 
-// CORS ayarları - TEST İÇİN GEÇİCİ GEVŞEK
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*'; // GEÇICI: Tüm origin'lere izin
+// CORS ayarları
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || (process.env.NODE_ENV === 'production' ? false : '*');
 
 const io = new Server(server, {
     cors: {
-        origin: true, // GEÇICI: Tüm origin'lere izin (credentials için gerekli)
+        origin: ALLOWED_ORIGIN || true,  // Production'da env'den, dev'de *
         methods: ["GET", "POST"],
         credentials: true
     }
@@ -117,8 +117,8 @@ const sessionMiddleware = session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,        // XSS koruması: JavaScript erişimi yok
-        secure: false,         // GEÇICI: Secure kapalı (test için), production'da true olmalı
-        sameSite: 'lax',       // GEÇICI: strict yerine lax (test için)
+        secure: process.env.NODE_ENV === 'production',  // Railway'de HTTPS için gerekli
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',  // Cross-site cookie için
         maxAge: 7 * 24 * 60 * 60 * 1000  // 7 gün (otomatik temizlik ile aynı)
     }
     // name yok - varsayılan 'connect.sid' kullan
