@@ -659,7 +659,8 @@ io.use((socket, next) => {
 
     // Development'da origin kontrolü atla
     if (process.env.NODE_ENV === 'production' && ALLOWED_ORIGIN !== '*') {
-        if (!origin || (origin !== ALLOWED_ORIGIN && !referer?.startsWith(ALLOWED_ORIGIN))) {
+        // Origin varsa kontrol et, yoksa (undefined) izin ver (bazı WebSocket client'lar origin göndermez)
+        if (origin && origin !== ALLOWED_ORIGIN && !referer?.startsWith(ALLOWED_ORIGIN)) {
             console.log('❌ WebSocket bağlantısı reddedildi - geçersiz origin:', origin);
             return next(new Error('Origin not allowed'));
         }
