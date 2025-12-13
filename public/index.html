@@ -2139,7 +2139,15 @@
 
                     // Kullanıcılar bölümü açıldıysa listeyi render et
                     if (section === 'users') {
-                        renderUsersList();
+                        // Manuel olarak kullanıcıları server'dan çek
+                        if (socketConnected) {
+                            socket.emit('get-users-by-team', function(fetchedUsers) {
+                                users = fetchedUsers;
+                                renderUsersList();
+                            });
+                        } else {
+                            renderUsersList();
+                        }
                     }
 
                     // Emeği geçenler bölümü açıldıysa listeyi render et

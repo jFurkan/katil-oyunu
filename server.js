@@ -1887,6 +1887,17 @@ io.on('connection', async (socket) => {
         }
     });
 
+    // Kullanıcıları getir (takımlara göre gruplandırılmış)
+    socket.on('get-users-by-team', async (callback) => {
+        try {
+            const users = await getUsersByTeam();
+            callback(users);
+        } catch (err) {
+            console.error('Kullanıcılar getirme hatası:', err);
+            callback([]);
+        }
+    });
+
     // Tüm kullanıcıları getir (admin)
     socket.on('get-all-users', async (callback) => {
         // GÜVENLİK: Admin kontrolü
