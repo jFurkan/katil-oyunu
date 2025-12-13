@@ -836,22 +836,38 @@ io.on('connection', async (socket) => {
                         if (saveErr) {
                             console.error('Session save error:', saveErr);
                         }
+
+                        // GÜVENLİK FIX: Callback'i session save SONRASINDA çağır
+                        callback({ success: true, userId: userId, nickname: trimmedNick });
+
+                        // Tüm kullanıcılara güncel listeyi gönder
+                        getUsersByTeam().then(users => {
+                            io.emit('users-update', users);
+                        });
+
+                        // Log mesajı - yeni kayıt mı yoksa reconnect mi?
+                        if (isReconnect) {
+                            console.log('✓ Kullanıcı yeniden bağlandı:', trimmedNick, '- IP:', clientIP, '- userId:', userId);
+                        } else {
+                            console.log('✓ Yeni kullanıcı kaydedildi:', trimmedNick, '- IP:', clientIP, '- userId:', userId);
+                        }
                     });
                 });
-            }
-
-            callback({ success: true, userId: userId, nickname: trimmedNick });
-
-            // Tüm kullanıcılara güncel listeyi gönder
-            getUsersByTeam().then(users => {
-                io.emit('users-update', users);
-            });
-
-            // Log mesajı - yeni kayıt mı yoksa reconnect mi?
-            if (isReconnect) {
-                console.log('✓ Kullanıcı yeniden bağlandı:', trimmedNick, '- IP:', clientIP, '- userId:', userId);
             } else {
-                console.log('✓ Yeni kullanıcı kaydedildi:', trimmedNick, '- IP:', clientIP, '- userId:', userId);
+                // Session yoksa direkt callback
+                callback({ success: true, userId: userId, nickname: trimmedNick });
+
+                // Tüm kullanıcılara güncel listeyi gönder
+                getUsersByTeam().then(users => {
+                    io.emit('users-update', users);
+                });
+
+                // Log mesajı
+                if (isReconnect) {
+                    console.log('✓ Kullanıcı yeniden bağlandı (session yok):', trimmedNick, '- IP:', clientIP, '- userId:', userId);
+                } else {
+                    console.log('✓ Yeni kullanıcı kaydedildi (session yok):', trimmedNick, '- IP:', clientIP, '- userId:', userId);
+                }
             }
 
         } catch (err) {
