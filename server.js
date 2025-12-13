@@ -905,6 +905,12 @@ io.on('connection', async (socket) => {
             // GÜVENLİK: Socket session'a userId kaydet
             socket.data.userId = userId;
 
+            console.log('🔍 REGISTER DEBUG:', {
+                hasSession: !!socket.request.session,
+                sessionID: socket.request.sessionID,
+                sessionKeys: socket.request.session ? Object.keys(socket.request.session) : 'NO SESSION'
+            });
+
             // GÜVENLİK: Session kontrolü - eğer session varsa kaydet
             if (socket.request.session) {
                 // HTTP-only cookie'ye userId kaydet (güvenli oturum)
