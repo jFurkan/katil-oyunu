@@ -116,7 +116,7 @@ app.use(cookieParser());
 const sessionMiddleware = session({
     secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
     resave: false,
-    saveUninitialized: true,  // GEÇİCİ TEST: Her request'te cookie set et
+    saveUninitialized: false,  // FIX: Sadece gerçek veri yazıldığında session oluştur (boş session'ları engelle)
     cookie: {
         httpOnly: true,        // XSS koruması: JavaScript erişimi yok
         secure: process.env.NODE_ENV === 'production',  // Railway'de HTTPS için gerekli
@@ -134,23 +134,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Root endpoint - Railway health check
 app.get('/', (req, res) => {
     console.log('📄 Ana sayfa yüklendi:', {
-        sessionID: req.sessionID,
+        sessionID: req.sessionID || 'yok',
         hasSession: !!req.session,
+        userId: req.session?.userId,
         hasCookie: !!req.headers.cookie,
-        cookieValue: req.headers.cookie || 'yok',
         protocol: req.protocol,
-        secure: req.secure,
-        trustProxy: app.get('trust proxy')
-    });
-
-    // Session'ı zorla kaydet (test)
-    req.session.test = Date.now();
-    req.session.save((err) => {
-        if (err) {
-            console.error('❌ Session save error on GET /:', err);
-        } else {
-            console.log('✅ Session saved on GET /, cookie should be set');
-        }
+        secure: req.secure
     });
 
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -161,30 +150,6 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 // Keep alive - Railway health check
 app.get('/health', (req, res) => res.status(200).send('OK'));
-
-// Session sync endpoint - Socket event'lerinden sonra cookie güncellemesi için
-app.get('/api/session-sync', (req, res) => {
-    console.log('🔄 Session sync request:', {
-        sessionID: req.sessionID,
-        userId: req.session?.userId,
-        hasCookie: !!req.headers.cookie
-    });
-
-    // Session'ı zorla kaydet (cookie header'ı günceller)
-    req.session.save((err) => {
-        if (err) {
-            console.error('❌ Session sync save error:', err);
-            res.status(500).json({ success: false, error: 'Session sync failed' });
-        } else {
-            console.log('✅ Session synced, Set-Cookie header sent');
-            res.json({
-                success: true,
-                sessionID: req.sessionID,
-                userId: req.session?.userId
-            });
-        }
-    });
-});
 
 // Veritabanı test endpoint'i
 app.get('/api/health', async (req, res) => {
@@ -963,8 +928,9 @@ io.on('connection', async (socket) => {
             const sessionUserId = socket.request.session?.userId;
 
             if (!sessionUserId) {
-                console.log('❌ Reconnect başarısız: Session userId yok');
-                callback({ success: false, error: 'Oturum bulunamadı!' });
+                // Session yok - kullanıcı henüz login olmamış (normal durum)
+                console.log('ℹ️  Reconnect: Session userId yok (kullanıcı giriş yapmamış)');
+                callback({ success: false, requireLogin: true });
                 return;
             }
 
@@ -1295,28 +1261,21 @@ io.on('connection', async (socket) => {
 
             // GÜVENLİK: Session kontrolü - eğer session varsa kaydet
             if (socket.request.session) {
-                // Session Fixation saldırısını önle - admin girişinde yeni session oluştur
-                socket.request.session.regenerate((err) => {
-                    if (err) {
-                        console.error('Session regenerate error:', err);
-                        // Session hatası olsa bile admin girişi yapıldı
+                // HTTP-only session'a admin bilgisini kaydet
+                // NOT: Socket.IO'da regenerate() kullanmıyoruz, cookie sync sorunu yaratıyor
+                socket.request.session.isAdmin = true;
+
+                // Eğer userId varsa onu da session'a kaydet
+                if (socket.data.userId) {
+                    socket.request.session.userId = socket.data.userId;
+                }
+
+                socket.request.session.save((saveErr) => {
+                    if (saveErr) {
+                        console.error('Admin session save error:', saveErr);
                     }
-
-                    // HTTP-only session'a admin bilgisini kaydet
-                    socket.request.session.isAdmin = true;
-
-                    // Eğer userId varsa onu da yeni session'a kopyala
-                    if (socket.data.userId) {
-                        socket.request.session.userId = socket.data.userId;
-                    }
-
-                    socket.request.session.save((saveErr) => {
-                        if (saveErr) {
-                            console.error('Admin session save error:', saveErr);
-                        }
-                        callback({ success: true });
-                        console.log('✓ Admin girişi yapıldı:', socket.id, '- IP:', clientIP);
-                    });
+                    callback({ success: true });
+                    console.log('✓ Admin girişi yapıldı:', socket.id, '- IP:', clientIP);
                 });
             } else {
                 // Session yoksa direkt callback

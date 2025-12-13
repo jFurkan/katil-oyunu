@@ -1545,14 +1545,14 @@
                             showPage('pgLobby');
                         }
 
-                        console.log('✓ Session restore edildi:', response.nickname);
+                        console.log('✅ Session restore edildi:', response.nickname);
                     } else {
-                        // Session yok, nickname sayfasına git
+                        // Session yok veya süresi dolmuş - giriş sayfasına yönlendir (normal durum)
                         currentUser = null;
                         currentTeamId = null;
                         updateCurrentUserDisplay();
                         showPage('pgNickname', false);
-                        console.log('Session yok, giriş sayfasına yönlendirildi');
+                        console.log('ℹ️  Session bulunamadı, giriş sayfasına yönlendirildi');
                     }
                 });
             });
@@ -1720,18 +1720,7 @@
                             // GÜVENLİK: localStorage'a kaydetme, sadece memory'de tut
                             currentUser = { userId: res.userId, nickname: res.nickname };
                             updateCurrentUserDisplay();
-                            console.log('✅ Kayıt başarılı! Cookie kontrol:', document.cookie || 'yok');
-
-                            // Session sync - Cookie'yi güncellemek için HTTP request
-                            fetch('/api/session-sync', {
-                                method: 'GET',
-                                credentials: 'include'
-                            }).then(r => r.json()).then(data => {
-                                console.log('🔄 Session sync response:', data);
-                            }).catch(err => {
-                                console.error('Session sync error:', err);
-                            });
-
+                            console.log('✅ Kayıt başarılı! UserId:', res.userId);
                             showPage('pgLobby');
                             toast('Hoşgeldin, ' + res.nickname + '!');
                         } else {
