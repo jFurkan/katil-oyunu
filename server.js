@@ -131,6 +131,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Root endpoint - Railway health check
 app.get('/', (req, res) => {
+    console.log('📄 Ana sayfa yüklendi:', {
+        sessionID: req.sessionID,
+        hasSession: !!req.session,
+        hasCookie: !!req.headers.cookie,
+        cookieValue: req.headers.cookie || 'yok'
+    });
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

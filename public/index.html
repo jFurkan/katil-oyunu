@@ -1519,6 +1519,7 @@
             socket.on('connect', function() {
                 socketConnected = true;
                 console.log('Socket bağlantısı kuruldu');
+                console.log('🍪 Browser cookies:', document.cookie || 'yok');
 
                 // SESSION RESTORE: Server'dan session kontrolü yap
                 socket.emit('reconnect-user', function(response) {
@@ -1719,6 +1720,7 @@
                             // GÜVENLİK: localStorage'a kaydetme, sadece memory'de tut
                             currentUser = { userId: res.userId, nickname: res.nickname };
                             updateCurrentUserDisplay();
+                            console.log('✅ Kayıt başarılı! Cookie kontrol:', document.cookie || 'yok');
                             showPage('pgLobby');
                             toast('Hoşgeldin, ' + res.nickname + '!');
                         } else {
