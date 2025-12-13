@@ -121,11 +121,11 @@ const sessionMiddleware = session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,        // XSS koruması: JavaScript erişimi yok
-        secure: process.env.NODE_ENV === 'production', // HTTPS'te zorunlu
-        sameSite: 'strict',    // CSRF koruması
+        secure: false,         // GEÇICI: Secure kapalı (test için), production'da true olmalı
+        sameSite: 'lax',       // GEÇICI: strict yerine lax (test için)
         maxAge: 7 * 24 * 60 * 60 * 1000  // 7 gün (otomatik temizlik ile aynı)
-    },
-    name: 'sessionId'          // Varsayılan 'connect.sid' yerine özel isim
+    }
+    // name yok - varsayılan 'connect.sid' kullan
 });
 
 app.use(sessionMiddleware);
@@ -649,7 +649,22 @@ const adminLoginLimiter = new AdminLoginLimiter();
 
 // WebSocket session middleware - HTTP session'ı Socket.io'da kullan
 io.use((socket, next) => {
-    sessionMiddleware(socket.request, {}, next);
+    sessionMiddleware(socket.request, {}, (err) => {
+        if (err) {
+            console.error('Session middleware hatası:', err);
+            return next(err);
+        }
+
+        // DEBUG: Session kontrolü
+        console.log('🔑 Session middleware çalıştı:', {
+            sessionID: socket.request.sessionID,
+            hasSession: !!socket.request.session,
+            userId: socket.request.session?.userId,
+            cookie: socket.request.headers.cookie ? 'var' : 'yok'
+        });
+
+        next();
+    });
 });
 
 // WebSocket güvenlik middleware'i
@@ -882,10 +897,19 @@ io.on('connection', async (socket) => {
     // Kullanıcı reconnect (sayfa yenilendiğinde) - Session'dan otomatik oku
     socket.on('reconnect-user', async (callback) => {
         try {
+            // DEBUG: Session durumu
+            console.log('🔄 Reconnect talebi:', {
+                hasSession: !!socket.request.session,
+                sessionID: socket.request.sessionID,
+                userId: socket.request.session?.userId,
+                cookie: socket.handshake.headers.cookie ? 'var' : 'yok'
+            });
+
             // GÜVENLİK: Sadece session'dan userId oku (HTTP-only cookie)
-            const sessionUserId = socket.request.session.userId;
+            const sessionUserId = socket.request.session?.userId;
 
             if (!sessionUserId) {
+                console.log('❌ Reconnect başarısız: Session userId yok');
                 callback({ success: false, error: 'Oturum bulunamadı!' });
                 return;
             }

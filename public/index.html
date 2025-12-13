@@ -1515,12 +1515,40 @@
                 socketConnected = true;
                 console.log('Socket bağlantısı kuruldu');
 
-                // UX İYİLEŞTİRME: Her zaman nickname sayfasında başla
-                currentUser = null;
-                currentTeamId = null;
-                updateCurrentUserDisplay();
-                showPage('pgNickname', false); // History'ye ekleme
-                console.log('Giriş sayfasına yönlendirildi');
+                // SESSION RESTORE: Server'dan session kontrolü yap
+                socket.emit('reconnect-user', function(response) {
+                    if (response && response.userId) {
+                        // Session var, kullanıcıyı restore et
+                        currentUser = {
+                            userId: response.userId,
+                            nickname: response.nickname
+                        };
+                        updateCurrentUserDisplay();
+
+                        // Eğer takımı varsa takım sayfasına yönlendir
+                        if (response.teamId) {
+                            currentTeamId = response.teamId;
+                            var team = teams.find(t => t.id === response.teamId);
+                            if (team) {
+                                showPage('pgTeam');
+                            } else {
+                                showPage('pgLobby');
+                            }
+                        } else {
+                            // Takımı yoksa lobby'ye git
+                            showPage('pgLobby');
+                        }
+
+                        console.log('✓ Session restore edildi:', response.nickname);
+                    } else {
+                        // Session yok, nickname sayfasına git
+                        currentUser = null;
+                        currentTeamId = null;
+                        updateCurrentUserDisplay();
+                        showPage('pgNickname', false);
+                        console.log('Session yok, giriş sayfasına yönlendirildi');
+                    }
+                });
             });
 
             socket.on('disconnect', function() {
