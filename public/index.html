@@ -1140,6 +1140,7 @@
                 <button class="btn" onclick="ADMIN.showSection('scoring')">🎯 Puanlama</button>
                 <button class="btn" onclick="ADMIN.showSection('notifications')">📢 Bildirimler</button>
                 <button class="btn" onclick="ADMIN.showSection('chat')">💬 Chat İzleme</button>
+                <button class="btn" onclick="ADMIN.showSection('adminmessages')">👑 Admin Mesajları</button>
                 <button class="btn" onclick="ADMIN.showSection('stats')">📊 İstatistikler</button>
                 <button class="btn" onclick="ADMIN.showSection('credits')">👥 Emeği Geçenler</button>
                 <button class="btn" onclick="ADMIN.showSection('iplogs')">🔍 IP Logları</button>
@@ -1281,6 +1282,58 @@
                     <div style="font-size:48px; margin-bottom:15px; opacity:0.5;">🔍</div>
                     <div style="font-size:16px; margin-bottom:8px;">Bir takım seçin</div>
                     <div style="font-size:13px; color:#444;">Seçtiğiniz takımın chat geçmişini görüntüleyebilirsiniz</div>
+                </div>
+            </div>
+
+            <!-- Admin Mesajları Bölümü -->
+            <div id="adminSectionAdminmessages" class="admin-section" style="display:none;">
+                <h3 style="color:var(--gold); font-size:18px; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <span>👑 Admin Mesajları</span>
+                    <button class="btn btn-primary" style="width:auto; padding:8px 16px; margin:0; font-size:13px;" onclick="ADMIN.loadAdminMessages()">🔄 Yenile</button>
+                </h3>
+
+                <!-- Mesajlar ve Cevap Kutusu -->
+                <div style="background: linear-gradient(135deg, #0a1a1a, #050d0d); border: 2px solid #1a4d4d; border-radius: 12px; padding: 20px; box-shadow: 0 5px 20px rgba(26,77,77,0.3);">
+                    <!-- Başlık -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid #1a4d4d; padding-bottom: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="font-size: 24px;">👑</div>
+                            <div>
+                                <h3 style="margin: 0; color: #fbbf24; font-size: 18px; font-weight: 700;">Takımlardan Gelen Mesajlar</h3>
+                                <div style="color: #666; font-size: 11px; margin-top: 2px;">Tüm takımların admin'e gönderdiği özel mesajlar</div>
+                            </div>
+                        </div>
+                        <div id="adminMessageCount" style="background: rgba(251,191,36,0.2); color: #fbbf24; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; border: 1px solid rgba(251,191,36,0.3);">0 mesaj</div>
+                    </div>
+
+                    <!-- Mesajlar Alanı -->
+                    <div id="adminMessagesContainer" style="background: #000; border: 1px solid #1a4d4d; border-radius: 8px; padding: 15px; max-height: 500px; overflow-y: auto; min-height: 400px; margin-bottom: 15px;">
+                        <div style="text-align: center; padding: 60px 20px; color: #555;">
+                            <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">👑</div>
+                            <div style="font-size: 14px;">Henüz admin mesajı yok</div>
+                            <div style="font-size: 12px; color: #444; margin-top: 5px;">Takımlar size özel mesaj gönderdiğinde burada görünecek</div>
+                        </div>
+                    </div>
+
+                    <!-- Cevap Gönderme Alanı -->
+                    <div style="background: rgba(251,191,36,0.05); border: 1px solid rgba(251,191,36,0.2); border-radius: 8px; padding: 15px;">
+                        <div style="color: #fbbf24; font-size: 13px; font-weight: 700; margin-bottom: 10px;">✉️ Takıma Cevap Gönder</div>
+                        <div style="margin-bottom: 10px;">
+                            <label style="display:block; color:#888; font-size:12px; margin-bottom:5px;">Hedef Takım:</label>
+                            <select id="adminReplyTeamSelector" style="width:100%; background:#0a0a0a; border:1px solid #1a4d4d; color:#4dd4d4; padding:10px 14px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer;">
+                                <option value="">Takım seçin...</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="adminReplyMessage" placeholder="Mesajınızı yazın..." maxlength="500" style="margin: 0; background: #000; border: 1px solid #1a4d4d; color: #fff; flex: 1; padding: 12px 16px; border-radius: 6px;" onkeypress="if(event.key==='Enter') ADMIN.sendReplyMessage()">
+                            <button class="btn btn-primary" style="width: auto; margin: 0; padding: 12px 24px; background: linear-gradient(135deg, #fbbf24, #f59e0b); border-color: #fbbf24; color: #000; font-weight: 700;" onclick="ADMIN.sendReplyMessage()">Gönder</button>
+                        </div>
+                    </div>
+
+                    <!-- Bilgi Metni -->
+                    <div style="margin-top: 15px; padding: 12px; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2); border-radius: 6px; color: #888; font-size: 12px; text-align: center;">
+                        ℹ️ Burada sadece admin'e gönderilen özel mesajlar görünür. Cevaplarınız seçtiğiniz takımın chatinde görünecek.
+                    </div>
                 </div>
             </div>
 
@@ -2557,6 +2610,13 @@
                             📢 Tüm Takımlar
                         </div>`;
 
+                    // Admin seçeneği
+                    var isAdminSelected = CHAT.selectedTargetTeamId === 'admin';
+                    html += `
+                        <div onclick="CHAT.selectTeam('admin', 'Admin')" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #1a4d4d; color: ${isAdminSelected ? '#fbbf24' : '#f59e0b'}; font-weight: ${isAdminSelected ? '700' : '600'}; transition: background 0.2s;" onmouseover="this.style.background='#1a4d4d'" onmouseout="this.style.background='transparent'">
+                            👑 Admin (Özel Mesaj)
+                        </div>`;
+
                     // Diğer takımlar
                     CHAT.availableTeams.forEach(function(team) {
                         var isSelected = CHAT.selectedTargetTeamId === team.id;
@@ -2576,7 +2636,9 @@
 
                     var textEl = document.getElementById('selectedTeamText');
                     if (textEl) {
-                        if (teamId) {
+                        if (teamId === 'admin') {
+                            textEl.textContent = '👑 ' + teamName;
+                        } else if (teamId) {
                             textEl.textContent = '🔒 ' + teamName;
                         } else {
                             textEl.textContent = '📢 Tüm Takımlar';
@@ -2691,7 +2753,9 @@
 
                         // Hedef takım etiketi
                         var targetLabel = '';
-                        if (msg.target_team_name) {
+                        if (msg.target_team_id === 'admin') {
+                            targetLabel = `<span style="color: #fbbf24; font-size: 10px; background: rgba(251,191,36,0.2); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(251,191,36,0.4);">👑 → Admin (Özel)</span>`;
+                        } else if (msg.target_team_name) {
                             targetLabel = `<span style="color: #d4af37; font-size: 10px; background: rgba(212,175,55,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(212,175,55,0.3);">🔒 → ${htmlEscape(msg.target_team_name)}</span>`;
                         } else {
                             targetLabel = `<span style="color: #4dd4d4; font-size: 10px; background: rgba(77,212,212,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(77,212,212,0.3);">📢 Tüm Takımlar</span>`;
@@ -2846,11 +2910,17 @@
                     else if (section === 'scoring') buttons[2].classList.add('btn-primary');
                     else if (section === 'notifications') buttons[3].classList.add('btn-primary');
                     else if (section === 'chat') buttons[4].classList.add('btn-primary');
-                    else if (section === 'stats') buttons[5].classList.add('btn-primary');
-                    else if (section === 'credits') buttons[6].classList.add('btn-primary');
-                    else if (section === 'iplogs') buttons[7].classList.add('btn-primary');
+                    else if (section === 'adminmessages') buttons[5].classList.add('btn-primary');
+                    else if (section === 'stats') buttons[6].classList.add('btn-primary');
+                    else if (section === 'credits') buttons[7].classList.add('btn-primary');
+                    else if (section === 'iplogs') buttons[8].classList.add('btn-primary');
 
                     this.currentSection = section;
+
+                    // Admin Mesajları bölümü açıldıysa mesajları yükle
+                    if (section === 'adminmessages') {
+                        ADMIN.loadAdminMessages();
+                    }
 
                     // Kullanıcılar bölümü açıldıysa listeyi render et
                     if (section === 'users') {
@@ -2956,6 +3026,138 @@
                         NOTIF.deleteById(notifId);
                         toast('Bildirim silindi');
                     }
+                },
+
+                // Admin mesajlarını yükle
+                loadAdminMessages: function() {
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
+                    socket.emit('load-admin-messages', function(res) {
+                        if (res.success) {
+                            ADMIN.renderAdminMessages(res.messages);
+                            // Takım dropdown'ını güncelle
+                            ADMIN.updateAdminReplyTeamSelector();
+                        } else {
+                            toast(res.error, true);
+                        }
+                    });
+                },
+
+                // Admin mesajlarını render et
+                renderAdminMessages: function(messages) {
+                    var container = document.getElementById('adminMessagesContainer');
+                    var countEl = document.getElementById('adminMessageCount');
+
+                    if (!container) return;
+
+                    // Sayacı güncelle
+                    if (countEl) {
+                        countEl.textContent = messages.length + ' mesaj';
+                    }
+
+                    if (messages.length === 0) {
+                        container.innerHTML = `
+                            <div style="text-align: center; padding: 60px 20px; color: #555;">
+                                <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">👑</div>
+                                <div style="font-size: 14px;">Henüz admin mesajı yok</div>
+                                <div style="font-size: 12px; color: #444; margin-top: 5px;">Takımlar size özel mesaj gönderdiğinde burada görünecek</div>
+                            </div>`;
+                        return;
+                    }
+
+                    var html = '';
+                    messages.forEach(function(msg) {
+                        var time = new Date(msg.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+                        var date = new Date(msg.created_at).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
+
+                        html += `
+                        <div style="margin-bottom: 15px; background: rgba(251,191,36,0.05); border: 1px solid rgba(251,191,36,0.2); border-radius: 8px; padding: 12px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+                                <span style="color: #fbbf24; font-weight: 700; font-size: 13px;">${htmlEscape(msg.nickname)}</span>
+                                <span style="color: #888; font-size: 11px; font-weight: 600;">${htmlEscape(msg.team_name)}</span>
+                                <span style="color: #666; font-size: 10px;">${date} ${time}</span>
+                            </div>
+                            <div style="background: #0a0a0a; border: 1px solid rgba(251,191,36,0.3); border-radius: 6px; padding: 10px 14px; color: #fff; font-size: 14px; word-wrap: break-word;">
+                                ${htmlEscape(msg.message)}
+                            </div>
+                            <div style="margin-top: 8px;">
+                                <button class="btn" style="padding: 6px 12px; margin: 0; font-size: 11px; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #000; font-weight: 700;" onclick="ADMIN.quickReply('${msg.team_id}', '${htmlEscape(msg.team_name).replace(/'/g, "\\'")}')">✉️ Cevapla</button>
+                            </div>
+                        </div>`;
+                    });
+
+                    container.innerHTML = html;
+                    container.scrollTop = container.scrollHeight; // En alta kaydır
+                },
+
+                // Takım dropdown'ını güncelle (cevap gönderme için)
+                updateAdminReplyTeamSelector: function() {
+                    var selector = document.getElementById('adminReplyTeamSelector');
+                    if (!selector) return;
+
+                    var html = '<option value="">Takım seçin...</option>';
+
+                    // Tüm takımları ekle
+                    allTeams.forEach(function(team) {
+                        html += `<option value="${team.id}">${htmlEscape(team.name)}</option>`;
+                    });
+
+                    selector.innerHTML = html;
+                },
+
+                // Hızlı cevap - takımı otomatik seç
+                quickReply: function(teamId, teamName) {
+                    var selector = document.getElementById('adminReplyTeamSelector');
+                    var messageInput = document.getElementById('adminReplyMessage');
+
+                    if (selector) {
+                        selector.value = teamId;
+                    }
+
+                    if (messageInput) {
+                        messageInput.focus();
+                    }
+
+                    toast('Cevap gönderme alanı hazır: ' + teamName);
+                },
+
+                // Admin'den takıma mesaj gönder
+                sendReplyMessage: function() {
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
+                    var selector = document.getElementById('adminReplyTeamSelector');
+                    var messageInput = document.getElementById('adminReplyMessage');
+
+                    var targetTeamId = selector ? selector.value : '';
+                    var message = messageInput ? messageInput.value.trim() : '';
+
+                    if (!targetTeamId) {
+                        toast('Lütfen bir takım seçin!', true);
+                        return;
+                    }
+
+                    if (!message) {
+                        toast('Mesaj boş olamaz!', true);
+                        return;
+                    }
+
+                    socket.emit('admin-send-message', {
+                        targetTeamId: targetTeamId,
+                        message: message
+                    }, function(res) {
+                        if (res.success) {
+                            if (messageInput) messageInput.value = '';
+                            toast('Mesaj gönderildi!');
+                        } else {
+                            toast(res.error, true);
+                        }
+                    });
                 },
 
                 clearAllClues: function() {
@@ -4324,6 +4526,20 @@
                             }
                         }
                     }
+                }
+            });
+
+            // Yeni admin mesajı (admin'e gönderilen özel mesaj)
+            socket.on('new-admin-message', function(message) {
+                // Admin panelde Admin Mesajları bölümündeyse mesajları yenile
+                if (document.getElementById('pgAdmin').classList.contains('active') &&
+                    document.getElementById('adminSectionAdminmessages').style.display !== 'none') {
+                    ADMIN.loadAdminMessages();
+                }
+
+                // Bildirim göster
+                if (currentUser && currentUser.isAdmin) {
+                    toast(`📩 ${message.team_name} takımından yeni mesaj!`);
                 }
             });
 

@@ -1712,12 +1712,18 @@ io.on('connection', async (socket) => {
             // Hedef takım bilgisi
             let targetTeamName = null;
             if (targetTeamId) {
-                const targetTeamResult = await pool.query('SELECT name FROM teams WHERE id = $1', [targetTeamId]);
-                if (targetTeamResult.rows.length === 0) {
-                    callback({ success: false, error: 'Hedef takım bulunamadı!' });
-                    return;
+                // Admin'e özel mesaj
+                if (targetTeamId === 'admin') {
+                    targetTeamName = 'Admin';
+                } else {
+                    // Normal takıma özel mesaj
+                    const targetTeamResult = await pool.query('SELECT name FROM teams WHERE id = $1', [targetTeamId]);
+                    if (targetTeamResult.rows.length === 0) {
+                        callback({ success: false, error: 'Hedef takım bulunamadı!' });
+                        return;
+                    }
+                    targetTeamName = targetTeamResult.rows[0].name;
                 }
-                targetTeamName = targetTeamResult.rows[0].name;
             }
 
             // Mesajı veritabanına kaydet
@@ -1731,9 +1737,21 @@ io.on('connection', async (socket) => {
             // Tüm kullanıcılara mesajı gönder
             io.emit('new-team-message', newMessage);
 
+            // Admin'e özel mesaj ise admin socket'larına bildir
+            if (targetTeamId === 'admin') {
+                // Tüm admin socket'larına özel bildirim gönder
+                io.sockets.sockets.forEach((adminSocket) => {
+                    if (adminSocket.data.isAdmin) {
+                        adminSocket.emit('new-admin-message', newMessage);
+                    }
+                });
+            }
+
             callback({ success: true, message: newMessage });
 
-            if (targetTeamId) {
+            if (targetTeamId === 'admin') {
+                console.log(`👑 ${user.nickname} (${user.team_name}) → ADMIN: ${messageValidation.value.substring(0, 50)}...`);
+            } else if (targetTeamId) {
                 console.log(`💬 ${user.nickname} (${user.team_name}) → ${targetTeamName}: ${messageValidation.value.substring(0, 50)}...`);
             } else {
                 console.log(`💬 ${user.nickname} (${user.team_name}) → HERKESE: ${messageValidation.value.substring(0, 50)}...`);
@@ -1816,6 +1834,97 @@ io.on('connection', async (socket) => {
         } catch (err) {
             console.error('Admin chat yükleme hatası:', err);
             callback({ success: false, error: 'Chat yüklenemedi!' });
+        }
+    });
+
+    // Admin için tüm admin mesajlarını yükle
+    socket.on('load-admin-messages', async (callback) => {
+        // GÜVENLİK: Admin kontrolü
+        if (!socket.data.isAdmin) {
+            callback({ success: false, error: 'Yetkisiz işlem!' });
+            console.log('⚠️  Yetkisiz admin işlemi: load-admin-messages -', socket.id);
+            return;
+        }
+
+        try {
+            // Admin'e gönderilen tüm mesajları getir (target_team_id = 'admin')
+            const result = await pool.query(`
+                SELECT * FROM team_messages
+                WHERE target_team_id = 'admin'
+                ORDER BY created_at DESC
+                LIMIT 100
+            `);
+
+            callback({
+                success: true,
+                messages: result.rows
+            });
+
+            console.log(`👑 Admin mesajları yüklendi: ${result.rows.length} mesaj`);
+        } catch (err) {
+            console.error('Admin mesajları yükleme hatası:', err);
+            callback({ success: false, error: 'Mesajlar yüklenemedi!' });
+        }
+    });
+
+    // Admin'den takıma cevap gönder
+    socket.on('admin-send-message', async (data, callback) => {
+        // GÜVENLİK: Admin kontrolü
+        if (!socket.data.isAdmin) {
+            callback({ success: false, error: 'Yetkisiz işlem!' });
+            console.log('⚠️  Yetkisiz admin işlemi: admin-send-message -', socket.id);
+            return;
+        }
+
+        // Rate limiting: 30 mesaj/dakika
+        if (!rateLimiter.check(socket.id, 'admin-send-message', 30, 60000)) {
+            callback({ success: false, error: 'Çok hızlı mesaj gönderiyorsunuz!' });
+            console.log('⚠️  Rate limit: admin-send-message -', socket.id);
+            return;
+        }
+
+        const message = data.message;
+        const targetTeamId = data.targetTeamId;
+
+        // GÜVENLİK: Input validation & XSS koruması
+        const messageValidation = InputValidator.validateMessage(message, 500);
+        if (!messageValidation.valid) {
+            callback({ success: false, error: messageValidation.error });
+            return;
+        }
+
+        if (!targetTeamId) {
+            callback({ success: false, error: 'Hedef takım belirtilmedi!' });
+            return;
+        }
+
+        try {
+            // Hedef takım bilgilerini al
+            const teamResult = await pool.query('SELECT name FROM teams WHERE id = $1', [targetTeamId]);
+            if (teamResult.rows.length === 0) {
+                callback({ success: false, error: 'Hedef takım bulunamadı!' });
+                return;
+            }
+
+            const targetTeamName = teamResult.rows[0].name;
+
+            // Mesajı veritabanına kaydet (admin'den gönderiliyor, team_id = 'admin')
+            const insertResult = await pool.query(
+                'INSERT INTO team_messages (team_id, user_id, nickname, team_name, message, target_team_id, target_team_name) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+                ['admin', 'admin', 'Admin', 'Yönetim', messageValidation.value, targetTeamId, targetTeamName]
+            );
+
+            const newMessage = insertResult.rows[0];
+
+            // Tüm kullanıcılara mesajı gönder
+            io.emit('new-team-message', newMessage);
+
+            callback({ success: true, message: newMessage });
+
+            console.log(`👑 ADMIN → ${targetTeamName}: ${messageValidation.value.substring(0, 50)}...`);
+        } catch (err) {
+            console.error('Admin mesaj gönderme hatası:', err);
+            callback({ success: false, error: 'Mesaj gönderilemedi!' });
         }
     });
 
