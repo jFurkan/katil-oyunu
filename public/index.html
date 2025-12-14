@@ -3510,17 +3510,28 @@
 
                 // Chat İzleme - Takım seçici dropdown'ı güncelle
                 updateChatTeamSelector: function() {
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
+
                     var selector = document.getElementById('adminChatTeamSelector');
                     if (!selector) return;
 
                     var selectedValue = selector.value;
 
-                    var html = '<option value="">Takım seçin...</option>';
-                    teams.forEach(function(team) {
-                        html += `<option value="${team.id}" ${selectedValue === team.id ? 'selected' : ''}>${htmlEscape(team.name)}</option>`;
+                    // Takımları server'dan çek
+                    socket.emit('admin-get-teams', function(res) {
+                        if (res.success) {
+                            var html = '<option value="">Takım seçin...</option>';
+                            res.teams.forEach(function(team) {
+                                html += `<option value="${team.id}" ${selectedValue === team.id ? 'selected' : ''}>${htmlEscape(team.name)}</option>`;
+                            });
+                            selector.innerHTML = html;
+                        } else {
+                            toast(res.error, true);
+                        }
                     });
-
-                    selector.innerHTML = html;
                 },
 
                 // Chat İzleme - Takım seç
@@ -4801,50 +4812,8 @@
                     }
 
                     if (canSeeMessage) {
-                        // Mesajı ekle
-                        var container = document.getElementById('adminChatMessages');
-                        if (container) {
-                            // Boş mesaj varsa temizle
-                            if (container.querySelector('[style*="Henüz mesaj yok"]')) {
-                                container.innerHTML = '';
-                            }
-
-                            var time = new Date(message.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-                            var isFromSelectedTeam = message.team_id === ADMIN.selectedChatTeamId;
-
-                            // Hedef takım etiketi
-                            var targetLabel = '';
-                            if (message.target_team_name) {
-                                targetLabel = `<span style="color: #d4af37; font-size: 10px; background: rgba(212,175,55,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(212,175,55,0.3);">🔒 → ${htmlEscape(message.target_team_name)}</span>`;
-                            } else {
-                                targetLabel = `<span style="color: #4dd4d4; font-size: 10px; background: rgba(77,212,212,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(77,212,212,0.3);">📢 Tüm Takımlar</span>`;
-                            }
-
-                            var html = `
-                            <div style="margin-bottom: 15px; ${isFromSelectedTeam ? 'text-align: right;' : ''}">
-                                <div style="display: inline-block; max-width: 80%; text-align: left;">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
-                                        <span style="color: ${isFromSelectedTeam ? '#4dd4d4' : '#ffa500'}; font-weight: 700; font-size: 13px;">${htmlEscape(message.nickname)}</span>
-                                        <span style="color: #666; font-size: 11px; font-weight: 600;">${htmlEscape(message.team_name)}</span>
-                                        ${targetLabel}
-                                        <span style="color: #444; font-size: 10px;">${time}</span>
-                                    </div>
-                                    <div style="background: ${isFromSelectedTeam ? 'linear-gradient(135deg, #1a4d4d, #0d3333)' : '#1a1a1a'}; border: 1px solid ${isFromSelectedTeam ? '#4dd4d4' : '#333'}; border-radius: 8px; padding: 10px 14px; color: #fff; font-size: 14px; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
-                                        ${htmlEscape(message.message)}
-                                    </div>
-                                </div>
-                            </div>`;
-
-                            container.insertAdjacentHTML('beforeend', html);
-                            container.scrollTop = container.scrollHeight;
-
-                            // Sayacı güncelle
-                            var countEl = document.getElementById('adminChatMessageCount');
-                            if (countEl) {
-                                var currentCount = parseInt(countEl.textContent.split(' ')[0]) || 0;
-                                countEl.textContent = (currentCount + 1) + ' mesaj';
-                            }
-                        }
+                        // Tüm chat'i yeniden yükle (WhatsApp tarzı görünüm ve takım renkleri için)
+                        ADMIN.selectTeamForChat(ADMIN.selectedChatTeamId);
                     }
                 }
             });

@@ -1952,6 +1952,34 @@ io.on('connection', async (socket) => {
         }
     });
 
+    // Admin için tüm takımları listele
+    socket.on('admin-get-teams', async (callback) => {
+        // GÜVENLİK: Admin kontrolü
+        if (!socket.data.isAdmin) {
+            callback({ success: false, error: 'Yetkisiz işlem!' });
+            console.log('⚠️  Yetkisiz admin işlemi: admin-get-teams -', socket.id);
+            return;
+        }
+
+        try {
+            const result = await pool.query(`
+                SELECT id, name, color, score, created_at
+                FROM teams
+                ORDER BY name ASC
+            `);
+
+            callback({
+                success: true,
+                teams: result.rows
+            });
+
+            console.log(`📋 Admin için takımlar listesi yüklendi: ${result.rows.length} takım`);
+        } catch (err) {
+            console.error('Takımlar listesi yükleme hatası:', err);
+            callback({ success: false, error: 'Takımlar yüklenemedi!' });
+        }
+    });
+
     // Admin'den takıma cevap gönder
     socket.on('admin-send-message', async (data, callback) => {
         // GÜVENLİK: Admin kontrolü
