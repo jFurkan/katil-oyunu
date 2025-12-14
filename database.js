@@ -131,12 +131,18 @@ async function initDatabase() {
         // Migration: Özel mesajlar için target_team_id ekle
         await pool.query(`
             ALTER TABLE team_messages
-            ADD COLUMN IF NOT EXISTS target_team_id TEXT REFERENCES teams(id) ON DELETE CASCADE
+            ADD COLUMN IF NOT EXISTS target_team_id TEXT
         `);
 
         await pool.query(`
             ALTER TABLE team_messages
             ADD COLUMN IF NOT EXISTS target_team_name TEXT
+        `);
+
+        // Migration: target_team_id foreign key constraint'ini kaldır (admin mesajları için)
+        await pool.query(`
+            ALTER TABLE team_messages
+            DROP CONSTRAINT IF EXISTS team_messages_target_team_id_fkey
         `);
 
         // IP Activity tracking tablosu (Bot farm koruması)
