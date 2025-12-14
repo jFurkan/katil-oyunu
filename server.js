@@ -389,6 +389,70 @@ async function getTeamMessagesCount(teamId, excludeAdminMessages = false) {
     return parseInt(result.rows[0].count);
 }
 
+// Filtrelenmiş takım mesajları (belirli bir kişiyle olan konuşma)
+async function getFilteredTeamMessages(teamId, filterTeamId, limit = 50, offset = 0) {
+    // filterTeamId yoksa normal mesajları döndür
+    if (!filterTeamId) {
+        return await getTeamMessages(teamId, limit, offset);
+    }
+
+    let query = `
+        SELECT * FROM team_messages
+        WHERE (
+            (
+                -- Genel mesajlar hariç, sadece belirli kişiyle olan mesajlar
+                -- 1. Bizim takımdan filterTeamId'ye gönderilen mesajlar
+                (team_id = $1 AND target_team_id = $2)
+                OR
+                -- 2. filterTeamId'den bize gönderilen mesajlar
+                (team_id = $2 AND target_team_id = $1)
+            )
+            ${filterTeamId === 'admin' ? `
+                OR
+                -- Admin ile olan konuşma (admin'e gönderilen veya admin'den gelen)
+                (team_id = $1 AND target_team_id = 'admin')
+                OR
+                (team_id = 'admin' AND target_team_id = $1)
+            ` : ''}
+        )
+        ORDER BY created_at DESC
+        LIMIT $3 OFFSET $4
+    `;
+
+    const result = await pool.query(query, [teamId, filterTeamId, limit, offset]);
+    return result.rows.reverse(); // Eskiden yeniye sıralı döndür
+}
+
+async function getFilteredTeamMessagesCount(teamId, filterTeamId) {
+    // filterTeamId yoksa normal sayıyı döndür
+    if (!filterTeamId) {
+        return await getTeamMessagesCount(teamId);
+    }
+
+    let query = `
+        SELECT COUNT(*) FROM team_messages
+        WHERE (
+            (
+                -- 1. Bizim takımdan filterTeamId'ye gönderilen mesajlar
+                (team_id = $1 AND target_team_id = $2)
+                OR
+                -- 2. filterTeamId'den bize gönderilen mesajlar
+                (team_id = $2 AND target_team_id = $1)
+            )
+            ${filterTeamId === 'admin' ? `
+                OR
+                -- Admin ile olan konuşma
+                (team_id = $1 AND target_team_id = 'admin')
+                OR
+                (team_id = 'admin' AND target_team_id = $1)
+            ` : ''}
+        )
+    `;
+
+    const result = await pool.query(query, [teamId, filterTeamId]);
+    return parseInt(result.rows[0].count);
+}
+
 // Socket.IO Event Rate Limiter (Spam koruması)
 class SocketRateLimiter {
     constructor() {
@@ -1792,9 +1856,11 @@ io.on('connection', async (socket) => {
             const page = data?.page || 1;
             const limit = 50;
             const offset = (page - 1) * limit;
+            const filterTeamId = data?.filterTeamId || null; // Filtre parametresi
 
-            const messages = await getTeamMessages(userTeamId, limit, offset);
-            const totalCount = await getTeamMessagesCount(userTeamId);
+            // Filtrelenmiş mesajları al
+            const messages = await getFilteredTeamMessages(userTeamId, filterTeamId, limit, offset);
+            const totalCount = await getFilteredTeamMessagesCount(userTeamId, filterTeamId);
             const totalPages = Math.ceil(totalCount / limit);
 
             callback({

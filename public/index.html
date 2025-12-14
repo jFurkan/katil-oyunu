@@ -2805,6 +2805,9 @@
                     // Dropdown'ı kapat
                     var dropdown = document.getElementById('teamDropdown');
                     if (dropdown) dropdown.style.display = 'none';
+
+                    // Mesajları filtrele ve yeniden yükle
+                    CHAT.loadMessages(1);
                 },
 
                 // Mevcut takımları güncelle
@@ -2854,7 +2857,10 @@
                     if (CHAT.isLoading) return;
                     CHAT.isLoading = true;
 
-                    socket.emit('load-team-messages', { page: page }, function(res) {
+                    socket.emit('load-team-messages', {
+                        page: page,
+                        filterTeamId: CHAT.selectedTargetTeamId  // Filtre ekle
+                    }, function(res) {
                         CHAT.isLoading = false;
                         if (res.success) {
                             CHAT.currentPage = res.pagination.currentPage;
