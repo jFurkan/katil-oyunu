@@ -792,6 +792,15 @@
                 width: 100%;
                 max-width: 100%;
             }
+
+            /* Müzik kontrol butonu - Mobil */
+            #musicToggle {
+                width: 50px !important;
+                height: 50px !important;
+                font-size: 20px !important;
+                bottom: 70px !important;
+                right: 15px !important;
+            }
         }
 
         /* Çok Küçük Mobil Cihazlar (<480px) */
@@ -1082,6 +1091,32 @@
     </style>
 </head>
 <body>
+    <!-- Arka Plan Müziği -->
+    <audio id="bgMusic" loop>
+        <source src="/audio/background.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Müzik Kontrol Butonu -->
+    <div style="position: fixed; bottom: 80px; right: 20px; z-index: 9999;">
+        <button id="musicToggle" onclick="toggleMusic()" style="
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1a4d4d, #0d3333);
+            border: 2px solid #4dd4d4;
+            color: #4dd4d4;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(77,212,212,0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        " onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 20px rgba(77,212,212,0.5)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(77,212,212,0.3)';">
+            🔇
+        </button>
+    </div>
+
     <!-- Bildirim Container -->
     <div class="notification-container" id="notificationContainer"></div>
 
@@ -5018,6 +5053,48 @@
                 showPage('pgNickname', false);
             };
         })();
+
+        // ARKA PLAN MÜZİĞİ KONTROLÜ
+        var bgMusic = document.getElementById('bgMusic');
+        var musicToggle = document.getElementById('musicToggle');
+        var isMusicPlaying = false;
+
+        // Müzik aç/kapa
+        function toggleMusic() {
+            if (isMusicPlaying) {
+                bgMusic.pause();
+                musicToggle.textContent = '🔇';
+                musicToggle.style.borderColor = '#666';
+                musicToggle.style.color = '#666';
+                isMusicPlaying = false;
+                localStorage.setItem('musicEnabled', 'false');
+            } else {
+                bgMusic.play().catch(function(err) {
+                    console.log('Müzik otomatik başlatılamadı (tarayıcı politikası):', err);
+                });
+                musicToggle.textContent = '🔊';
+                musicToggle.style.borderColor = '#4dd4d4';
+                musicToggle.style.color = '#4dd4d4';
+                isMusicPlaying = true;
+                localStorage.setItem('musicEnabled', 'true');
+            }
+        }
+
+        // Sayfa yüklendiğinde müzik tercihini kontrol et
+        document.addEventListener('DOMContentLoaded', function() {
+            var musicEnabled = localStorage.getItem('musicEnabled');
+
+            // İlk ziyaret veya önceden açık bırakılmışsa
+            if (musicEnabled === null || musicEnabled === 'true') {
+                // Kullanıcı etkileşimi sonrası müziği başlat
+                document.body.addEventListener('click', function startMusic() {
+                    if (!isMusicPlaying) {
+                        toggleMusic();
+                    }
+                    document.body.removeEventListener('click', startMusic);
+                }, { once: true });
+            }
+        });
     </script>
 </body>
 </html>
