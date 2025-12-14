@@ -348,29 +348,44 @@ async function getUsersByTeam() {
 }
 
 // Team messages fonksiyonları
-async function getTeamMessages(teamId, limit = 50, offset = 0) {
+async function getTeamMessages(teamId, limit = 50, offset = 0, excludeAdminMessages = false) {
     // Kullanıcı görebileceği mesajlar:
     // 1. Genel mesajlar (target_team_id IS NULL)
     // 2. Kendi takımına gönderilen mesajlar (target_team_id = teamId)
     // 3. Kendi takımının gönderdiği özel mesajlar (team_id = teamId AND target_team_id IS NOT NULL)
-    const result = await pool.query(`
+
+    let query = `
         SELECT * FROM team_messages
-        WHERE target_team_id IS NULL
+        WHERE (target_team_id IS NULL
            OR target_team_id = $1
-           OR (team_id = $1 AND target_team_id IS NOT NULL)
-        ORDER BY created_at DESC
-        LIMIT $2 OFFSET $3
-    `, [teamId, limit, offset]);
+           OR (team_id = $1 AND target_team_id IS NOT NULL))
+    `;
+
+    // Admin mesajlarını hariç tut (Chat İzleme için)
+    if (excludeAdminMessages) {
+        query += ` AND target_team_id != 'admin'`;
+    }
+
+    query += ` ORDER BY created_at DESC LIMIT $2 OFFSET $3`;
+
+    const result = await pool.query(query, [teamId, limit, offset]);
     return result.rows.reverse(); // Eskiden yeniye sıralı döndür
 }
 
-async function getTeamMessagesCount(teamId) {
-    const result = await pool.query(`
+async function getTeamMessagesCount(teamId, excludeAdminMessages = false) {
+    let query = `
         SELECT COUNT(*) FROM team_messages
-        WHERE target_team_id IS NULL
+        WHERE (target_team_id IS NULL
            OR target_team_id = $1
-           OR (team_id = $1 AND target_team_id IS NOT NULL)
-    `, [teamId]);
+           OR (team_id = $1 AND target_team_id IS NOT NULL))
+    `;
+
+    // Admin mesajlarını hariç tut
+    if (excludeAdminMessages) {
+        query += ` AND target_team_id != 'admin'`;
+    }
+
+    const result = await pool.query(query, [teamId]);
     return parseInt(result.rows[0].count);
 }
 
@@ -1819,9 +1834,9 @@ io.on('connection', async (socket) => {
             const limit = 100; // Admin için daha fazla mesaj göster
             const offset = 0;
 
-            // Takımın görebildiği tüm mesajları yükle
-            const messages = await getTeamMessages(teamId, limit, offset);
-            const totalCount = await getTeamMessagesCount(teamId);
+            // Takımın görebildiği mesajları yükle (admin mesajları hariç)
+            const messages = await getTeamMessages(teamId, limit, offset, true);
+            const totalCount = await getTeamMessagesCount(teamId, true);
 
             callback({
                 success: true,
@@ -1830,7 +1845,7 @@ io.on('connection', async (socket) => {
                 totalCount: totalCount
             });
 
-            console.log(`👁️  Admin chat izleme: ${teamName} (${messages.length} mesaj)`);
+            console.log(`👁️  Admin chat izleme: ${teamName} (${messages.length} mesaj - admin mesajları hariç)`);
         } catch (err) {
             console.error('Admin chat yükleme hatası:', err);
             callback({ success: false, error: 'Chat yüklenemedi!' });
