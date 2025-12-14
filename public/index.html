@@ -758,10 +758,10 @@
                 padding: 20px;
             }
 
-            /* Admin Mesajları - İki kolonu tek kolona çevir */
-            #adminSectionMessages > div > div[style*="grid-template-columns: 320px 1fr"] {
-                grid-template-columns: 1fr !important;
-                gap: 15px !important;
+            /* Admin Mesajları - Dropdown genişliği */
+            #adminMessagesTeamSelector,
+            #adminChatTeamSelector {
+                max-width: 100% !important;
             }
 
             /* Chat İzleme - Padding düzeltmesi */
@@ -853,11 +853,11 @@
             }
 
             /* Mesaj gönderme alanı - Flex düzeni */
-            #adminReplySection > div[style*="display: flex"] {
+            #adminMessagesViewerContainer div[style*="display: flex; gap: 10px"] {
                 flex-direction: column !important;
             }
 
-            #adminReplySection button {
+            #adminMessagesViewerContainer div[style*="display: flex; gap: 10px"] button {
                 width: 100% !important;
                 margin-top: 8px !important;
             }
@@ -1497,56 +1497,53 @@
                     <button class="btn btn-primary" style="width:auto; padding:8px 16px; margin:0; font-size:13px;" onclick="ADMIN.loadAdminMessages()">🔄 Yenile</button>
                 </h3>
 
-                <!-- İki Kolonlu Yapı -->
-                <div style="display: grid; grid-template-columns: 320px 1fr; gap: 20px; min-height: 600px;">
-                    <!-- Sol: Takım Listesi -->
-                    <div style="background: linear-gradient(135deg, #0a1a1a, #050d0d); border: 2px solid #1a4d4d; border-radius: 12px; padding: 15px; box-shadow: 0 5px 20px rgba(26,77,77,0.3);">
-                        <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #1a4d4d;">
-                            <div style="color: #fbbf24; font-size: 14px; font-weight: 700;">📋 Mesaj Gönderen Takımlar</div>
-                            <div style="color: #666; font-size: 11px; margin-top: 4px;">Takıma tıklayarak mesajları görün</div>
-                        </div>
-                        <div id="adminTeamsList" style="display: flex; flex-direction: column; gap: 8px;">
-                            <div style="text-align: center; padding: 60px 20px; color: #555;">
-                                <div style="font-size: 36px; margin-bottom: 10px; opacity: 0.5;">📭</div>
-                                <div style="font-size: 13px;">Henüz mesaj yok</div>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Takım Seçici -->
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; color:#888; font-size:13px; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">Takım Seç</label>
+                    <select id="adminMessagesTeamSelector" onchange="ADMIN.selectTeamForAdminMessages(this.value)" style="width:100%; max-width:400px; background:#0a0a0a; border:1px solid #1a4d4d; color:#fbbf24; padding:12px 16px; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer;">
+                        <option value="">Takım seçin...</option>
+                    </select>
+                </div>
 
-                    <!-- Sağ: Seçili Takımın Mesajları -->
-                    <div style="background: linear-gradient(135deg, #0a1a1a, #050d0d); border: 2px solid #1a4d4d; border-radius: 12px; padding: 20px; box-shadow: 0 5px 20px rgba(26,77,77,0.3); display: flex; flex-direction: column;">
+                <!-- Mesajlar Görüntüleme Alanı -->
+                <div id="adminMessagesViewerContainer" style="display:none;">
+                    <div style="background: linear-gradient(135deg, #0a1a1a, #050d0d); border: 2px solid #1a4d4d; border-radius: 12px; padding: 20px; box-shadow: 0 5px 20px rgba(26,77,77,0.3);">
                         <!-- Başlık -->
-                        <div id="adminMessagesHeader" style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #1a4d4d;">
-                            <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="font-size: 24px;">💬</div>
-                                    <div>
-                                        <div id="adminSelectedTeamName" style="color: #fbbf24; font-size: 16px; font-weight: 700;">Takım seçin</div>
-                                        <div style="color: #666; font-size: 11px; margin-top: 2px;">Sol taraftan takım seçerek mesajlaşmaya başlayın</div>
-                                    </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid #1a4d4d; padding-bottom: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="font-size: 24px;">💬</div>
+                                <div>
+                                    <h3 id="adminSelectedTeamName" style="margin: 0; color: #fbbf24; font-size: 18px; font-weight: 700;">-</h3>
+                                    <div style="color: #666; font-size: 11px; margin-top: 2px;">Admin ile takım arasındaki mesajlar</div>
                                 </div>
-                                <div id="adminSelectedTeamMessageCount" style="background: rgba(251,191,36,0.2); color: #fbbf24; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; border: 1px solid rgba(251,191,36,0.3); display: none;">0 mesaj</div>
                             </div>
+                            <div id="adminSelectedTeamMessageCount" style="background: rgba(251,191,36,0.2); color: #fbbf24; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; border: 1px solid rgba(251,191,36,0.3);">0 mesaj</div>
                         </div>
 
                         <!-- Mesajlar Alanı -->
-                        <div id="adminMessagesContainer" style="flex: 1; background: #000; border: 1px solid #1a4d4d; border-radius: 8px; padding: 15px; overflow-y: auto; margin-bottom: 15px;">
+                        <div id="adminMessagesContainer" style="background: #000; border: 1px solid #1a4d4d; border-radius: 8px; padding: 15px; max-height: 500px; overflow-y: auto; margin-bottom: 15px; min-height: 400px;">
                             <div style="text-align: center; padding: 80px 20px; color: #555;">
-                                <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">👈</div>
-                                <div style="font-size: 14px;">Takım seçin</div>
-                                <div style="font-size: 12px; color: #444; margin-top: 5px;">Sol taraftan mesaj gönderen bir takım seçin</div>
+                                <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">📭</div>
+                                <div style="font-size: 14px;">Henüz mesaj yok</div>
                             </div>
                         </div>
 
                         <!-- Cevap Gönderme Alanı -->
-                        <div id="adminReplySection" style="background: rgba(251,191,36,0.05); border: 1px solid rgba(251,191,36,0.2); border-radius: 8px; padding: 15px; display: none;">
-                            <div style="color: #fbbf24; font-size: 13px; font-weight: 700; margin-bottom: 10px;">✉️ Cevap Gönder</div>
+                        <div style="background: rgba(251,191,36,0.05); border: 1px solid rgba(251,191,36,0.2); border-radius: 8px; padding: 15px;">
+                            <div style="color: #fbbf24; font-size: 13px; font-weight: 700; margin-bottom: 10px;">✉️ Takıma Mesaj Gönder</div>
                             <div style="display: flex; gap: 10px;">
                                 <input type="text" id="adminReplyMessage" placeholder="Mesajınızı yazın..." maxlength="500" style="margin: 0; background: #000; border: 1px solid #1a4d4d; color: #fff; flex: 1; padding: 12px 16px; border-radius: 6px;" onkeypress="if(event.key==='Enter') ADMIN.sendReplyMessage()">
                                 <button class="btn btn-primary" style="width: auto; margin: 0; padding: 12px 24px; background: linear-gradient(135deg, #fbbf24, #f59e0b); border-color: #fbbf24; color: #000; font-weight: 700;" onclick="ADMIN.sendReplyMessage()">Gönder</button>
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Boş Durum -->
+                <div id="adminMessagesEmptyState" style="text-align:center; padding:60px 20px; color:#555;">
+                    <div style="font-size:48px; margin-bottom:15px; opacity:0.5;">🔍</div>
+                    <div style="font-size:16px; margin-bottom:8px;">Bir takım seçin</div>
+                    <div style="font-size:13px; color:#444;">Seçtiğiniz takıma mesaj gönderebilir ve gelen mesajları görüntüleyebilirsiniz</div>
                 </div>
             </div>
 
@@ -3282,107 +3279,75 @@
                         return;
                     }
 
-                    socket.emit('load-admin-messages', function(res) {
+                    // Tüm takımları yükle ve dropdown'ı doldur
+                    socket.emit('admin-get-teams', function(res) {
                         if (res.success) {
-                            ADMIN.adminMessagesData = res.messages;
-                            ADMIN.renderAdminTeamsList();
+                            var selector = document.getElementById('adminMessagesTeamSelector');
+                            if (!selector) return;
+
+                            selector.innerHTML = '<option value="">Takım seçin...</option>';
+                            res.teams.forEach(function(team) {
+                                selector.innerHTML += `<option value="${team.id}">${htmlEscape(team.name)}</option>`;
+                            });
                         } else {
                             toast(res.error, true);
                         }
                     });
                 },
 
-                // Takım listesini render et (sol taraf)
-                renderAdminTeamsList: function() {
-                    var container = document.getElementById('adminTeamsList');
-                    if (!container) return;
-
-                    if (ADMIN.adminMessagesData.length === 0) {
-                        container.innerHTML = `
-                            <div style="text-align: center; padding: 60px 20px; color: #555;">
-                                <div style="font-size: 36px; margin-bottom: 10px; opacity: 0.5;">📭</div>
-                                <div style="font-size: 13px;">Henüz mesaj yok</div>
-                            </div>`;
+                // Dropdown'dan takım seç
+                selectTeamForAdminMessages: function(teamId) {
+                    if (!teamId) {
+                        // Boş seçim
+                        ADMIN.selectedAdminTeamId = null;
+                        document.getElementById('adminMessagesViewerContainer').style.display = 'none';
+                        document.getElementById('adminMessagesEmptyState').style.display = 'block';
                         return;
                     }
 
-                    // Takımlara göre grupla
-                    var teamGroups = {};
-                    ADMIN.adminMessagesData.forEach(function(msg) {
-                        if (!teamGroups[msg.team_id]) {
-                            teamGroups[msg.team_id] = {
-                                team_id: msg.team_id,
-                                team_name: msg.team_name,
-                                team_color: msg.team_color || '#3b82f6',
-                                messages: []
-                            };
-                        }
-                        teamGroups[msg.team_id].messages.push(msg);
-                    });
-
-                    var html = '';
-                    Object.values(teamGroups).forEach(function(group) {
-                        var isSelected = ADMIN.selectedAdminTeamId === group.team_id;
-                        var messageCount = group.messages.length;
-                        var lastMessage = group.messages[group.messages.length - 1];
-                        var time = new Date(lastMessage.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-
-                        html += `
-                        <div onclick="ADMIN.selectAdminTeam('${group.team_id}', '${htmlEscape(group.team_name).replace(/'/g, "\\\'")}')" style="
-                            padding: 12px;
-                            background: ${isSelected ? 'linear-gradient(135deg, rgba(251,191,36,0.15), rgba(251,191,36,0.08))' : '#0a0a0a'};
-                            border: 1px solid ${isSelected ? 'rgba(251,191,36,0.5)' : '#1a4d4d'};
-                            border-radius: 8px;
-                            cursor: pointer;
-                            transition: all 0.2s;
-                        " onmouseover="if(!${isSelected}) { this.style.background='#111'; this.style.borderColor='#2a5d5d'; }" onmouseout="if(!${isSelected}) { this.style.background='#0a0a0a'; this.style.borderColor='#1a4d4d'; }">
-                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-                                <div style="display: flex; align-items: center; gap: 6px;">
-                                    <span style="background: ${group.team_color}; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">${htmlEscape(group.team_name)}</span>
-                                </div>
-                                <span style="background: ${isSelected ? '#fbbf24' : '#1a4d4d'}; color: ${isSelected ? '#000' : '#4dd4d4'}; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700;">${messageCount}</span>
-                            </div>
-                            <div style="color: #888; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                ${htmlEscape(lastMessage.message.substring(0, 40))}${lastMessage.message.length > 40 ? '...' : ''}
-                            </div>
-                            <div style="color: #555; font-size: 10px; margin-top: 4px;">
-                                🕐 ${time}
-                            </div>
-                        </div>`;
-                    });
-
-                    container.innerHTML = html;
-                },
-
-                // Takım seç (sağ tarafta mesajları göster)
-                selectAdminTeam: function(teamId, teamName) {
                     ADMIN.selectedAdminTeamId = teamId;
 
-                    // Header'ı güncelle
-                    document.getElementById('adminSelectedTeamName').textContent = teamName;
-                    document.getElementById('adminSelectedTeamMessageCount').style.display = 'block';
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        return;
+                    }
 
-                    // Cevap bölümünü göster
-                    document.getElementById('adminReplySection').style.display = 'block';
+                    // Takım bilgisini al
+                    socket.emit('admin-get-teams', function(res) {
+                        if (res.success) {
+                            var team = res.teams.find(function(t) { return t.id === teamId; });
+                            if (team) {
+                                document.getElementById('adminSelectedTeamName').textContent = team.name;
+                            }
+                        }
+                    });
 
-                    // Takım listesini yeniden render et (seçili vurgusu için)
-                    ADMIN.renderAdminTeamsList();
+                    // Admin mesajlarını yükle (bu takımla olan mesajlar)
+                    socket.emit('load-admin-messages', function(res) {
+                        if (res.success) {
+                            // Seçili takımın mesajlarını filtrele
+                            var teamMessages = res.messages.filter(function(msg) {
+                                return msg.team_id === teamId || msg.target_team_id === teamId;
+                            });
 
-                    // Seçili takımın mesajlarını render et
-                    ADMIN.renderSelectedTeamMessages();
+                            // Mesajları render et
+                            ADMIN.renderAdminTeamMessages(teamMessages);
+
+                            // Görünümleri değiştir
+                            document.getElementById('adminMessagesViewerContainer').style.display = 'block';
+                            document.getElementById('adminMessagesEmptyState').style.display = 'none';
+                        } else {
+                            toast(res.error, true);
+                        }
+                    });
                 },
 
                 // Seçili takımın mesajlarını render et
-                renderSelectedTeamMessages: function() {
+                renderAdminTeamMessages: function(teamMessages) {
                     var container = document.getElementById('adminMessagesContainer');
                     var countEl = document.getElementById('adminSelectedTeamMessageCount');
 
-                    if (!container || !ADMIN.selectedAdminTeamId) return;
-
-                    // Seçili takımın mesajlarını filtrele
-                    var teamMessages = ADMIN.adminMessagesData.filter(function(msg) {
-                        return msg.team_id === ADMIN.selectedAdminTeamId;
-                    });
+                    if (!container) return;
 
                     // Sayacı güncelle
                     if (countEl) {
@@ -4888,20 +4853,13 @@
                     toast(`📩 ${message.team_name} takımından yeni mesaj!`);
                 }
 
-                // Admin panelde Admin Mesajları bölümündeyse güncelle
+                // Admin panelde Admin Mesajları bölümündeyse ve seçili takımın mesajıysa güncelle
                 if (document.getElementById('pgAdmin').classList.contains('active') &&
-                    document.getElementById('adminSectionAdminmessages').style.display !== 'none') {
+                    document.getElementById('adminSectionAdminmessages').style.display !== 'none' &&
+                    ADMIN.selectedAdminTeamId === message.team_id) {
 
-                    // Mesajı data'ya ekle
-                    ADMIN.adminMessagesData.push(message);
-
-                    // Takım listesini güncelle
-                    ADMIN.renderAdminTeamsList();
-
-                    // Eğer bu takım seçiliyse, mesajları da güncelle
-                    if (ADMIN.selectedAdminTeamId === message.team_id) {
-                        ADMIN.renderSelectedTeamMessages();
-                    }
+                    // Seçili takımın mesajlarını yeniden yükle
+                    ADMIN.selectTeamForAdminMessages(ADMIN.selectedAdminTeamId);
                 }
             });
 
