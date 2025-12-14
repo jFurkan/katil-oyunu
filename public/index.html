@@ -58,10 +58,41 @@
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         
         /* Header & Başlıklar */
-        header { text-align: center; padding: 40px 0; }
-        h1 { font-size: 42px; letter-spacing: -1px; margin-bottom: 10px; }
-        h1 span { color: var(--accent); }
-        .subtitle { color: var(--text-muted); font-style: italic; }
+        header {
+            text-align: center;
+            padding: 40px 0;
+            position: relative;
+        }
+        h1 {
+            font-size: 42px;
+            letter-spacing: -1px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #fff, #ccc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: titleGlow 3s ease-in-out infinite;
+        }
+        @keyframes titleGlow {
+            0%, 100% { filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3)); }
+            50% { filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5)); }
+        }
+        h1 span {
+            background: linear-gradient(135deg, var(--accent), #c00000);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: accentGlow 3s ease-in-out infinite;
+        }
+        @keyframes accentGlow {
+            0%, 100% { filter: drop-shadow(0 0 10px rgba(139, 0, 0, 0.5)); }
+            50% { filter: drop-shadow(0 0 20px rgba(139, 0, 0, 0.8)); }
+        }
+        .subtitle {
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 14px;
+        }
 
         /* Sayfa Geçişleri */
         .page { display: none; animation: fadeIn 0.3s ease; }
@@ -69,15 +100,91 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* Butonlar (Global) */
-        .btn { width: 100%; padding: 16px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 15px; cursor: pointer; margin-bottom: 12px; transition: all 0.2s; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn:hover { border-color: var(--accent); background: #1a1a1a; transform: translateY(-2px); }
-        .btn-primary { background: var(--accent); border-color: var(--accent); color: white; }
-        .btn-primary:hover { background: #a00000; }
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 15px;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        .btn:hover {
+            border-color: var(--accent);
+            background: #1a1a1a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #a00000);
+            border-color: var(--accent);
+            color: white;
+            box-shadow: 0 2px 8px rgba(139, 0, 0, 0.3);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #a00000, #c00000);
+            box-shadow: 0 6px 16px rgba(139, 0, 0, 0.5);
+            transform: translateY(-3px);
+        }
         
         /* Form Alanları */
-        .form-box { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; margin-top: 20px; max-width: 400px; margin-left: auto; margin-right: auto; }
-        input { width: 100%; padding: 14px; background: #000; border: 1px solid var(--border-color); border-radius: 6px; color: white; font-size: 16px; margin-bottom: 15px; outline: none; transition: border 0.2s; }
-        input:focus { border-color: var(--gold); }
+        .form-box {
+            background: linear-gradient(135deg, var(--card-bg), #0a0a0a);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+        input {
+            width: 100%;
+            padding: 14px;
+            background: #000;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: white;
+            font-size: 16px;
+            margin-bottom: 15px;
+            outline: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1), 0 0 15px rgba(212, 175, 55, 0.2);
+            transform: translateY(-1px);
+        }
+        input:hover {
+            border-color: #333;
+        }
 
         /* --- YENİLENEN ADMIN PANEL TASARIMI --- */
         
@@ -96,17 +203,36 @@
         }
 
         /* Admin Kartı (Yenilenmiş UX) */
-        .admin-card { 
-            background: var(--card-bg); 
-            border: 1px solid var(--border-color); 
-            border-radius: 12px; 
-            overflow: hidden; 
-            display: flex; 
+        .admin-card {
+            background: linear-gradient(135deg, var(--card-bg), #0a0a0a);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
             flex-direction: column;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
-        .admin-card:hover { border-color: #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateY(-3px); }
+        .admin-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .admin-card:hover {
+            border-color: #444;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(212, 175, 55, 0.1);
+            transform: translateY(-5px) scale(1.02);
+        }
+        .admin-card:hover::before {
+            opacity: 1;
+        }
 
         /* Kart Üst Kısım */
         .card-header { 
@@ -176,9 +302,32 @@
         .modal.show { display: flex; }
         .modal-box { background: #111; border: 1px solid #333; padding: 30px; border-radius: 16px; width: 90%; max-width: 350px; text-align: center; }
 
-        #toast { position: fixed; bottom: 30px; left: 50%; transform: translate(-50%, 50px); background: #333; color: #fff; padding: 12px 24px; border-radius: 50px; opacity: 0; transition: 0.3s; z-index: 9999; box-shadow: 0 5px 20px rgba(0,0,0,0.5); font-weight: 500; }
-        #toast.show { transform: translate(-50%, 0); opacity: 1; }
-        #toast.err { background: var(--accent); }
+        #toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translate(-50%, 50px);
+            background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 50px;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 9999;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 255, 255, 0.05);
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        #toast.show {
+            transform: translate(-50%, 0);
+            opacity: 1;
+        }
+        #toast.err {
+            background: linear-gradient(135deg, var(--accent), #a00000);
+            box-shadow: 0 8px 30px rgba(139, 0, 0, 0.6), 0 0 20px rgba(139, 0, 0, 0.3);
+            border-color: rgba(255, 100, 100, 0.3);
+        }
 
         /* Bildirim Sistemi - Genel Popup */
         .notification-popup { position: fixed; top: 20px; right: 20px; border-radius: 12px; padding: 20px; min-width: 320px; max-width: 400px; z-index: 10000; transform: translateX(500px); opacity: 0; transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
@@ -3074,17 +3223,18 @@
                         var date = new Date(msg.created_at).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
 
                         html += `
-                        <div style="margin-bottom: 15px; background: rgba(251,191,36,0.05); border: 1px solid rgba(251,191,36,0.2); border-radius: 8px; padding: 12px;">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
-                                <span style="color: #fbbf24; font-weight: 700; font-size: 13px;">${htmlEscape(msg.nickname)}</span>
-                                <span style="color: #888; font-size: 11px; font-weight: 600;">${htmlEscape(msg.team_name)}</span>
-                                <span style="color: #666; font-size: 10px;">${date} ${time}</span>
+                        <div style="margin-bottom: 15px; background: linear-gradient(135deg, rgba(251,191,36,0.08), rgba(251,191,36,0.03)); border: 1px solid rgba(251,191,36,0.3); border-radius: 10px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(251,191,36,0.5)'; this.style.boxShadow='0 4px 12px rgba(251,191,36,0.15)';" onmouseout="this.style.borderColor='rgba(251,191,36,0.3)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.2)';">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
+                                <span style="background: linear-gradient(135deg, #4dd4d4, #3ba3a3); color: #000; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 6px rgba(77,212,212,0.3);">🏆 ${htmlEscape(msg.team_name)}</span>
+                                <span style="color: #fbbf24; font-weight: 600; font-size: 14px;">👤 ${htmlEscape(msg.nickname)}</span>
+                                <span style="color: #666; font-size: 11px; margin-left: auto;">🕐 ${date} ${time}</span>
                             </div>
-                            <div style="background: #0a0a0a; border: 1px solid rgba(251,191,36,0.3); border-radius: 6px; padding: 10px 14px; color: #fff; font-size: 14px; word-wrap: break-word;">
+                            <div style="background: #0a0a0a; border: 1px solid rgba(251,191,36,0.4); border-radius: 8px; padding: 12px 16px; color: #fff; font-size: 14px; line-height: 1.6; word-wrap: break-word; box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);">
                                 ${htmlEscape(msg.message)}
                             </div>
-                            <div style="margin-top: 8px;">
-                                <button class="btn" style="padding: 6px 12px; margin: 0; font-size: 11px; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #000; font-weight: 700;" onclick="ADMIN.quickReply('${msg.team_id}', '${htmlEscape(msg.team_name).replace(/'/g, "\\'")}')">✉️ Cevapla</button>
+                            <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center;">
+                                <button class="btn" style="padding: 8px 16px; margin: 0; font-size: 12px; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #000; font-weight: 700; border: none; box-shadow: 0 2px 6px rgba(251,191,36,0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 10px rgba(251,191,36,0.4)';" onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 6px rgba(251,191,36,0.3)';" onclick="ADMIN.quickReply('${msg.team_id}', '${htmlEscape(msg.team_name).replace(/'/g, "\\'")}')">✉️ Cevapla</button>
+                                <span style="color: #555; font-size: 10px; font-style: italic;">Takıma özel mesaj</span>
                             </div>
                         </div>`;
                     });
