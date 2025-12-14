@@ -4812,8 +4812,75 @@
                     }
 
                     if (canSeeMessage) {
-                        // Tüm chat'i yeniden yükle (WhatsApp tarzı görünüm ve takım renkleri için)
-                        ADMIN.selectTeamForChat(ADMIN.selectedChatTeamId);
+                        // Mesajı ekle
+                        var container = document.getElementById('adminChatMessages');
+                        if (container) {
+                            // Boş mesaj varsa temizle
+                            if (container.querySelector('[style*="Henüz mesaj yok"]')) {
+                                container.innerHTML = '';
+                            }
+
+                            var time = new Date(message.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+                            var isFromSelectedTeam = message.team_id === ADMIN.selectedChatTeamId;
+
+                            // Takım rengi badge
+                            var teamColor = message.team_color || '#3b82f6';
+                            var teamBadge = `<span style="background: ${teamColor}; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">${htmlEscape(message.team_name)}</span>`;
+
+                            // Hedef takım etiketi
+                            var targetLabel = '';
+                            if (message.target_team_name) {
+                                targetLabel = `<span style="color: #d4af37; font-size: 10px; background: rgba(212,175,55,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(212,175,55,0.3);">🔒 → ${htmlEscape(message.target_team_name)}</span>`;
+                            } else {
+                                targetLabel = `<span style="color: #4dd4d4; font-size: 10px; background: rgba(77,212,212,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(77,212,212,0.3);">📢 Tüm Takımlar</span>`;
+                            }
+
+                            // WhatsApp tarzı görünüm
+                            var html = '';
+                            if (isFromSelectedTeam) {
+                                // Seçili takımın mesajı - SAĞDA
+                                html = `
+                                <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+                                    <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-end;">
+                                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; justify-content: flex-end;">
+                                            <span style="color: #444; font-size: 10px;">${time}</span>
+                                            ${targetLabel}
+                                            ${teamBadge}
+                                            <span style="color: #4dd4d4; font-weight: 700; font-size: 13px;">${htmlEscape(message.nickname)}</span>
+                                        </div>
+                                        <div style="background: linear-gradient(135deg, #0d5858, #0a4040); border: 1px solid #1a7070; border-radius: 12px 12px 2px 12px; padding: 10px 14px; color: #fff; font-size: 14px; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                                            ${htmlEscape(message.message)}
+                                        </div>
+                                    </div>
+                                </div>`;
+                            } else {
+                                // Diğer takımın mesajı - SOLDA
+                                html = `
+                                <div style="display: flex; justify-content: flex-start; margin-bottom: 12px;">
+                                    <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-start;">
+                                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
+                                            <span style="color: #ffa500; font-weight: 700; font-size: 13px;">${htmlEscape(message.nickname)}</span>
+                                            ${teamBadge}
+                                            ${targetLabel}
+                                            <span style="color: #444; font-size: 10px;">${time}</span>
+                                        </div>
+                                        <div style="background: #1a1a1a; border: 1px solid #333; border-radius: 12px 12px 12px 2px; padding: 10px 14px; color: #fff; font-size: 14px; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                                            ${htmlEscape(message.message)}
+                                        </div>
+                                    </div>
+                                </div>`;
+                            }
+
+                            container.insertAdjacentHTML('beforeend', html);
+                            container.scrollTop = container.scrollHeight;
+
+                            // Sayacı güncelle
+                            var countEl = document.getElementById('adminChatMessageCount');
+                            if (countEl) {
+                                var currentCount = parseInt(countEl.textContent.split(' ')[0]) || 0;
+                                countEl.textContent = (currentCount + 1) + ' mesaj';
+                            }
+                        }
                     }
                 }
             });
