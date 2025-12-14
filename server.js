@@ -1788,6 +1788,10 @@ io.on('connection', async (socket) => {
                 return;
             }
 
+            // Takım rengi bilgisi
+            const teamColorResult = await pool.query('SELECT color FROM teams WHERE id = $1', [user.team_id]);
+            const teamColor = teamColorResult.rows.length > 0 ? teamColorResult.rows[0].color : '#3b82f6';
+
             // Hedef takım bilgisi
             let targetTeamName = null;
             if (targetTeamId) {
@@ -1807,8 +1811,8 @@ io.on('connection', async (socket) => {
 
             // Mesajı veritabanına kaydet
             const insertResult = await pool.query(
-                'INSERT INTO team_messages (team_id, user_id, nickname, team_name, message, target_team_id, target_team_name) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-                [user.team_id, user.id, user.nickname, user.team_name, messageValidation.value, targetTeamId, targetTeamName]
+                'INSERT INTO team_messages (team_id, user_id, nickname, team_name, team_color, message, target_team_id, target_team_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+                [user.team_id, user.id, user.nickname, user.team_name, teamColor, messageValidation.value, targetTeamId, targetTeamName]
             );
 
             const newMessage = insertResult.rows[0];
@@ -1991,8 +1995,8 @@ io.on('connection', async (socket) => {
 
             // Mesajı veritabanına kaydet (admin'den gönderiliyor, team_id = 'admin')
             const insertResult = await pool.query(
-                'INSERT INTO team_messages (team_id, user_id, nickname, team_name, message, target_team_id, target_team_name) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-                ['admin', 'admin', 'Admin', 'Yönetim', messageValidation.value, targetTeamId, targetTeamName]
+                'INSERT INTO team_messages (team_id, user_id, nickname, team_name, team_color, message, target_team_id, target_team_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+                ['admin', 'admin', 'Admin', 'Yönetim', '#fbbf24', messageValidation.value, targetTeamId, targetTeamName]
             );
 
             const newMessage = insertResult.rows[0];

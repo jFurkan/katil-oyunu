@@ -145,6 +145,22 @@ async function initDatabase() {
             DROP CONSTRAINT IF EXISTS team_messages_target_team_id_fkey
         `);
 
+        // Migration: Takım rengi için team_color ekle
+        await pool.query(`
+            ALTER TABLE team_messages
+            ADD COLUMN IF NOT EXISTS team_color TEXT DEFAULT '#3b82f6'
+        `);
+
+        // Migration: Mevcut mesajlara takım renklerini ekle
+        await pool.query(`
+            UPDATE team_messages tm
+            SET team_color = COALESCE(
+                (SELECT color FROM teams WHERE id = tm.team_id),
+                '#3b82f6'
+            )
+            WHERE tm.team_color IS NULL OR tm.team_color = '#3b82f6'
+        `);
+
         // IP Activity tracking tablosu (Bot farm koruması)
         await pool.query(`
             CREATE TABLE IF NOT EXISTS ip_activity (
