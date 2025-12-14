@@ -3418,7 +3418,7 @@
                     }
 
                     if (!ADMIN.selectedAdminTeamId) {
-                        toast('Lütfen sol taraftan bir takım seçin!', true);
+                        toast('Lütfen dropdown\'dan bir takım seçin!', true);
                         return;
                     }
 
@@ -3437,6 +3437,9 @@
                         if (res.success) {
                             if (messageInput) messageInput.value = '';
                             toast('Mesaj gönderildi!');
+
+                            // Mesajları yeniden yükle (gönderilen mesaj görünsün)
+                            ADMIN.selectTeamForAdminMessages(ADMIN.selectedAdminTeamId);
                         } else {
                             toast(res.error, true);
                         }
