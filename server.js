@@ -513,6 +513,10 @@ class SocketRateLimiter {
 
 const rateLimiter = new SocketRateLimiter();
 
+// Poke (Dürtme) Rate Limiting Cache
+// Map<teamId, Map<targetTeamId, timestamp>>
+const pokeRateLimiter = new Map();
+
 // Input Validation & Sanitization Helper
 const InputValidator = {
     // Genel text sanitization (XSS önleme)
@@ -1842,6 +1846,97 @@ io.on('connection', async (socket) => {
         } catch (err) {
             console.error('Mesaj gönderme hatası:', err);
             callback({ success: false, error: 'Mesaj gönderilemedi!' });
+        }
+    });
+
+    // Takım dürtme (Poke) sistemi
+    socket.on('poke-team', async (targetTeamId, callback) => {
+        // GÜVENLİK: Kullanıcı kontrolü
+        if (!socket.data.userId) {
+            callback({ success: false, error: 'Önce giriş yapmalısınız!' });
+            return;
+        }
+
+        try {
+            // Kullanıcı bilgilerini al
+            const userResult = await pool.query(
+                'SELECT u.id, u.nickname, u.team_id, t.name as team_name, t.color as team_color FROM users u LEFT JOIN teams t ON u.team_id = t.id WHERE u.id = $1',
+                [socket.data.userId]
+            );
+
+            if (userResult.rows.length === 0) {
+                callback({ success: false, error: 'Kullanıcı bulunamadı!' });
+                return;
+            }
+
+            const user = userResult.rows[0];
+
+            if (!user.team_id) {
+                callback({ success: false, error: 'Takıma katılmalısınız!' });
+                return;
+            }
+
+            // Kendi takımını dürtmeye çalışıyor mu?
+            if (user.team_id === targetTeamId) {
+                callback({ success: false, error: 'Kendi takımınızı dürtemezsiniz!' });
+                return;
+            }
+
+            // Hedef takım var mı?
+            const targetTeamResult = await pool.query('SELECT name FROM teams WHERE id = $1', [targetTeamId]);
+            if (targetTeamResult.rows.length === 0) {
+                callback({ success: false, error: 'Hedef takım bulunamadı!' });
+                return;
+            }
+
+            const targetTeamName = targetTeamResult.rows[0].name;
+
+            // RATE LIMITING: Bir takım, aynı takımı 1 dakikada en fazla 1 kere dürtebilir
+            const now = Date.now();
+            const teamPokeMap = pokeRateLimiter.get(user.team_id) || new Map();
+            const lastPokeTime = teamPokeMap.get(targetTeamId) || 0;
+            const timeSinceLastPoke = now - lastPokeTime;
+
+            if (timeSinceLastPoke < 60000) { // 60 saniye = 1 dakika
+                const remainingSeconds = Math.ceil((60000 - timeSinceLastPoke) / 1000);
+                callback({
+                    success: false,
+                    error: `Bu takımı ${remainingSeconds} saniye sonra tekrar dürtebilirsiniz!`
+                });
+                return;
+            }
+
+            // Rate limiting kaydını güncelle
+            teamPokeMap.set(targetTeamId, now);
+            pokeRateLimiter.set(user.team_id, teamPokeMap);
+
+            // Hedef takımdaki tüm kullanıcılara dürtme bildirimi gönder
+            io.sockets.sockets.forEach((userSocket) => {
+                if (userSocket.data.userId) {
+                    // Bu socket'in takımını kontrol et
+                    pool.query('SELECT team_id FROM users WHERE id = $1', [userSocket.data.userId])
+                        .then(result => {
+                            if (result.rows.length > 0 && result.rows[0].team_id === targetTeamId) {
+                                // Bu kullanıcı hedef takımda, dürtme bildirimi gönder
+                                userSocket.emit('team-poke', {
+                                    fromTeamId: user.team_id,
+                                    fromTeamName: user.team_name,
+                                    fromTeamColor: user.team_color
+                                });
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Poke broadcast hatası:', err);
+                        });
+                }
+            });
+
+            callback({ success: true });
+
+            console.log(`👋 ${user.team_name} → ${targetTeamName} dürtüldü!`);
+        } catch (err) {
+            console.error('Dürtme hatası:', err);
+            callback({ success: false, error: 'Dürtme gönderilemedi!' });
         }
     });
 

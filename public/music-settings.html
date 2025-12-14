@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Müzik Ayarları - Katil Kim?</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+
+        .container {
+            background: linear-gradient(135deg, #1a1a1a, #0d0d0d);
+            border: 2px solid #1a4d4d;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(77, 212, 212, 0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: #4dd4d4;
+            font-size: 32px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(77, 212, 212, 0.5);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 40px;
+        }
+
+        .setting-group {
+            margin-bottom: 30px;
+        }
+
+        .setting-label {
+            display: block;
+            color: #4dd4d4;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: #333;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            border: 2px solid #555;
+        }
+
+        .toggle-switch.active {
+            background: linear-gradient(135deg, #1a4d4d, #0d3333);
+            border-color: #4dd4d4;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 22px;
+            height: 22px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(30px);
+            background: #4dd4d4;
+        }
+
+        .toggle-status {
+            font-size: 14px;
+            color: #888;
+            font-weight: 600;
+        }
+
+        .toggle-switch.active + .toggle-status {
+            color: #4dd4d4;
+        }
+
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .volume-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            background: #333;
+            border-radius: 5px;
+            outline: none;
+            border: 1px solid #555;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4dd4d4;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(77, 212, 212, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .volume-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 15px rgba(77, 212, 212, 0.8);
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #4dd4d4;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(77, 212, 212, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .volume-slider::-moz-range-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 15px rgba(77, 212, 212, 0.8);
+        }
+
+        .volume-value {
+            font-size: 18px;
+            color: #4dd4d4;
+            font-weight: 700;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 700;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #1a4d4d, #0d3333);
+            color: #4dd4d4;
+            border: 2px solid #4dd4d4;
+            margin-bottom: 15px;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #0d3333, #1a4d4d);
+            box-shadow: 0 5px 20px rgba(77, 212, 212, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #888;
+            border: 2px solid #333;
+        }
+
+        .btn-secondary:hover {
+            background: #1a1a1a;
+            border-color: #555;
+            color: #aaa;
+        }
+
+        .preview-info {
+            background: rgba(77, 212, 212, 0.1);
+            border: 1px solid rgba(77, 212, 212, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 30px;
+            text-align: center;
+            font-size: 13px;
+            color: #4dd4d4;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .setting-label {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Müzik Ayarları</h1>
+        <p class="subtitle">Arka plan müziği tercihlerinizi ayarlayın</p>
+
+        <div class="setting-group">
+            <label class="setting-label">Müzik Durumu</label>
+            <div class="toggle-container">
+                <div class="toggle-switch" id="musicToggle" onclick="toggleMusic()">
+                    <div class="toggle-slider"></div>
+                </div>
+                <span class="toggle-status" id="musicStatus">Kapalı</span>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <label class="setting-label">Ses Seviyesi</label>
+            <div class="volume-container">
+                <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value="50"
+                    class="volume-slider"
+                    id="volumeSlider"
+                    oninput="updateVolume(this.value)"
+                >
+                <span class="volume-value" id="volumeValue">50%</span>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="saveSettings()">💾 Ayarları Kaydet</button>
+        <button class="btn btn-secondary" onclick="goBack()">← Geri Dön</button>
+
+        <div class="preview-info">
+            ℹ️ Müziği açtığınızda arka planda sürekli çalacaktır. İstediğiniz zaman buradan kapatabilirsiniz.
+        </div>
+    </div>
+
+    <!-- Arka Plan Müziği (Önizleme için) -->
+    <audio id="bgMusicPreview" loop>
+        <source src="/audio/background.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        var bgMusic = document.getElementById('bgMusicPreview');
+        var musicToggle = document.getElementById('musicToggle');
+        var musicStatus = document.getElementById('musicStatus');
+        var volumeSlider = document.getElementById('volumeSlider');
+        var volumeValue = document.getElementById('volumeValue');
+        var isMusicEnabled = false;
+
+        // Sayfa yüklendiğinde ayarları yükle
+        function loadSettings() {
+            var musicEnabled = localStorage.getItem('musicEnabled');
+            var volume = localStorage.getItem('musicVolume');
+
+            if (musicEnabled === 'true') {
+                isMusicEnabled = true;
+                musicToggle.classList.add('active');
+                musicStatus.textContent = 'Açık';
+                bgMusic.play().catch(function(err) {
+                    console.log('Müzik önizlemesi başlatılamadı:', err);
+                });
+            }
+
+            if (volume) {
+                volumeSlider.value = volume;
+                volumeValue.textContent = volume + '%';
+                bgMusic.volume = volume / 100;
+            } else {
+                bgMusic.volume = 0.5;
+            }
+        }
+
+        // Müziği aç/kapat
+        function toggleMusic() {
+            isMusicEnabled = !isMusicEnabled;
+
+            if (isMusicEnabled) {
+                musicToggle.classList.add('active');
+                musicStatus.textContent = 'Açık';
+                bgMusic.play().catch(function(err) {
+                    console.log('Müzik başlatılamadı:', err);
+                    alert('Müzik çalınamadı. Lütfen sayfayla etkileşime geçin.');
+                });
+            } else {
+                musicToggle.classList.remove('active');
+                musicStatus.textContent = 'Kapalı';
+                bgMusic.pause();
+            }
+        }
+
+        // Ses seviyesini güncelle
+        function updateVolume(value) {
+            volumeValue.textContent = value + '%';
+            bgMusic.volume = value / 100;
+        }
+
+        // Ayarları kaydet
+        function saveSettings() {
+            localStorage.setItem('musicEnabled', isMusicEnabled);
+            localStorage.setItem('musicVolume', volumeSlider.value);
+
+            // Başarı mesajı göster
+            var originalText = event.target.textContent;
+            event.target.textContent = '✓ Kaydedildi!';
+            event.target.style.background = 'linear-gradient(135deg, #0d5858, #0a4040)';
+
+            setTimeout(function() {
+                event.target.textContent = originalText;
+                event.target.style.background = '';
+            }, 2000);
+        }
+
+        // Geri dön
+        function goBack() {
+            // Müziği durdur
+            bgMusic.pause();
+            bgMusic.currentTime = 0;
+
+            // Ana sayfaya dön
+            window.location.href = '/';
+        }
+
+        // Sayfa yüklendiğinde
+        loadSettings();
+
+        // Sayfa kapanırken müziği durdur
+        window.addEventListener('beforeunload', function() {
+            bgMusic.pause();
+        });
+    </script>
+</body>
+</html>

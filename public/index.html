@@ -502,6 +502,109 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Müzik Ayarları Butonu */
+        .music-settings-btn {
+            position: fixed;
+            bottom: 95px;
+            right: 30px;
+            z-index: 1000;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            background: var(--card-bg);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .music-settings-btn:hover {
+            transform: scale(1.1);
+            border-color: var(--gold);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        }
+
+        /* Dürtme Modalları */
+        .poke-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+        .poke-overlay.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+        .poke-modal {
+            background: linear-gradient(135deg, #1a1a1a, #0d0d0d);
+            border: 3px solid #d44dd4;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 50px rgba(212,77,212,0.4);
+            animation: popIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .poke-notification {
+            background: linear-gradient(135deg, #4d1a4d, #331033);
+            border: 4px solid #d44dd4;
+            border-radius: 25px;
+            padding: 50px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 15px 60px rgba(212,77,212,0.6);
+            animation: shake 0.6s ease;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0) rotate(0deg); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px) rotate(-2deg); }
+            20%, 40%, 60%, 80% { transform: translateX(10px) rotate(2deg); }
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-30px); }
+            60% { transform: translateY(-15px); }
+        }
+        .poke-team-item {
+            background: #0a0a0a;
+            border: 2px solid #333;
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+        .poke-team-item:hover {
+            border-color: #d44dd4;
+            background: rgba(212,77,212,0.1);
+            transform: translateX(5px);
+        }
+        .poke-team-item.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .poke-team-item.disabled:hover {
+            border-color: #333;
+            background: #0a0a0a;
+            transform: translateX(0);
+        }
+
         /* Tema Seçici */
         .theme-switcher {
             position: fixed;
@@ -721,6 +824,15 @@
                 align-self: flex-end;
                 width: 100%;
                 text-align: right;
+            }
+
+            /* Müzik Ayarları Butonu - Mobil için optimize */
+            .music-settings-btn {
+                bottom: 75px;
+                right: 15px;
+                width: 45px;
+                height: 45px;
+                font-size: 20px;
             }
 
             /* Tema Seçici - Mobil için optimize */
@@ -1096,27 +1208,6 @@
         <source src="/audio/background.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- Müzik Kontrol Butonu -->
-    <div style="position: fixed; bottom: 80px; right: 20px; z-index: 9999;">
-        <button id="musicToggle" onclick="toggleMusic()" style="
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #1a4d4d, #0d3333);
-            border: 2px solid #4dd4d4;
-            color: #4dd4d4;
-            font-size: 24px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(77,212,212,0.3);
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        " onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 20px rgba(77,212,212,0.5)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(77,212,212,0.3)';">
-            🔇
-        </button>
-    </div>
-
     <!-- Bildirim Container -->
     <div class="notification-container" id="notificationContainer"></div>
 
@@ -1310,7 +1401,13 @@
                                 <div style="color: #666; font-size: 11px; margin-top: 2px;">Tüm takımlar görebilir</div>
                             </div>
                         </div>
-                        <div id="teamChatCount" style="background: #1a4d4d; color: #4dd4d4; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;">0</div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <button onclick="POKE.showPokeModal()" style="background: linear-gradient(135deg, #4d1a4d, #331033); border: 2px solid #d44dd4; color: #d44dd4; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 15px rgba(212,77,212,0.4)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
+                                <span>👋</span>
+                                <span>Dürt</span>
+                            </button>
+                            <div id="teamChatCount" style="background: #1a4d4d; color: #4dd4d4; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;">0</div>
+                        </div>
                     </div>
 
                     <!-- Mesajlar Alanı -->
@@ -1790,6 +1887,11 @@
 
     <div id="toast"></div>
 
+    <!-- Müzik Ayarları Butonu -->
+    <a href="/music-settings.html" class="music-settings-btn" title="Müzik Ayarları">
+        🎵
+    </a>
+
     <!-- Tema Seçici -->
     <div class="theme-switcher">
         <div class="theme-menu" id="themeMenu">
@@ -1817,6 +1919,32 @@
         </div>
         <div class="notif-body" id="popupBody"></div>
         <div class="notif-time" id="popupTime"></div>
+    </div>
+
+    <!-- Dürtme Seçici Modalı -->
+    <div id="pokeSelectOverlay" class="poke-overlay" onclick="if(event.target===this) POKE.hidePokeModal()">
+        <div class="poke-modal">
+            <div style="text-align: center; margin-bottom: 25px;">
+                <div style="font-size: 48px; margin-bottom: 10px;">👋</div>
+                <h2 style="margin: 0; color: #d44dd4; font-size: 24px; font-weight: 700;">Hangi Takımı Dürtmek İstersiniz?</h2>
+                <p style="color: #888; font-size: 13px; margin-top: 8px;">Bir takımı 1 dakikada en fazla 1 kere dürtebilirsiniz</p>
+            </div>
+            <div id="pokeTeamList" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
+                <!-- Takımlar buraya eklenecek -->
+            </div>
+            <button class="btn" style="width: 100%; margin: 0; border-color: #555;" onclick="POKE.hidePokeModal()">İptal</button>
+        </div>
+    </div>
+
+    <!-- Dürtme Bildirimi Overlayı -->
+    <div id="pokeNotificationOverlay" class="poke-overlay">
+        <div class="poke-notification">
+            <div style="font-size: 80px; margin-bottom: 20px; animation: bounce 1s infinite;">👋</div>
+            <h2 id="pokeNotificationText" style="margin: 0; color: #fff; font-size: 32px; font-weight: 700; text-shadow: 0 0 20px rgba(212,77,212,0.8);">
+                <!-- Dürtme mesajı buraya gelecek -->
+            </h2>
+            <p style="color: #d44dd4; font-size: 18px; margin-top: 15px; font-weight: 600;">sizi dürttü!</p>
+        </div>
     </div>
 
     <!-- Bildirim Sesi -->
@@ -5037,6 +5165,115 @@
                 }, 3000);
             });
 
+            // Dürtme (Poke) sistemi
+            socket.on('team-poke', function(data) {
+                // Büyük bildirim göster
+                document.getElementById('pokeNotificationText').textContent = data.fromTeamName;
+                var overlay = document.getElementById('pokeNotificationOverlay');
+                overlay.classList.add('active');
+
+                // 3 saniye sonra kapat
+                setTimeout(function() {
+                    overlay.classList.remove('active');
+                }, 3000);
+
+                // Toast bildirimi de göster
+                toast('👋 ' + data.fromTeamName + ' sizi dürttü!', false);
+            });
+
+            // POKE (Dürtme) Yönetimi
+            var POKE = {
+                // Rate limiting cache (client-side, son dürtme zamanları)
+                lastPokeTime: {}, // { targetTeamId: timestamp }
+
+                // Modal göster
+                showPokeModal: function() {
+                    if (!currentUser || !currentTeamId) {
+                        toast('Dürtme özelliğini kullanmak için bir takıma giriş yapmalısınız!', true);
+                        return;
+                    }
+
+                    // Takım listesini yükle
+                    socket.emit('get-teams', function(teams) {
+                        var html = '';
+                        var now = Date.now();
+
+                        teams.forEach(function(team) {
+                            // Kendi takımını gösterme
+                            if (team.id === currentTeamId) return;
+
+                            // Rate limiting kontrolü
+                            var lastPoke = POKE.lastPokeTime[team.id] || 0;
+                            var timeSinceLastPoke = now - lastPoke;
+                            var canPoke = timeSinceLastPoke > 60000; // 60 saniye = 1 dakika
+                            var remainingSeconds = canPoke ? 0 : Math.ceil((60000 - timeSinceLastPoke) / 1000);
+
+                            var disabledClass = canPoke ? '' : 'disabled';
+                            var disabledAttr = canPoke ? '' : 'disabled';
+                            var buttonText = canPoke ? 'Dürt 👋' : ('Bekleyin (' + remainingSeconds + 's)');
+
+                            html += `
+                            <div class="poke-team-item ${disabledClass}">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="width: 12px; height: 12px; background: ${team.color}; border-radius: 50%; box-shadow: 0 0 10px ${team.color};"></div>
+                                    <div>
+                                        <div style="color: #fff; font-size: 16px; font-weight: 600;">${htmlEscape(team.name)}</div>
+                                        <div style="color: #666; font-size: 12px;">${team.score} puan</div>
+                                    </div>
+                                </div>
+                                <button
+                                    class="btn btn-primary"
+                                    style="padding: 8px 16px; margin: 0; font-size: 13px; ${canPoke ? '' : 'opacity: 0.5; cursor: not-allowed;'}"
+                                    onclick="POKE.pokeTeam('${team.id}', '${htmlEscape(team.name)}')"
+                                    ${disabledAttr}
+                                >
+                                    ${buttonText}
+                                </button>
+                            </div>`;
+                        });
+
+                        if (html === '') {
+                            html = '<div style="text-align: center; padding: 40px; color: #666;"><div style="font-size: 32px; margin-bottom: 10px;">🤷</div><div>Dürtebileceğiniz başka takım yok</div></div>';
+                        }
+
+                        document.getElementById('pokeTeamList').innerHTML = html;
+                        document.getElementById('pokeSelectOverlay').classList.add('active');
+                    });
+                },
+
+                // Modal gizle
+                hidePokeModal: function() {
+                    document.getElementById('pokeSelectOverlay').classList.remove('active');
+                },
+
+                // Takımı dürt
+                pokeTeam: function(targetTeamId, targetTeamName) {
+                    var now = Date.now();
+                    var lastPoke = POKE.lastPokeTime[targetTeamId] || 0;
+                    var timeSinceLastPoke = now - lastPoke;
+
+                    // Client-side rate limiting
+                    if (timeSinceLastPoke < 60000) {
+                        var remainingSeconds = Math.ceil((60000 - timeSinceLastPoke) / 1000);
+                        toast('Bu takımı ' + remainingSeconds + ' saniye sonra tekrar dürtebilirsiniz!', true);
+                        return;
+                    }
+
+                    // Server'a dürtme isteği gönder
+                    socket.emit('poke-team', targetTeamId, function(response) {
+                        if (response.success) {
+                            // Son dürtme zamanını kaydet
+                            POKE.lastPokeTime[targetTeamId] = now;
+
+                            toast('👋 ' + targetTeamName + ' takımını dürttünüz!', false);
+                            POKE.hidePokeModal();
+                        } else {
+                            toast(response.error || 'Dürtme gönderilemedi!', true);
+                        }
+                    });
+                }
+            };
+
             // Init
             window.onload = function() {
                 // UX İYİLEŞTİRME: Her zaman temiz bir başlangıç
@@ -5056,42 +5293,26 @@
 
         // ARKA PLAN MÜZİĞİ KONTROLÜ
         var bgMusic = document.getElementById('bgMusic');
-        var musicToggle = document.getElementById('musicToggle');
-        var isMusicPlaying = false;
 
-        // Müzik aç/kapa
-        function toggleMusic() {
-            if (isMusicPlaying) {
-                bgMusic.pause();
-                musicToggle.textContent = '🔇';
-                musicToggle.style.borderColor = '#666';
-                musicToggle.style.color = '#666';
-                isMusicPlaying = false;
-                localStorage.setItem('musicEnabled', 'false');
-            } else {
-                bgMusic.play().catch(function(err) {
-                    console.log('Müzik otomatik başlatılamadı (tarayıcı politikası):', err);
-                });
-                musicToggle.textContent = '🔊';
-                musicToggle.style.borderColor = '#4dd4d4';
-                musicToggle.style.color = '#4dd4d4';
-                isMusicPlaying = true;
-                localStorage.setItem('musicEnabled', 'true');
-            }
-        }
-
-        // Sayfa yüklendiğinde müzik tercihini kontrol et
+        // Sayfa yüklendiğinde müzik ayarlarını uygula
         document.addEventListener('DOMContentLoaded', function() {
             var musicEnabled = localStorage.getItem('musicEnabled');
+            var musicVolume = localStorage.getItem('musicVolume');
 
-            // İlk ziyaret veya önceden açık bırakılmışsa
-            if (musicEnabled === null || musicEnabled === 'true') {
-                // Kullanıcı etkileşimi sonrası müziği başlat
+            // Ses seviyesini ayarla
+            if (musicVolume) {
+                bgMusic.volume = parseInt(musicVolume) / 100;
+            } else {
+                bgMusic.volume = 0.5; // Varsayılan %50
+            }
+
+            // Müziği sadece açıksa başlat
+            if (musicEnabled === 'true') {
+                // Kullanıcı etkileşimi sonrası müziği başlat (tarayıcı politikası)
                 document.body.addEventListener('click', function startMusic() {
-                    if (!isMusicPlaying) {
-                        toggleMusic();
-                    }
-                    document.body.removeEventListener('click', startMusic);
+                    bgMusic.play().catch(function(err) {
+                        console.log('Müzik başlatılamadı:', err);
+                    });
                 }, { once: true });
             }
         });
