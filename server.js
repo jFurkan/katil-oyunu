@@ -758,6 +758,13 @@ io.use((socket, next) => {
                 signedCookies: socket.request.signedCookies ? 'parsed' : 'yok'
             });
 
+            // FIX: Session'ı initialize et (saveUninitialized: false için gerekli)
+            // Session varsa onu touch et ki sonradan veri yazabilelim
+            if (socket.request.session) {
+                // Session'ı değiştir ki initialized olsun
+                socket.request.session.socketInitialized = true;
+            }
+
             next();
         });
     });
@@ -1809,6 +1816,102 @@ io.on('connection', async (socket) => {
         } catch (err) {
             console.error('Admin chat yükleme hatası:', err);
             callback({ success: false, error: 'Chat yüklenemedi!' });
+        }
+    });
+
+    // Admin için oyun istatistiklerini getir
+    socket.on('get-statistics', async (callback) => {
+        // GÜVENLİK: Admin kontrolü
+        if (!socket.data.isAdmin) {
+            callback({ success: false, error: 'Yetkisiz işlem!' });
+            console.log('⚠️  Yetkisiz admin işlemi: get-statistics -', socket.id);
+            return;
+        }
+
+        try {
+            // Genel İstatistikler
+            const teamsResult = await pool.query('SELECT COUNT(*) FROM teams');
+            const usersResult = await pool.query('SELECT COUNT(*) FROM users');
+            const messagesResult = await pool.query('SELECT COUNT(*) FROM team_messages');
+            const cluesResult = await pool.query('SELECT COUNT(*) FROM clues');
+
+            const totalTeams = parseInt(teamsResult.rows[0].count);
+            const totalUsers = parseInt(usersResult.rows[0].count);
+            const totalMessages = parseInt(messagesResult.rows[0].count);
+            const totalClues = parseInt(cluesResult.rows[0].count);
+
+            // Takım başına mesaj sayısı
+            const teamMessagesResult = await pool.query(`
+                SELECT t.id, t.name, COUNT(tm.id) as message_count
+                FROM teams t
+                LEFT JOIN team_messages tm ON t.id = tm.team_id
+                GROUP BY t.id, t.name
+                ORDER BY message_count DESC
+            `);
+
+            // Takım başına ipucu sayısı
+            const teamCluesResult = await pool.query(`
+                SELECT t.id, t.name, COUNT(c.id) as clue_count
+                FROM teams t
+                LEFT JOIN clues c ON t.id = c.team_id
+                GROUP BY t.id, t.name
+                ORDER BY clue_count DESC
+            `);
+
+            // En aktif kullanıcılar (mesaj bazlı)
+            const activeUsersResult = await pool.query(`
+                SELECT u.nickname, u.team_id, t.name as team_name, COUNT(tm.id) as message_count
+                FROM users u
+                LEFT JOIN team_messages tm ON u.id = tm.user_id
+                LEFT JOIN teams t ON u.team_id = t.id
+                GROUP BY u.id, u.nickname, u.team_id, t.name
+                ORDER BY message_count DESC
+                LIMIT 10
+            `);
+
+            // Puan sıralaması
+            const scoringResult = await pool.query(`
+                SELECT id, name, score, avatar, color
+                FROM teams
+                ORDER BY score DESC
+            `);
+
+            // Tüm veriler
+            const allTeams = await getAllTeams();
+            const allUsers = await getAllUsers();
+
+            callback({
+                success: true,
+                stats: {
+                    overview: {
+                        totalTeams: totalTeams,
+                        totalUsers: totalUsers,
+                        totalMessages: totalMessages,
+                        totalClues: totalClues
+                    },
+                    messaging: {
+                        byTeam: teamMessagesResult.rows,
+                        avgPerTeam: totalTeams > 0 ? (totalMessages / totalTeams).toFixed(1) : 0
+                    },
+                    clues: {
+                        byTeam: teamCluesResult.rows,
+                        avgPerTeam: totalTeams > 0 ? (totalClues / totalTeams).toFixed(1) : 0
+                    },
+                    users: {
+                        mostActive: activeUsersResult.rows
+                    },
+                    scoring: scoringResult.rows,
+                    raw: {
+                        teams: allTeams,
+                        users: allUsers
+                    }
+                }
+            });
+
+            console.log('📊 İstatistikler yüklendi');
+        } catch (err) {
+            console.error('İstatistik yükleme hatası:', err);
+            callback({ success: false, error: 'İstatistikler yüklenemedi!' });
         }
     });
 
