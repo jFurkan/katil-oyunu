@@ -1096,6 +1096,7 @@ io.on('connection', async (socket) => {
                 hasSession: !!socket.request.session,
                 sessionID: socket.request.sessionID,
                 userId: socket.request.session?.userId,
+                isAdmin: socket.request.session?.isAdmin,
                 cookie: socket.handshake.headers.cookie ? 'var' : 'yok'
             });
 
@@ -1481,7 +1482,9 @@ io.on('connection', async (socket) => {
 
                 socket.request.session.save((saveErr) => {
                     if (saveErr) {
-                        console.error('Admin session save error:', saveErr);
+                        console.error('❌ Admin session save error:', saveErr);
+                    } else {
+                        console.log('✅ Admin session saved. isAdmin=', socket.request.session.isAdmin, 'sessionID=', socket.request.sessionID);
                     }
                     callback({ success: true });
                     console.log('✓ Admin girişi yapıldı:', socket.id, '- IP:', clientIP);
