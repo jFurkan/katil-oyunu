@@ -352,8 +352,16 @@
             bgMusic.pause();
             bgMusic.currentTime = 0;
 
-            // Ana sayfaya dön
-            window.location.href = '/';
+            // Geri dönüş URL'ini localStorage'dan al
+            var returnUrl = localStorage.getItem('musicSettingsReturnUrl');
+
+            // Eğer kayıtlı URL varsa oraya dön, yoksa ana sayfaya
+            if (returnUrl) {
+                localStorage.removeItem('musicSettingsReturnUrl'); // Temizle
+                window.location.href = returnUrl;
+            } else {
+                window.location.href = '/';
+            }
         }
 
         // Sayfa yüklendiğinde

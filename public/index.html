@@ -1888,9 +1888,9 @@
     <div id="toast"></div>
 
     <!-- Müzik Ayarları Butonu -->
-    <a href="/music-settings.html" class="music-settings-btn" title="Müzik Ayarları">
+    <button onclick="openMusicSettings()" class="music-settings-btn" title="Müzik Ayarları">
         🎵
-    </a>
+    </button>
 
     <!-- Tema Seçici -->
     <div class="theme-switcher">
@@ -5273,6 +5273,14 @@
                     });
                 }
             };
+
+            // Müzik Ayarları Sayfasını Aç
+            function openMusicSettings() {
+                // Mevcut URL'i kaydet (geri dönüş için)
+                localStorage.setItem('musicSettingsReturnUrl', window.location.href);
+                // Müzik ayarları sayfasına git
+                window.location.href = '/music-settings.html';
+            }
 
             // Init
             window.onload = function() {
