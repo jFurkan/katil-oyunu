@@ -2116,10 +2116,10 @@ io.on('connection', async (socket) => {
 
             const targetTeamName = teamResult.rows[0].name;
 
-            // Mesajı veritabanına kaydet (admin'den gönderiliyor, team_id = 'admin')
+            // Mesajı veritabanına kaydet (admin'den gönderiliyor, team_id ve user_id NULL)
             const insertResult = await pool.query(
                 'INSERT INTO team_messages (team_id, user_id, nickname, team_name, team_color, message, target_team_id, target_team_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-                ['admin', 'admin', 'Admin', 'Yönetim', '#fbbf24', messageValidation.value, targetTeamId, targetTeamName]
+                [null, null, 'Admin', 'Yönetim', '#fbbf24', messageValidation.value, targetTeamId, targetTeamName]
             );
 
             const newMessage = insertResult.rows[0];

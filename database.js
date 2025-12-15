@@ -161,6 +161,32 @@ async function initDatabase() {
             WHERE tm.team_color IS NULL OR tm.team_color = '#3b82f6'
         `);
 
+        // Migration: Admin mesajları için team_id ve user_id NULL olabilir yap
+        // Foreign key constraint'leri kaldır ve yeniden ekle (NULL destekleyecek şekilde)
+        await pool.query(`
+            ALTER TABLE team_messages
+            DROP CONSTRAINT IF EXISTS team_messages_team_id_fkey
+        `);
+
+        await pool.query(`
+            ALTER TABLE team_messages
+            DROP CONSTRAINT IF EXISTS team_messages_user_id_fkey
+        `);
+
+        // team_id NULL olabilir, ama NULL değilse teams tablosunda olmalı
+        await pool.query(`
+            ALTER TABLE team_messages
+            ADD CONSTRAINT team_messages_team_id_fkey
+            FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
+        `);
+
+        // user_id NULL olabilir, ama NULL değilse users tablosunda olmalı
+        await pool.query(`
+            ALTER TABLE team_messages
+            ADD CONSTRAINT team_messages_user_id_fkey
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        `);
+
         // IP Activity tracking tablosu (Bot farm koruması)
         await pool.query(`
             CREATE TABLE IF NOT EXISTS ip_activity (
