@@ -352,17 +352,23 @@
             bgMusic.pause();
             bgMusic.currentTime = 0;
 
-            // Geri dönüş URL'ini sessionStorage'dan al
+            // Önce sessionStorage'dan kontrol et
             var returnUrl = sessionStorage.getItem('musicSettingsReturnUrl');
-            console.log('Geri dönülüyor, return URL:', returnUrl);
+            console.log('SessionStorage returnUrl:', returnUrl);
+            console.log('Document referrer:', document.referrer);
 
-            // Eğer kayıtlı URL varsa oraya dön, yoksa ana sayfaya
             if (returnUrl) {
-                sessionStorage.removeItem('musicSettingsReturnUrl'); // Temizle
-                console.log('Return URL bulundu, yönlendiriliyor:', returnUrl);
+                // sessionStorage'dan al
+                sessionStorage.removeItem('musicSettingsReturnUrl');
+                console.log('sessionStorage URL ile geri dönülüyor:', returnUrl);
                 window.location.href = returnUrl;
+            } else if (document.referrer && document.referrer !== '' && !document.referrer.includes('music-settings')) {
+                // document.referrer kullan (önceki sayfa)
+                console.log('Referrer URL ile geri dönülüyor:', document.referrer);
+                window.location.href = document.referrer;
             } else {
-                console.log('Return URL bulunamadı, ana sayfaya yönlendiriliyor');
+                // Hiçbiri yoksa ana sayfaya
+                console.log('Varsayılan olarak ana sayfaya dönülüyor');
                 window.location.href = '/';
             }
         }
