@@ -3782,8 +3782,8 @@
                         }
 
                         // WhatsApp tarzı görünüm
-                        if (isFromSelectedTeam) {
-                            // Seçili takımın mesajı - SAĞDA
+                        if (isFromAdmin) {
+                            // Admin mesajı - SAĞDA (özel altın rengi)
                             html += `
                             <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
                                 <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-end;">
@@ -3791,25 +3791,25 @@
                                         <span style="color: #444; font-size: 10px;">${time}</span>
                                         ${targetLabel}
                                         ${teamBadge}
-                                        <span style="color: #4dd4d4; font-weight: 700; font-size: 13px;">${htmlEscape(msg.nickname)}</span>
+                                        <span style="color: #fbbf24; font-weight: 700; font-size: 13px;">👑 ${htmlEscape(msg.nickname)}</span>
                                     </div>
-                                    <div style="background: linear-gradient(135deg, #0d5858, #0a4040); border: 1px solid #1a7070; border-radius: 12px 12px 2px 12px; padding: 10px 14px; color: #fff; font-size: 14px; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                                    <div style="background: linear-gradient(135deg, #4a3800, #2d2200); border: 2px solid #fbbf24; border-radius: 12px 12px 2px 12px; padding: 10px 14px; color: #fbbf24; font-size: 14px; font-weight: 600; word-wrap: break-word; box-shadow: 0 2px 8px rgba(251,191,36,0.3);">
                                         ${htmlEscape(msg.message)}
                                     </div>
                                 </div>
                             </div>`;
-                        } else if (isFromAdmin) {
-                            // Admin mesajı - SOLDA (özel altın rengi)
+                        } else if (isFromSelectedTeam) {
+                            // Seçili takımın mesajı - SOLDA
                             html += `
                             <div style="display: flex; justify-content: flex-start; margin-bottom: 12px;">
                                 <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-start;">
                                     <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
-                                        <span style="color: #fbbf24; font-weight: 700; font-size: 13px;">👑 ${htmlEscape(msg.nickname)}</span>
+                                        <span style="color: #4dd4d4; font-weight: 700; font-size: 13px;">${htmlEscape(msg.nickname)}</span>
                                         ${teamBadge}
                                         ${targetLabel}
                                         <span style="color: #444; font-size: 10px;">${time}</span>
                                     </div>
-                                    <div style="background: linear-gradient(135deg, #4a3800, #2d2200); border: 2px solid #fbbf24; border-radius: 12px 12px 12px 2px; padding: 10px 14px; color: #fbbf24; font-size: 14px; font-weight: 600; word-wrap: break-word; box-shadow: 0 2px 8px rgba(251,191,36,0.3);">
+                                    <div style="background: linear-gradient(135deg, #0d5858, #0a4040); border: 1px solid #1a7070; border-radius: 12px 12px 12px 2px; padding: 10px 14px; color: #fff; font-size: 14px; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
                                         ${htmlEscape(msg.message)}
                                     </div>
                                 </div>
@@ -5029,8 +5029,8 @@
 
                             // WhatsApp tarzı görünüm
                             var html = '';
-                            if (isFromSelectedTeam) {
-                                // Seçili takımın mesajı - SAĞDA
+                            if (isFromAdmin) {
+                                // Admin mesajı - SAĞDA (özel altın rengi)
                                 html = `
                                 <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
                                     <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-end;">
@@ -5038,25 +5038,25 @@
                                             <span style="color: #444; font-size: 10px;">${time}</span>
                                             ${targetLabel}
                                             ${teamBadge}
-                                            <span style="color: #4dd4d4; font-weight: 700; font-size: 13px;">${htmlEscape(message.nickname)}</span>
+                                            <span style="color: #fbbf24; font-weight: 700; font-size: 13px;">👑 ${htmlEscape(message.nickname)}</span>
                                         </div>
-                                        <div style="background: linear-gradient(135deg, #0d5858, #0a4040); border: 1px solid #1a7070; border-radius: 12px 12px 2px 12px; padding: 10px 14px; color: #fff; font-size: 14px; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                                        <div style="background: linear-gradient(135deg, #4a3800, #2d2200); border: 2px solid #fbbf24; border-radius: 12px 12px 2px 12px; padding: 10px 14px; color: #fbbf24; font-size: 14px; font-weight: 600; word-wrap: break-word; box-shadow: 0 2px 8px rgba(251,191,36,0.3);">
                                             ${htmlEscape(message.message)}
                                         </div>
                                     </div>
                                 </div>`;
-                            } else if (isFromAdmin) {
-                                // Admin mesajı - SOLDA (özel altın rengi)
+                            } else if (isFromSelectedTeam) {
+                                // Seçili takımın mesajı - SOLDA
                                 html = `
                                 <div style="display: flex; justify-content: flex-start; margin-bottom: 12px;">
                                     <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-start;">
                                         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
-                                            <span style="color: #fbbf24; font-weight: 700; font-size: 13px;">👑 ${htmlEscape(message.nickname)}</span>
+                                            <span style="color: #4dd4d4; font-weight: 700; font-size: 13px;">${htmlEscape(message.nickname)}</span>
                                             ${teamBadge}
                                             ${targetLabel}
                                             <span style="color: #444; font-size: 10px;">${time}</span>
                                         </div>
-                                        <div style="background: linear-gradient(135deg, #4a3800, #2d2200); border: 2px solid #fbbf24; border-radius: 12px 12px 12px 2px; padding: 10px 14px; color: #fbbf24; font-size: 14px; font-weight: 600; word-wrap: break-word; box-shadow: 0 2px 8px rgba(251,191,36,0.3);">
+                                        <div style="background: linear-gradient(135deg, #0d5858, #0a4040); border: 1px solid #1a7070; border-radius: 12px 12px 12px 2px; padding: 10px 14px; color: #fff; font-size: 14px; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
                                             ${htmlEscape(message.message)}
                                         </div>
                                     </div>
@@ -5319,14 +5319,6 @@
                 }
             };
 
-            // Müzik Ayarları Sayfasını Aç
-            function openMusicSettings() {
-                // Mevcut URL'i kaydet (geri dönüş için)
-                localStorage.setItem('musicSettingsReturnUrl', window.location.href);
-                // Müzik ayarları sayfasına git
-                window.location.href = '/music-settings.html';
-            }
-
             // Init
             window.onload = function() {
                 // UX İYİLEŞTİRME: Her zaman temiz bir başlangıç
@@ -5369,6 +5361,14 @@
                 }, { once: true });
             }
         });
+
+        // Müzik Ayarları Sayfasını Aç (GLOBAL)
+        function openMusicSettings() {
+            // Mevcut URL'i kaydet (geri dönüş için)
+            localStorage.setItem('musicSettingsReturnUrl', window.location.href);
+            // Müzik ayarları sayfasına git
+            window.location.href = '/music-settings.html';
+        }
     </script>
 </body>
 </html>
