@@ -3742,9 +3742,16 @@
                     var container = document.getElementById('adminChatMessages');
                     if (!container) return;
 
-                    // Admin mesajlarını filtrele (Chat İzleme sadece takımlar arası mesajlar için)
+                    // Seçili takımla ilgili mesajları filtrele (takıma gönderilen veya takımın gönderdiği + admin mesajları)
                     var filteredMessages = messages.filter(function(msg) {
-                        return msg.target_team_id !== 'admin';
+                        // Admin mesajlarını hariç tut (sadece takımlara özel değil, herkese olanları)
+                        if (msg.target_team_id === 'admin') return false;
+
+                        // Admin'in bu takıma gönderdiği mesajları dahil et
+                        if (msg.team_id === null && msg.target_team_id === ADMIN.selectedChatTeamId) return true;
+
+                        // Diğer mesajları olduğu gibi bırak
+                        return true;
                     });
 
                     if (filteredMessages.length === 0) {
@@ -3760,6 +3767,7 @@
                     filteredMessages.forEach(function(msg) {
                         var time = new Date(msg.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
                         var isFromSelectedTeam = msg.team_id === ADMIN.selectedChatTeamId;
+                        var isFromAdmin = msg.team_id === null; // Admin mesajı
 
                         // Takım rengi badge
                         var teamColor = msg.team_color || '#3b82f6';
@@ -3786,6 +3794,22 @@
                                         <span style="color: #4dd4d4; font-weight: 700; font-size: 13px;">${htmlEscape(msg.nickname)}</span>
                                     </div>
                                     <div style="background: linear-gradient(135deg, #0d5858, #0a4040); border: 1px solid #1a7070; border-radius: 12px 12px 2px 12px; padding: 10px 14px; color: #fff; font-size: 14px; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                                        ${htmlEscape(msg.message)}
+                                    </div>
+                                </div>
+                            </div>`;
+                        } else if (isFromAdmin) {
+                            // Admin mesajı - SOLDA (özel altın rengi)
+                            html += `
+                            <div style="display: flex; justify-content: flex-start; margin-bottom: 12px;">
+                                <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-start;">
+                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
+                                        <span style="color: #fbbf24; font-weight: 700; font-size: 13px;">👑 ${htmlEscape(msg.nickname)}</span>
+                                        ${teamBadge}
+                                        ${targetLabel}
+                                        <span style="color: #444; font-size: 10px;">${time}</span>
+                                    </div>
+                                    <div style="background: linear-gradient(135deg, #4a3800, #2d2200); border: 2px solid #fbbf24; border-radius: 12px 12px 12px 2px; padding: 10px 14px; color: #fbbf24; font-size: 14px; font-weight: 600; word-wrap: break-word; box-shadow: 0 2px 8px rgba(251,191,36,0.3);">
                                         ${htmlEscape(msg.message)}
                                     </div>
                                 </div>
@@ -4953,16 +4977,20 @@
                     document.getElementById('adminSectionChat').style.display !== 'none' &&
                     ADMIN.selectedChatTeamId) {
 
-                    // Admin mesajlarını hariç tut (Chat İzleme sadece takımlar arası mesajlar için)
+                    // Takımlara özel admin mesajlarını hariç tut (herkese olanları)
                     if (message.target_team_id === 'admin') {
-                        return; // Admin mesajını Chat İzleme'de gösterme
+                        return;
                     }
 
                     // Mesajın seçili takım tarafından görülebilir olup olmadığını kontrol et
                     var canSeeMessage = false;
 
+                    // Admin'in bu takıma gönderdiği mesaj
+                    if (message.team_id === null && message.target_team_id === ADMIN.selectedChatTeamId) {
+                        canSeeMessage = true;
+                    }
                     // 1. Genel mesaj (herkese)
-                    if (!message.target_team_id) {
+                    else if (!message.target_team_id) {
                         canSeeMessage = true;
                     }
                     // 2. Seçili takıma gönderilen özel mesaj
@@ -4985,6 +5013,7 @@
 
                             var time = new Date(message.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
                             var isFromSelectedTeam = message.team_id === ADMIN.selectedChatTeamId;
+                            var isFromAdmin = message.team_id === null; // Admin mesajı
 
                             // Takım rengi badge
                             var teamColor = message.team_color || '#3b82f6';
@@ -5012,6 +5041,22 @@
                                             <span style="color: #4dd4d4; font-weight: 700; font-size: 13px;">${htmlEscape(message.nickname)}</span>
                                         </div>
                                         <div style="background: linear-gradient(135deg, #0d5858, #0a4040); border: 1px solid #1a7070; border-radius: 12px 12px 2px 12px; padding: 10px 14px; color: #fff; font-size: 14px; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                                            ${htmlEscape(message.message)}
+                                        </div>
+                                    </div>
+                                </div>`;
+                            } else if (isFromAdmin) {
+                                // Admin mesajı - SOLDA (özel altın rengi)
+                                html = `
+                                <div style="display: flex; justify-content: flex-start; margin-bottom: 12px;">
+                                    <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-start;">
+                                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
+                                            <span style="color: #fbbf24; font-weight: 700; font-size: 13px;">👑 ${htmlEscape(message.nickname)}</span>
+                                            ${teamBadge}
+                                            ${targetLabel}
+                                            <span style="color: #444; font-size: 10px;">${time}</span>
+                                        </div>
+                                        <div style="background: linear-gradient(135deg, #4a3800, #2d2200); border: 2px solid #fbbf24; border-radius: 12px 12px 12px 2px; padding: 10px 14px; color: #fbbf24; font-size: 14px; font-weight: 600; word-wrap: break-word; box-shadow: 0 2px 8px rgba(251,191,36,0.3);">
                                             ${htmlEscape(message.message)}
                                         </div>
                                     </div>

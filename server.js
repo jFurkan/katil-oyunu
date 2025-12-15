@@ -1414,7 +1414,7 @@ io.on('connection', async (socket) => {
     });
 
     // Admin şifre kontrolü
-    socket.on('admin-login', (password, callback) => {
+    socket.on('admin-login', async (password, callback) => {
         // GÜVENLİK: Brute-force koruması
         const clientIP = botProtection.getClientIP(socket);
 
@@ -1435,6 +1435,17 @@ io.on('connection', async (socket) => {
             // GÜVENLİK: Admin session'ı aktif et (socket.data)
             socket.data.isAdmin = true;
 
+            // ÖNEMLI: Admin olduğunda takım bilgisini temizle (admin takımsız olmalı)
+            // Eğer kullanıcı daha önce bir takıma girmişse, team_id'yi database'den temizle
+            if (socket.data.userId) {
+                try {
+                    await pool.query('UPDATE users SET team_id = NULL WHERE id = $1', [socket.data.userId]);
+                    console.log('✓ Admin login: Kullanıcının team_id temizlendi:', socket.data.userId);
+                } catch (err) {
+                    console.error('Admin login team_id temizleme hatası:', err);
+                }
+            }
+
             // GÜVENLİK: Session kontrolü - eğer session varsa kaydet
             if (socket.request.session) {
                 // HTTP-only session'a admin bilgisini kaydet
@@ -1445,6 +1456,9 @@ io.on('connection', async (socket) => {
                 if (socket.data.userId) {
                     socket.request.session.userId = socket.data.userId;
                 }
+
+                // team_id'yi session'dan temizle
+                delete socket.request.session.teamId;
 
                 socket.request.session.save((saveErr) => {
                     if (saveErr) {
