@@ -1101,8 +1101,27 @@ io.on('connection', async (socket) => {
 
             // GÜVENLİK: Sadece session'dan userId oku (HTTP-only cookie)
             const sessionUserId = socket.request.session?.userId;
+            const sessionIsAdmin = !!socket.request.session?.isAdmin;
 
             if (!sessionUserId) {
+                // userId yok ama admin session varsa admin restore et
+                if (sessionIsAdmin) {
+                    socket.data.userId = null;
+                    socket.data.isAdmin = true;
+
+                    callback({
+                        success: true,
+                        userId: null,
+                        nickname: 'Admin',
+                        teamId: null,
+                        isCaptain: false,
+                        isAdmin: true
+                    });
+
+                    console.log('✅ Reconnect: Admin session restore edildi (userId yok)');
+                    return;
+                }
+
                 // Session yok - kullanıcı henüz login olmamış (normal durum)
                 console.log('ℹ️  Reconnect: Session userId yok (kullanıcı giriş yapmamış)');
                 callback({ success: false, requireLogin: true });

@@ -2273,24 +2273,33 @@
 
                 // SESSION RESTORE: Server'dan session kontrolü yap
                 socket.emit('reconnect-user', function(response) {
-                    if (response && response.userId) {
-                        // Session var, kullanıcıyı restore et
-                        currentUser = {
-                            userId: response.userId,
-                            nickname: response.nickname,
-                            teamId: response.teamId || null
-                        };
-                        updateCurrentUserDisplay();
-
-                        // Takım ID'sini restore et
-                        if (response.teamId) {
-                            currentTeamId = response.teamId;
-                        }
-
-                        // Admin yetkisini restore et
+                    if (response && response.success) {
+                        // Admin yetkisini önce set et (routing için gerekli)
                         isAdmin = response.isAdmin || false;
 
-                        console.log('✅ Session restore edildi:', response.nickname, '- Admin:', isAdmin);
+                        if (response.userId) {
+                            // Normal kullanıcı restore et
+                            currentUser = {
+                                userId: response.userId,
+                                nickname: response.nickname,
+                                teamId: response.teamId || null
+                            };
+                            updateCurrentUserDisplay();
+
+                            // Takım ID'sini restore et
+                            if (response.teamId) {
+                                currentTeamId = response.teamId;
+                            }
+
+                            console.log('✅ Session restore edildi:', response.nickname, '- Admin:', isAdmin);
+                        } else if (response.isAdmin) {
+                            // Admin-only session (userId yok)
+                            currentUser = null;
+                            currentTeamId = null;
+                            updateCurrentUserDisplay();
+
+                            console.log('✅ Admin session restore edildi (userId yok)');
+                        }
                     } else {
                         // Session yok veya süresi dolmuş
                         currentUser = null;
@@ -2312,6 +2321,7 @@
                         }
                     } else {
                         // Mevcut URL'i handle et (route handler'lar auth check yapacak)
+                        // ÖNEMLİ: isAdmin zaten yukarıda set edildi, router artık bunu görecek
                         router.handleRoute(currentPath);
                     }
                 });
