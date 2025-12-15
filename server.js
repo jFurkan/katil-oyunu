@@ -1096,11 +1096,33 @@ io.on('connection', async (socket) => {
                 hasSession: !!socket.request.session,
                 sessionID: socket.request.sessionID,
                 userId: socket.request.session?.userId,
+                isAdmin: socket.request.session?.isAdmin,
                 cookie: socket.handshake.headers.cookie ? 'var' : 'yok'
             });
 
             // GÜVENLİK: Sadece session'dan userId oku (HTTP-only cookie)
             const sessionUserId = socket.request.session?.userId;
+            const sessionIsAdmin = socket.request.session?.isAdmin;
+
+            // FIX: Admin-only session restore - admin şifre ile giriş yaptıysa userId olmayabilir
+            if (!sessionUserId && sessionIsAdmin) {
+                // Admin-only session (password login, no nickname)
+                console.log('✅ Admin-only session restore:', socket.id);
+                
+                // Set admin flag in socket data
+                socket.data.isAdmin = true;
+                
+                // Return minimal success response for admin
+                callback({
+                    success: true,
+                    isAdmin: true,
+                    userId: null,
+                    nickname: null,
+                    teamId: null,
+                    isCaptain: false
+                });
+                return;
+            }
 
             if (!sessionUserId) {
                 // Session yok - kullanıcı henüz login olmamış (normal durum)
@@ -1128,6 +1150,11 @@ io.on('connection', async (socket) => {
             // GÜVENLİK: Socket session'a userId kaydet
             socket.data.userId = sessionUserId;
 
+            // Admin yetkisi varsa socket data'ya da kaydet
+            if (sessionIsAdmin) {
+                socket.data.isAdmin = true;
+            }
+
             // Son aktivite zamanını güncelle
             await userCleanup.updateActivity(sessionUserId);
 
@@ -1138,14 +1165,14 @@ io.on('connection', async (socket) => {
                 nickname: user.nickname,
                 teamId: user.team_id,
                 isCaptain: user.is_captain,
-                isAdmin: socket.request.session?.isAdmin || false
+                isAdmin: sessionIsAdmin || false
             });
 
             // Kullanıcı listesini güncelle
             const users = await getUsersByTeam();
             io.emit('users-update', users);
 
-            console.log('Kullanıcı reconnect edildi:', user.nickname, '- Yeni socket:', socket.id);
+            console.log('Kullanıcı reconnect edildi:', user.nickname, '- Yeni socket:', socket.id, '- Admin:', sessionIsAdmin || false);
         } catch (err) {
             console.error('Kullanıcı reconnect hatası:', err);
             callback({ success: false, error: 'Reconnect başarısız!' });

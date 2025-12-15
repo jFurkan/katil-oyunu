@@ -2268,40 +2268,53 @@
             // Socket bağlantı event'leri
             socket.on('connect', function() {
                 socketConnected = true;
-                console.log('Socket bağlantısı kuruldu');
+                console.log('🔌 Socket bağlantısı kuruldu');
                 console.log('🍪 Browser cookies:', document.cookie || 'yok');
 
                 // SESSION RESTORE: Server'dan session kontrolü yap
                 socket.emit('reconnect-user', function(response) {
-                    if (response && response.userId) {
-                        // Session var, kullanıcıyı restore et
-                        currentUser = {
-                            userId: response.userId,
-                            nickname: response.nickname,
-                            teamId: response.teamId || null
-                        };
-                        updateCurrentUserDisplay();
-
-                        // Takım ID'sini restore et
-                        if (response.teamId) {
-                            currentTeamId = response.teamId;
-                        }
-
-                        // Admin yetkisini restore et
+                    console.log('📥 Reconnect response:', response);
+                    
+                    if (response && response.success) {
+                        // FIX: Admin yetkisini önce set et (routing'den ÖNCE)
                         isAdmin = response.isAdmin || false;
 
-                        console.log('✅ Session restore edildi:', response.nickname, '- Admin:', isAdmin);
+                        // Admin-only session (password login, no nickname)
+                        if (response.isAdmin && !response.userId) {
+                            console.log('✅ Admin-only session restore edildi');
+                            currentUser = null; // Admin has no user profile
+                            currentTeamId = null;
+                            updateCurrentUserDisplay();
+                        }
+                        // Normal user session (with nickname)
+                        else if (response.userId) {
+                            currentUser = {
+                                userId: response.userId,
+                                nickname: response.nickname,
+                                teamId: response.teamId || null
+                            };
+                            updateCurrentUserDisplay();
+
+                            // Takım ID'sini restore et
+                            if (response.teamId) {
+                                currentTeamId = response.teamId;
+                            }
+
+                            console.log('✅ User session restore edildi:', response.nickname, '- Admin:', isAdmin);
+                        }
                     } else {
                         // Session yok veya süresi dolmuş
                         currentUser = null;
                         currentTeamId = null;
                         isAdmin = false;
                         updateCurrentUserDisplay();
-                        console.log('ℹ️  Session bulunamadı');
+                        console.log('ℹ️  Session bulunamadı veya hatalı');
                     }
 
                     // ROUTING: Session restore sonrası, mevcut URL'e göre sayfa göster
+                    // FIX: isAdmin artık set edildi, router doğru auth check yapabilir
                     var currentPath = window.location.pathname;
+                    console.log('🧭 Routing to:', currentPath, '- isAdmin:', isAdmin, '- currentUser:', currentUser ? currentUser.nickname : 'none');
 
                     // Ana sayfadaysa ve session varsa, uygun sayfaya yönlendir
                     if ((currentPath === '/' || currentPath === '') && currentUser) {
