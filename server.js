@@ -807,46 +807,23 @@ const adminLoginLimiter = new AdminLoginLimiter();
 
 // WebSocket session middleware - HTTP session'ı Socket.io'da kullan
 io.use((socket, next) => {
-    // Socket.request.res nesnesi oluştur (middleware'ler için gerekli)
-    if (!socket.request.res) {
-        socket.request.res = {
-            getHeader: () => {},
-            setHeader: () => {},
-            end: () => {}
-        };
-    }
-
-    // ÖNEMLİ: Önce cookieParser, sonra session middleware çalışmalı
-    // cookieParser imzalı cookie'leri parse eder, session bunları kullanır
-    cookieParserMiddleware(socket.request, socket.request.res, (cookieErr) => {
-        if (cookieErr) {
-            console.error('❌ Cookie parser hatası:', cookieErr);
-            return next(cookieErr);
+    // Express sessionMiddleware'i direkt kullan (cookieParser gerekmiyor, express-session kendi okur)
+    // Sahte res objesi + cookieParser tekrar çalıştırmak sessionID'nin değişmesine sebep oluyordu
+    sessionMiddleware(socket.request, {}, (err) => {
+        if (err) {
+            console.error('❌ Socket session hatası:', err);
+            return next(err);
         }
 
-        // Cookie parse edildikten sonra session middleware'i çalıştır
-        sessionMiddleware(socket.request, socket.request.res, (sessionErr) => {
-            if (sessionErr) {
-                console.error('❌ Session middleware hatası:', sessionErr);
-                return next(sessionErr);
-            }
-
-            // DEBUG: Session kontrolü
-            console.log('🔑 Session middleware çalıştı:', {
-                sessionID: socket.request.sessionID,
-                hasSession: !!socket.request.session,
-                userId: socket.request.session?.userId,
-                isAdmin: socket.request.session?.isAdmin,
-                cookieHeader: socket.request.headers.cookie || 'yok',
-                cookies: socket.request.cookies ? 'parsed' : 'yok',
-                signedCookies: socket.request.signedCookies ? 'parsed' : 'yok'
-            });
-
-            // Session başarıyla yüklendi, devam et
-            // NOT: Session sadece gerçek state değişikliğinde save edilir (admin-login, register-user)
-            // Her connect'te save yapma - bu sessionID'nin değişmesine sebep olur
-            next();
+        // DEBUG: Session kontrolü
+        console.log('🔑 Socket session yüklendi:', {
+            sessionID: socket.request.sessionID,
+            hasSession: !!socket.request.session,
+            userId: socket.request.session?.userId,
+            isAdmin: socket.request.session?.isAdmin
         });
+
+        next();
     });
 });
 
