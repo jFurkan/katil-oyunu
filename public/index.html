@@ -2276,7 +2276,7 @@
                     console.log('📥 Reconnect response:', response);
                     
                     if (response && response.success) {
-                        // FIX: Admin yetkisini önce set et (routing'den ÖNCE)
+                        // FIX: Set admin flag before routing (BEFORE router.handleRoute())
                         isAdmin = response.isAdmin || false;
 
                         // Admin-only session (password login, no nickname)

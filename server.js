@@ -1104,7 +1104,7 @@ io.on('connection', async (socket) => {
             const sessionUserId = socket.request.session?.userId;
             const sessionIsAdmin = socket.request.session?.isAdmin;
 
-            // FIX: Admin-only session restore - admin şifre ile giriş yaptıysa userId olmayabilir
+            // FIX: Admin-only session restore - userId may not exist when admin logged in with password only
             if (!sessionUserId && sessionIsAdmin) {
                 // Admin-only session (password login, no nickname)
                 console.log('✅ Admin-only session restore:', socket.id);
@@ -1172,7 +1172,7 @@ io.on('connection', async (socket) => {
             const users = await getUsersByTeam();
             io.emit('users-update', users);
 
-            console.log('Kullanıcı reconnect edildi:', user.nickname, '- Yeni socket:', socket.id, '- Admin:', sessionIsAdmin || false);
+            console.log('User reconnected successfully:', user.nickname, '- New socket:', socket.id, '- Admin:', sessionIsAdmin || false);
         } catch (err) {
             console.error('Kullanıcı reconnect hatası:', err);
             callback({ success: false, error: 'Reconnect başarısız!' });
