@@ -836,24 +836,16 @@ io.use((socket, next) => {
                 sessionID: socket.request.sessionID,
                 hasSession: !!socket.request.session,
                 userId: socket.request.session?.userId,
+                isAdmin: socket.request.session?.isAdmin,
                 cookieHeader: socket.request.headers.cookie || 'yok',
                 cookies: socket.request.cookies ? 'parsed' : 'yok',
                 signedCookies: socket.request.signedCookies ? 'parsed' : 'yok'
             });
 
-            // FIX: Session'ı initialize et ve persist et (saveUninitialized: false için gerekli)
-            if (socket.request.session) {
-                // Session'ı değiştir ve kaydet (yoksa her connect'te yeni session yaratılır)
-                socket.request.session.socketInitialized = true;
-                socket.request.session.save((saveErr) => {
-                    if (saveErr) {
-                        console.error('❌ Socket session init save error:', saveErr);
-                    }
-                    next();
-                });
-            } else {
-                next();
-            }
+            // Session başarıyla yüklendi, devam et
+            // NOT: Session sadece gerçek state değişikliğinde save edilir (admin-login, register-user)
+            // Her connect'te save yapma - bu sessionID'nin değişmesine sebep olur
+            next();
         });
     });
 });
