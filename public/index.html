@@ -5339,9 +5339,9 @@
                 renderMainCredits(); // Ana sayfa emeği geçenler listesini render et
                 updateCurrentUserDisplay(); // Kullanıcı bilgisi display'ini güncelle
 
-                // ROUTING: Socket connect'ten sonra yapılacak (session restore sonrası)
-                // Loading durumu göster (nickname sayfası default olarak aktif)
-                showPage('pgNickname', false);
+                // ROUTING: Socket connect'ten sonra router.handleRoute() çalışacak
+                // O zamana kadar nickname sayfası gösterilsin (HTML'de zaten default aktif)
+                // showPage('pgNickname', false); - KALDIRILDI: Router zaten doğru sayfayı gösterecek
             };
         })();
 

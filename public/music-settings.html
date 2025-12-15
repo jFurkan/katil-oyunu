@@ -359,12 +359,23 @@
             console.log('URL return parametresi:', returnPath);
 
             if (returnPath) {
-                // URL parametresinden gelen path'i kullan
+                // URL parametresinden gelen path'i decode et
+                try {
+                    returnPath = decodeURIComponent(returnPath);
+                    console.log('Decode edilmiş return path:', returnPath);
+                } catch (e) {
+                    console.warn('Return path decode hatası:', e);
+                }
+
                 console.log('Return path ile geri dönülüyor:', returnPath);
                 window.location.href = returnPath;
+            } else if (window.history.length > 1) {
+                // Parametre yoksa ama history varsa geri git
+                console.log('Return parametresi yok, history.back() ile geri dönülüyor');
+                window.history.back();
             } else {
-                // Parametre yoksa ana sayfaya
-                console.log('Return parametresi yok, ana sayfaya dönülüyor');
+                // Hiçbiri yoksa ana sayfaya
+                console.log('History yok, ana sayfaya dönülüyor');
                 window.location.href = '/';
             }
         }
