@@ -346,7 +346,7 @@
             }, 2000);
         }
 
-        // Geri dön
+        // Geri dön - Navigate back to the return path or use history.back() as fallback
         function goBack() {
             // Müziği durdur
             bgMusic.pause();
@@ -356,16 +356,32 @@
             var urlParams = new URLSearchParams(window.location.search);
             var returnPath = urlParams.get('return');
 
-            console.log('URL return parametresi:', returnPath);
+            console.log('Raw return parameter:', returnPath);
 
             if (returnPath) {
-                // URL parametresinden gelen path'i kullan
-                console.log('Return path ile geri dönülüyor:', returnPath);
-                window.location.href = returnPath;
+                try {
+                    // Decode the return path (it comes URL-encoded from index.html)
+                    var decodedPath = decodeURIComponent(returnPath);
+                    console.log('Decoded return path:', decodedPath);
+                    
+                    // Navigate to the decoded path
+                    window.location.href = decodedPath;
+                } catch (err) {
+                    console.error('Error decoding return path:', err);
+                    // Fallback to history.back() if decode fails
+                    console.log('Using history.back() as fallback');
+                    window.history.back();
+                }
             } else {
-                // Parametre yoksa ana sayfaya
-                console.log('Return parametresi yok, ana sayfaya dönülüyor');
-                window.location.href = '/';
+                // No return parameter - use history.back() if available, otherwise go to root
+                console.log('No return parameter - using history.back()');
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    // No history available - go to root
+                    console.log('No history - redirecting to root');
+                    window.location.href = '/';
+                }
             }
         }
 

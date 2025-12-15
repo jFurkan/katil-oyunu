@@ -2272,9 +2272,10 @@
                 console.log('🍪 Browser cookies:', document.cookie || 'yok');
 
                 // SESSION RESTORE: Server'dan session kontrolü yap
+                // This happens BEFORE any routing to ensure we have user session data first
                 socket.emit('reconnect-user', function(response) {
                     if (response && response.userId) {
-                        // Session var, kullanıcıyı restore et
+                        // Session exists - restore user state from server
                         currentUser = {
                             userId: response.userId,
                             nickname: response.nickname,
@@ -2282,36 +2283,41 @@
                         };
                         updateCurrentUserDisplay();
 
-                        // Takım ID'sini restore et
+                        // Restore team ID
                         if (response.teamId) {
                             currentTeamId = response.teamId;
                         }
 
-                        // Admin yetkisini restore et
+                        // Restore admin privileges
                         isAdmin = response.isAdmin || false;
 
-                        console.log('✅ Session restore edildi:', response.nickname, '- Admin:', isAdmin);
+                        console.log('✅ Session restored:', response.nickname, '- Admin:', isAdmin);
                     } else {
-                        // Session yok veya süresi dolmuş
+                        // No session or expired - ensure clean state
                         currentUser = null;
                         currentTeamId = null;
                         isAdmin = false;
                         updateCurrentUserDisplay();
-                        console.log('ℹ️  Session bulunamadı');
+                        console.log('ℹ️  No session found (user not logged in)');
                     }
 
-                    // ROUTING: Session restore sonrası, mevcut URL'e göre sayfa göster
+                    // INITIAL ROUTING: After session restore, route based on current URL
+                    // This ensures correct page shows on refresh (F5) for any route
                     var currentPath = window.location.pathname;
+                    console.log('🧭 Initial routing to:', currentPath);
 
-                    // Ana sayfadaysa ve session varsa, uygun sayfaya yönlendir
+                    // Special case: If on root and have session, auto-redirect to appropriate page
                     if ((currentPath === '/' || currentPath === '') && currentUser) {
                         if (currentTeamId) {
+                            // User has active team - go to team page
                             router.navigate('/team/' + currentTeamId, false);
                         } else {
+                            // User logged in but no team - go to lobby
                             router.navigate('/lobby', false);
                         }
                     } else {
-                        // Mevcut URL'i handle et (route handler'lar auth check yapacak)
+                        // Handle current URL path - router will validate auth/admin access
+                        // If user lacks required permissions, route handlers will redirect to '/'
                         router.handleRoute(currentPath);
                     }
                 });
@@ -5328,20 +5334,18 @@
                 }
             };
 
-            // Init
+            // Init - Application bootstrap
             window.onload = function() {
-                // UX İYİLEŞTİRME: Her zaman temiz bir başlangıç
-                currentUser = null;
-                currentTeamId = null;
+                // Initialize app state (do NOT reset currentUser here - session restore will handle it)
                 pageHistory = [];
 
                 NOTIF.updateBadge(); // Bildirim badge'ini güncelle
                 renderMainCredits(); // Ana sayfa emeği geçenler listesini render et
                 updateCurrentUserDisplay(); // Kullanıcı bilgisi display'ini güncelle
 
-                // ROUTING: Socket connect'ten sonra yapılacak (session restore sonrası)
-                // Loading durumu göster (nickname sayfası default olarak aktif)
-                showPage('pgNickname', false);
+                // IMPORTANT: Do NOT call showPage here. Wait for socket connection + session restoration.
+                // The socket.on('connect') handler will route to the correct page after reconnect-user completes.
+                // This prevents showing the wrong page UI (nickname) when user refreshes on other routes (/admin, /lobby, /team).
             };
         })();
 
