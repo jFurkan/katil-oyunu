@@ -841,14 +841,19 @@ io.use((socket, next) => {
                 signedCookies: socket.request.signedCookies ? 'parsed' : 'yok'
             });
 
-            // FIX: Session'ı initialize et (saveUninitialized: false için gerekli)
-            // Session varsa onu touch et ki sonradan veri yazabilelim
+            // FIX: Session'ı initialize et ve persist et (saveUninitialized: false için gerekli)
             if (socket.request.session) {
-                // Session'ı değiştir ki initialized olsun
+                // Session'ı değiştir ve kaydet (yoksa her connect'te yeni session yaratılır)
                 socket.request.session.socketInitialized = true;
+                socket.request.session.save((saveErr) => {
+                    if (saveErr) {
+                        console.error('❌ Socket session init save error:', saveErr);
+                    }
+                    next();
+                });
+            } else {
+                next();
             }
-
-            next();
         });
     });
 });
