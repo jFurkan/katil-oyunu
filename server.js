@@ -2041,10 +2041,10 @@ io.on('connection', async (socket) => {
         }
 
         try {
-            // Admin'e gönderilen tüm mesajları getir (target_team_id = 'admin')
+            // Admin mesajlarını getir (hem takımlardan gelen hem de admin'in gönderdiği)
             const result = await pool.query(`
                 SELECT * FROM team_messages
-                WHERE target_team_id = 'admin'
+                WHERE target_team_id = 'admin' OR team_id IS NULL
                 ORDER BY created_at DESC
                 LIMIT 100
             `);

@@ -3125,8 +3125,11 @@
                         return;
                     }
 
+                    // Mesajları WhatsApp sıralamasına göre düzenle (eski → yeni)
+                    var sortedMessages = messages.slice().reverse();
+
                     var html = '';
-                    messages.forEach(function(msg) {
+                    sortedMessages.forEach(function(msg) {
                         var time = new Date(msg.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
                         var isOwnMessage = currentUser && msg.user_id === currentUser.userId;
 
@@ -3526,11 +3529,14 @@
                         return;
                     }
 
+                    // Mesajları WhatsApp sıralamasına göre düzenle (eski → yeni)
+                    var sortedMessages = teamMessages.slice().reverse();
+
                     var html = '';
-                    teamMessages.forEach(function(msg) {
+                    sortedMessages.forEach(function(msg) {
                         var time = new Date(msg.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
                         var date = new Date(msg.created_at).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
-                        var isAdminMessage = msg.team_id === 'admin';
+                        var isAdminMessage = msg.team_id === null; // Admin mesajları team_id NULL
 
                         // Takım rengi badge
                         var teamColor = msg.team_color || '#3b82f6';
@@ -3763,8 +3769,11 @@
                         return;
                     }
 
+                    // Mesajları WhatsApp sıralamasına göre düzenle (eski → yeni)
+                    var sortedMessages = filteredMessages.slice().reverse();
+
                     var html = '';
-                    filteredMessages.forEach(function(msg) {
+                    sortedMessages.forEach(function(msg) {
                         var time = new Date(msg.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
                         var isFromSelectedTeam = msg.team_id === ADMIN.selectedChatTeamId;
                         var isFromAdmin = msg.team_id === null; // Admin mesajı
@@ -5364,8 +5373,9 @@
 
         // Müzik Ayarları Sayfasını Aç (GLOBAL)
         function openMusicSettings() {
-            // Mevcut URL'i kaydet (geri dönüş için)
-            localStorage.setItem('musicSettingsReturnUrl', window.location.href);
+            // Mevcut URL'i kaydet (geri dönüş için) - sessionStorage kullan
+            sessionStorage.setItem('musicSettingsReturnUrl', window.location.href);
+            console.log('Müzik ayarları açılıyor, return URL:', window.location.href);
             // Müzik ayarları sayfasına git
             window.location.href = '/music-settings.html';
         }

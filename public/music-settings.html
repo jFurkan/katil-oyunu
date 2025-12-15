@@ -352,14 +352,17 @@
             bgMusic.pause();
             bgMusic.currentTime = 0;
 
-            // Geri dönüş URL'ini localStorage'dan al
-            var returnUrl = localStorage.getItem('musicSettingsReturnUrl');
+            // Geri dönüş URL'ini sessionStorage'dan al
+            var returnUrl = sessionStorage.getItem('musicSettingsReturnUrl');
+            console.log('Geri dönülüyor, return URL:', returnUrl);
 
             // Eğer kayıtlı URL varsa oraya dön, yoksa ana sayfaya
             if (returnUrl) {
-                localStorage.removeItem('musicSettingsReturnUrl'); // Temizle
+                sessionStorage.removeItem('musicSettingsReturnUrl'); // Temizle
+                console.log('Return URL bulundu, yönlendiriliyor:', returnUrl);
                 window.location.href = returnUrl;
             } else {
+                console.log('Return URL bulunamadı, ana sayfaya yönlendiriliyor');
                 window.location.href = '/';
             }
         }
