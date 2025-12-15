@@ -346,7 +346,7 @@
             }, 2000);
         }
 
-        // Geri dön - Navigate back to the return path or use history.back() as fallback
+        // Geri dön - Return to the previous page using return parameter or history.back()
         function goBack() {
             // Müziği durdur
             bgMusic.pause();
@@ -356,34 +356,34 @@
             var urlParams = new URLSearchParams(window.location.search);
             var returnPath = urlParams.get('return');
 
-            console.log('Raw return parameter:', returnPath);
+            console.log('Ham return parametresi:', returnPath);
 
             if (returnPath) {
                 try {
-                    // Decode the return path (it comes URL-encoded from index.html)
+                    // Return path'i decode et (index.html'den URL-encoded gelir)
                     var decodedPath = decodeURIComponent(returnPath);
-                    console.log('Decoded return path:', decodedPath);
+                    console.log('Decode edilmiş return path:', decodedPath);
                     
-                    // SECURITY: Validate that the path is internal (starts with /)
-                    // This prevents external redirects from malicious return parameters
+                    // GÜVENLİK: Path'in internal olduğunu doğrula (/ ile başlamalı)
+                    // Bu sayede harici redirect'lerin önüne geçilir
                     if (decodedPath && decodedPath.startsWith('/')) {
-                        // Navigate to the decoded path
+                        // Decode edilmiş path'e git
                         window.location.href = decodedPath;
                     } else {
-                        // Invalid path - use history.back() as fallback
-                        console.warn('Invalid return path (must start with /), using history.back()');
-                        window.history.back();
+                        // Geçersiz path - güvenli default olarak root'a git
+                        console.warn('Geçersiz return path (/ ile başlamalı), root\'a yönlendiriliyor');
+                        window.location.href = '/';
                     }
                 } catch (err) {
-                    console.error('Error decoding return path:', err);
-                    // Fallback to history.back() if decode fails
-                    console.log('Using history.back() as fallback');
-                    window.history.back();
+                    console.error('Return path decode hatası:', err);
+                    // Decode hatası durumunda root'a git
+                    console.log('Hata nedeniyle root\'a yönlendiriliyor');
+                    window.location.href = '/';
                 }
             } else {
-                // No return parameter - use history.back() directly
-                // Note: history.back() is safe to call even without previous history
-                console.log('No return parameter - using history.back()');
+                // Return parametresi yok - history.back() kullan
+                // Not: history.back() history olmasa bile çağrılabilir (güvenli)
+                console.log('Return parametresi yok - history.back() kullanılıyor');
                 window.history.back();
             }
         }

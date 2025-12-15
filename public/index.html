@@ -2271,8 +2271,8 @@
                 console.log('Socket bağlantısı kuruldu');
                 console.log('🍪 Browser cookies:', document.cookie || 'yok');
 
-                // SESSION RESTORE: Server'dan session kontrolü yap
-                // This happens BEFORE any routing to ensure we have user session data first
+                // SESSION RESTORE: Attempt to restore user session from server
+                // This happens during socket connect event, before initial page routing
                 socket.emit('reconnect-user', function(response) {
                     if (response && response.userId) {
                         // Session exists - restore user state from server
@@ -2301,7 +2301,7 @@
                     // INITIAL ROUTING: After session restore, route based on current URL
                     // This ensures correct page shows on refresh (F5) for any route
                     var currentPath = window.location.pathname;
-                    console.log('🧭 Initial routing to:', currentPath);
+                    console.log('Initial routing to:', currentPath);
 
                     // Special case: If on root and have session, auto-redirect to appropriate page
                     if ((currentPath === '/' || currentPath === '') && currentUser) {
