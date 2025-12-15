@@ -364,8 +364,16 @@
                     var decodedPath = decodeURIComponent(returnPath);
                     console.log('Decoded return path:', decodedPath);
                     
-                    // Navigate to the decoded path
-                    window.location.href = decodedPath;
+                    // SECURITY: Validate that the path is internal (starts with /)
+                    // This prevents external redirects from malicious return parameters
+                    if (decodedPath && decodedPath.startsWith('/')) {
+                        // Navigate to the decoded path
+                        window.location.href = decodedPath;
+                    } else {
+                        // Invalid path - use history.back() as fallback
+                        console.warn('Invalid return path (must start with /), using history.back()');
+                        window.history.back();
+                    }
                 } catch (err) {
                     console.error('Error decoding return path:', err);
                     // Fallback to history.back() if decode fails
@@ -373,15 +381,10 @@
                     window.history.back();
                 }
             } else {
-                // No return parameter - use history.back() if available, otherwise go to root
+                // No return parameter - use history.back() directly
+                // Note: history.back() is safe to call even without previous history
                 console.log('No return parameter - using history.back()');
-                if (window.history.length > 1) {
-                    window.history.back();
-                } else {
-                    // No history available - go to root
-                    console.log('No history - redirecting to root');
-                    window.location.href = '/';
-                }
+                window.history.back();
             }
         }
 

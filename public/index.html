@@ -2294,10 +2294,7 @@
                         console.log('✅ Session restored:', response.nickname, '- Admin:', isAdmin);
                     } else {
                         // No session or expired - ensure clean state
-                        currentUser = null;
-                        currentTeamId = null;
-                        isAdmin = false;
-                        updateCurrentUserDisplay();
+                        resetUserState();
                         console.log('ℹ️  No session found (user not logged in)');
                     }
 
@@ -2424,6 +2421,15 @@
                 }
             }
 
+            // Helper: Reset user state to logged-out state
+            // Extracted to avoid duplication and improve maintainability
+            function resetUserState() {
+                currentUser = null;
+                currentTeamId = null;
+                isAdmin = false;
+                updateCurrentUserDisplay();
+            }
+
             function updateCurrentUserDisplay() {
                 var userInfo = document.getElementById('currentUserInfo');
                 var userNick = document.getElementById('currentUserNick');
@@ -2523,15 +2529,12 @@
                         clearAllTimeouts();
 
                         // GÜVENLİK: Session'ı temizle
-                        currentUser = null;
-                        currentTeamId = null;
-                        isAdmin = false;
+                        resetUserState();
 
                         // Server'a logout isteği gönder (session'ı temizle)
                         socket.emit('logout-user', function() {
                             // Nick giriş sayfasına yönlendir
                             router.navigate('/');
-                            updateCurrentUserDisplay();
                             toast('Çıkış yapıldı.');
                         });
                     }
@@ -2545,15 +2548,12 @@
                         // Cleanup: Tüm timeout'ları temizle
                         clearAllTimeouts();
 
-                        currentUser = null;
-                        currentTeamId = null;
-                        isAdmin = false;
+                        resetUserState();
 
                         // Server'a logout isteği gönder (session'ı temizle)
                         socket.emit('logout-user', function() {
                             // Ana sayfaya yönlendir (nickname giriş ekranı)
                             router.navigate('/');
-                            updateCurrentUserDisplay();
                             toast('Çıkış yapıldı.');
                         });
                     }
@@ -2771,15 +2771,12 @@
                         // Cleanup: Tüm timeout'ları temizle
                         clearAllTimeouts();
 
-                        currentUser = null;
-                        currentTeamId = null;
-                        isAdmin = false;
+                        resetUserState();
 
                         // Server'a logout isteği gönder (session'ı temizle)
                         socket.emit('logout-user', function() {
                             // Nick giriş sayfasına yönlendir
                             router.navigate('/');
-                            updateCurrentUserDisplay();
                             toast('Çıkış yapıldı.');
                         });
                     }
@@ -5207,13 +5204,10 @@
                 clearAllTimeouts();
 
                 // GÜVENLİK: Session temizliği
-                currentUser = null;
-                currentTeamId = null;
-                isAdmin = false;
+                resetUserState();
 
                 // Nick giriş sayfasına yönlendir
                 router.navigate('/');
-                updateCurrentUserDisplay();
                 toast('Hesabınız yönetici tarafından silindi.', true);
             });
 
