@@ -1391,9 +1391,9 @@
                 </div>
 
                 <!-- Takımlar Arası Chat -->
-                <div style="background: linear-gradient(135deg, #0a1a1a, #050d0d); border: 2px solid #1a4d4d; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 5px 20px rgba(26,77,77,0.3);">
-                    <!-- Başlık -->
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid #1a4d4d; padding-bottom: 10px;">
+                <div id="interTeamChatContainer" style="background: linear-gradient(135deg, #0a1a1a, #050d0d); border: 2px solid #1a4d4d; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 5px 20px rgba(26,77,77,0.3);">
+                    <!-- Başlık (Tıklanabilir) -->
+                    <div id="interTeamChatHeader" onclick="toggleInterTeamChat()" style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; cursor: pointer; user-select: none; border-bottom: 1px solid #1a4d4d; margin-bottom: 15px;" onmouseover="this.style.borderBottomColor='#4dd4d4'" onmouseout="this.style.borderBottomColor='#1a4d4d'">
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <div style="font-size: 24px;">💬</div>
                             <div>
@@ -1402,13 +1402,17 @@
                             </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <button onclick="POKE.showPokeModal()" style="background: linear-gradient(135deg, #4d1a4d, #331033); border: 2px solid #d44dd4; color: #d44dd4; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 15px rgba(212,77,212,0.4)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
+                            <button onclick="event.stopPropagation(); POKE.showPokeModal();" style="background: linear-gradient(135deg, #4d1a4d, #331033); border: 2px solid #d44dd4; color: #d44dd4; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 15px rgba(212,77,212,0.4)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
                                 <span>👋</span>
                                 <span>Dürt</span>
                             </button>
                             <div id="teamChatCount" style="background: #1a4d4d; color: #4dd4d4; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;">0</div>
+                            <div id="interTeamChatToggleIcon" style="color: #4dd4d4; font-size: 20px; transition: transform 0.3s ease;">▼</div>
                         </div>
                     </div>
+
+                    <!-- İçerik (Açılır/Kapanır) -->
+                    <div id="interTeamChatContent" style="max-height: 2000px; overflow: hidden; transition: max-height 0.4s ease-in-out, opacity 0.3s ease; opacity: 1;">
 
                     <!-- Mesajlar Alanı -->
                     <div id="teamChatMessages" style="background: #000; border: 1px solid #1a4d4d; border-radius: 8px; padding: 15px; max-height: 400px; overflow-y: auto; margin-bottom: 15px; min-height: 300px;">
@@ -1447,7 +1451,9 @@
                         <input type="text" id="inpTeamChat" placeholder="Mesajınızı yazın..." maxlength="500" style="margin: 0; background: #000; border: 1px solid #1a4d4d; color: #fff; flex: 1;" onkeypress="if(event.key==='Enter') CHAT.sendMessage()">
                         <button class="btn btn-primary" style="width: auto; margin: 0; padding: 12px 24px; background: linear-gradient(135deg, #1a4d4d, #0d3333); border-color: #4dd4d4;" onclick="CHAT.sendMessage()">Gönder</button>
                     </div>
-                </div>
+
+                    </div><!-- İçerik sonu -->
+                </div><!-- Container sonu -->
 
                 <div style="background:#111; padding:20px; border-radius:12px; border:1px solid #222;">
                     <h3 style="margin-bottom:12px; display:flex; justify-content:space-between;">
@@ -5389,6 +5395,31 @@
             console.log('Müzik ayarları açılıyor, return path:', currentPath);
             // Müzik ayarları sayfasına git (return parametresi ile)
             window.location.href = '/music-settings.html?return=' + returnUrl;
+        }
+
+        // Takımlar arası sohbet açılır/kapanır toggle
+        let interTeamChatOpen = true; // Başlangıçta açık
+        function toggleInterTeamChat() {
+            const content = document.getElementById('interTeamChatContent');
+            const icon = document.getElementById('interTeamChatToggleIcon');
+
+            if (!content || !icon) return;
+
+            interTeamChatOpen = !interTeamChatOpen;
+
+            if (interTeamChatOpen) {
+                // Aç
+                content.style.maxHeight = '2000px';
+                content.style.opacity = '1';
+                icon.textContent = '▼';
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                // Kapat
+                content.style.maxHeight = '0px';
+                content.style.opacity = '0';
+                icon.textContent = '▲';
+                icon.style.transform = 'rotate(180deg)';
+            }
         }
     </script>
 </body>
