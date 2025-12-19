@@ -1789,6 +1789,37 @@ io.on('connection', async (socket) => {
         }
     });
 
+    // Board öğesi notunu güncelle
+    socket.on('update-board-item-note', async (data, callback) => {
+        const teamId = socket.data.teamId;
+
+        if (!teamId) {
+            callback({ success: false, error: 'Takım bulunamadı!' });
+            return;
+        }
+
+        try {
+            // XSS koruması
+            const safeNote = data.note ? validator.escape(data.note.trim()) : null;
+
+            const result = await pool.query(
+                'UPDATE murder_board_items SET note = $1 WHERE id = $2 AND team_id = $3 RETURNING character_name',
+                [safeNote, data.itemId, teamId]
+            );
+
+            if (result.rowCount === 0) {
+                callback({ success: false, error: 'Öğe bulunamadı!' });
+                return;
+            }
+
+            callback({ success: true });
+            console.log('✓ Murder board not güncellendi:', result.rows[0].character_name);
+        } catch (err) {
+            console.error('Not güncelleme hatası:', err);
+            callback({ success: false, error: 'Not güncellenemedi!' });
+        }
+    });
+
     // Board öğesini sil
     socket.on('delete-board-item', async (itemId, callback) => {
         const teamId = socket.data.teamId;

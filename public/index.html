@@ -1519,6 +1519,24 @@
                 </div>
             </div>
 
+            <!-- Not Düzenleme Modal -->
+            <div id="editNoteModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center;">
+                <div style="background: #1a1a1a; border: 2px solid #4d1a1a; border-radius: 12px; padding: 25px; max-width: 500px; width: 90%;">
+                    <h3 style="margin: 0 0 15px 0; color: #d44d4d; font-size: 18px;">Not Düzenle</h3>
+
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-weight: 600; color: #4dd4d4; margin-bottom: 8px;">Karakter: <span id="editCharacterName"></span></div>
+                    </div>
+
+                    <textarea id="editNoteTextarea" placeholder="Not (opsiyonel)" maxlength="500" style="width: 100%; min-height: 120px; margin: 0 0 15px 0; padding: 12px; background: #000; border: 1px solid #333; color: #fff; resize: vertical;"></textarea>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" style="flex: 1; margin: 0;" onclick="MURDERBOARD.saveEditedNote()">✅ Kaydet</button>
+                        <button class="btn" style="flex: 1; margin: 0;" onclick="MURDERBOARD.hideEditNoteModal()">❌ İptal</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Cork Board Canvas -->
             <div style="background: linear-gradient(135deg, #2a1a0a, #1a1005); border: 3px solid #6b4423; border-radius: 8px; padding: 20px; position: relative; overflow: hidden;">
                 <!-- Cork Board Texture Overlay -->
@@ -5620,21 +5638,14 @@
                 connections: [],
                 draggedItem: null,
                 dragOffset: { x: 0, y: 0 },
+                editingItemId: null,
+                allCharacters: [],
 
                 openMurderBoard: function() {
                     // Karakter listesini yükle
                     socket.emit('get-characters-for-board', function(characters) {
-                        const dropdown = document.getElementById('characterDropdown');
-                        dropdown.innerHTML = '<option value="">Karakter seçin...</option>';
-
-                        characters.forEach(function(char) {
-                            const option = document.createElement('option');
-                            option.value = char.id;
-                            option.textContent = char.name;
-                            option.dataset.photoUrl = char.photo_url || '';
-                            option.dataset.name = char.name;
-                            dropdown.appendChild(option);
-                        });
+                        MURDERBOARD.allCharacters = characters;
+                        MURDERBOARD.updateCharacterDropdown();
                     });
 
                     // Board verilerini yükle
@@ -5659,6 +5670,63 @@
                     document.getElementById('characterSelectorModal').style.display = 'none';
                     document.getElementById('characterDropdown').value = '';
                     document.getElementById('characterNote').value = '';
+                },
+
+                updateCharacterDropdown: function() {
+                    const dropdown = document.getElementById('characterDropdown');
+                    dropdown.innerHTML = '<option value="">Karakter seçin...</option>';
+
+                    // Zaten board'a eklenmiş karakter ID'lerini bul
+                    const addedCharacterIds = MURDERBOARD.boardItems.map(function(item) {
+                        return item.character_id;
+                    });
+
+                    // Eklenmemiş karakterleri dropdown'a ekle
+                    MURDERBOARD.allCharacters.forEach(function(char) {
+                        if (addedCharacterIds.indexOf(char.id) === -1) {
+                            const option = document.createElement('option');
+                            option.value = char.id;
+                            option.textContent = char.name;
+                            option.dataset.photoUrl = char.photo_url || '';
+                            option.dataset.name = char.name;
+                            dropdown.appendChild(option);
+                        }
+                    });
+                },
+
+                showEditNoteModal: function(itemId) {
+                    const item = MURDERBOARD.boardItems.find(function(i) { return i.id === itemId; });
+                    if (!item) return;
+
+                    MURDERBOARD.editingItemId = itemId;
+                    document.getElementById('editCharacterName').textContent = item.character_name;
+                    document.getElementById('editNoteTextarea').value = item.note || '';
+                    document.getElementById('editNoteModal').style.display = 'flex';
+                },
+
+                hideEditNoteModal: function() {
+                    document.getElementById('editNoteModal').style.display = 'none';
+                    MURDERBOARD.editingItemId = null;
+                    document.getElementById('editNoteTextarea').value = '';
+                },
+
+                saveEditedNote: function() {
+                    if (!MURDERBOARD.editingItemId) return;
+
+                    const newNote = document.getElementById('editNoteTextarea').value.trim();
+
+                    socket.emit('update-board-item-note', {
+                        itemId: MURDERBOARD.editingItemId,
+                        note: newNote
+                    }, function(response) {
+                        if (response.success) {
+                            toast('✅ Not güncellendi');
+                            MURDERBOARD.hideEditNoteModal();
+                            MURDERBOARD.loadBoard();
+                        } else {
+                            toast(response.error || 'Not güncellenemedi!', true);
+                        }
+                    });
                 },
 
                 addCharacterToBoard: function() {
@@ -5707,6 +5775,7 @@
                         MURDERBOARD.boardItems = data.items || [];
                         MURDERBOARD.connections = data.connections || [];
                         MURDERBOARD.renderBoard();
+                        MURDERBOARD.updateCharacterDropdown();
                     });
                 },
 
@@ -5789,6 +5858,12 @@
                         MURDERBOARD.deleteItem(item.id);
                     };
                     div.appendChild(deleteBtn);
+
+                    // Çift tıklama ile not düzenleme
+                    div.addEventListener('dblclick', function(e) {
+                        e.stopPropagation();
+                        MURDERBOARD.showEditNoteModal(item.id);
+                    });
 
                     // Drag event'leri
                     div.addEventListener('mousedown', function(e) {
