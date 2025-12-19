@@ -1122,6 +1122,12 @@ io.on('connection', async (socket) => {
             // GÜVENLİK: Socket session'a userId kaydet
             socket.data.userId = sessionUserId;
 
+            // Eğer kullanıcının takımı varsa socket.data.teamId kaydet
+            if (user.team_id) {
+                socket.data.teamId = user.team_id;
+                socket.join(user.team_id);
+            }
+
             // Son aktivite zamanını güncelle
             await userCleanup.updateActivity(sessionUserId);
 
@@ -1249,6 +1255,10 @@ io.on('connection', async (socket) => {
             // IP aktivitesini kaydet (başarılı takım oluşturma)
             await botProtection.recordActivity(clientIP, 'create-team');
 
+            // Socket data'ya teamId kaydet (murder board için gerekli)
+            socket.data.teamId = teamId;
+            socket.join(teamId);
+
             callback({ success: true, team: team });
 
             const teams = await getAllTeams();
@@ -1316,6 +1326,9 @@ io.on('connection', async (socket) => {
                 'UPDATE users SET team_id = $1, is_captain = FALSE WHERE id = $2',
                 [data.teamId, data.userId]
             );
+
+            // Socket data'ya teamId kaydet (murder board için gerekli)
+            socket.data.teamId = data.teamId;
 
             socket.join(data.teamId);
             callback({ success: true, team: team });

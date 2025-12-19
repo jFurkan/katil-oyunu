@@ -2567,6 +2567,19 @@
             }
 
             // Global Fonksiyonlar (HTML onclick için)
+            // HTML Escape fonksiyonu (XSS koruması)
+            function escapeHtml(text) {
+                if (!text) return '';
+                var map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+            }
+
             window.adminScore = function(teamId, amount, teamName) {
                 if (isProcessing) return;
 
