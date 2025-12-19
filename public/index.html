@@ -1461,7 +1461,83 @@
                     </h3>
                     <div id="myClueList" style="max-height:300px; overflow-y:auto;"></div>
                 </div>
+
+                <!-- Murder Board Butonu -->
+                <button class="btn btn-primary" style="margin-top:20px; background: linear-gradient(135deg, #4d1a1a, #331010); border: 2px solid #d44d4d; color: #d44d4d;" onclick="MURDERBOARD.openMurderBoard()">
+                    🔍 Murder Board
+                </button>
+
                 <button class="btn" style="margin-top:20px; border-color:#333;" onclick="GAME.exitTeam()">🚪 Çıkış Yap</button>
+            </div>
+        </div>
+
+        <!-- Murder Board Sayfası -->
+        <div class="page" id="pgMurderBoard">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #1a0a0a, #0d0505); border-bottom: 2px solid #4d1a1a; padding: 20px; margin-bottom: 20px; position: sticky; top: 0; z-index: 100;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="margin: 0; color: #d44d4d; font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+                            🔍 Murder Board
+                        </h2>
+                        <div style="color: #888; font-size: 12px; margin-top: 4px;">
+                            <span id="mbTeamName">-</span> • <span id="mbItemCount">0</span> öğe
+                        </div>
+                    </div>
+                    <button class="back-btn" onclick="MURDERBOARD.closeMurderBoard()">← Geri</button>
+                </div>
+            </div>
+
+            <!-- Toolbar -->
+            <div style="background: #111; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+                <button id="btnAddCharacter" class="btn btn-primary" style="background: linear-gradient(135deg, #1a4d1a, #0d3310); border-color: #4dd44d; color: #4dd44d;" onclick="MURDERBOARD.showCharacterSelector()">
+                    ➕ Karakter Ekle
+                </button>
+                <button id="btnAddConnection" class="btn" style="background: linear-gradient(135deg, #4d4d1a, #333310); border-color: #d4d44d; color: #d4d44d;" onclick="MURDERBOARD.toggleConnectionMode()">
+                    🔗 Bağlantı Ekle
+                </button>
+                <button class="btn" style="background: linear-gradient(135deg, #4d1a4d, #331033); border-color: #d44dd4; color: #d44dd4;" onclick="MURDERBOARD.clearBoard()">
+                    🗑️ Temizle
+                </button>
+            </div>
+
+            <!-- Karakter Seçici Modal -->
+            <div id="characterSelectorModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center;">
+                <div style="background: #1a1a1a; border: 2px solid #4d1a1a; border-radius: 12px; padding: 25px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                    <h3 style="margin: 0 0 15px 0; color: #d44d4d; font-size: 18px;">Karakter Seç</h3>
+
+                    <select id="characterDropdown" style="width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px; margin-bottom: 15px; font-size: 14px;">
+                        <option value="">Karakter seçin...</option>
+                    </select>
+
+                    <textarea id="characterNote" placeholder="Not ekle (opsiyonel)" maxlength="500" style="width: 100%; min-height: 80px; margin: 0 0 15px 0; padding: 12px; background: #000; border: 1px solid #333; color: #fff; resize: vertical;"></textarea>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" style="flex: 1; margin: 0;" onclick="MURDERBOARD.addCharacterToBoard()">✅ Ekle</button>
+                        <button class="btn" style="flex: 1; margin: 0;" onclick="MURDERBOARD.hideCharacterSelector()">❌ İptal</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cork Board Canvas -->
+            <div style="background: linear-gradient(135deg, #2a1a0a, #1a1005); border: 3px solid #6b4423; border-radius: 8px; padding: 20px; position: relative; overflow: hidden;">
+                <!-- Cork Board Texture Overlay -->
+                <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><filter id=%22noise%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 stitchTiles=%22stitch%22/></filter><rect width=%22100%22 height=%22100%22 filter=%22url(%23noise)%22 opacity=%220.15%22/></svg>'); pointer-events: none;"></div>
+
+                <!-- Board Container -->
+                <div id="murderBoardCanvas" style="position: relative; min-height: 600px; background: rgba(139, 90, 43, 0.3); border-radius: 8px; border: 2px solid rgba(107, 68, 35, 0.5);">
+                    <!-- Karakterler ve bağlantılar buraya dinamik eklenecek -->
+                    <svg id="connectionsLayer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;">
+                        <!-- Bağlantı çizgileri buraya eklenecek -->
+                    </svg>
+
+                    <!-- Empty state -->
+                    <div id="boardEmptyState" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #666; pointer-events: none;">
+                        <div style="font-size: 64px; margin-bottom: 10px; opacity: 0.3;">📌</div>
+                        <div style="font-size: 16px;">Murder board boş</div>
+                        <div style="font-size: 12px; margin-top: 5px; opacity: 0.7;">Karakter eklemek için yukarıdaki butonu kullanın</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1479,6 +1555,7 @@
             <!-- Admin Menü Butonları - RESPONSIVE -->
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:30px;">
                 <button class="btn btn-primary" onclick="ADMIN.showSection('game')">⏱️ Oyun Kontrolü</button>
+                <button class="btn" onclick="ADMIN.showSection('characters')">👥 Karakterler</button>
                 <button class="btn" onclick="ADMIN.showSection('users')">👤 Kullanıcılar</button>
                 <button class="btn" onclick="ADMIN.showSection('scoring')">🎯 Puanlama</button>
                 <button class="btn" onclick="ADMIN.showSection('notifications')">📢 Bildirimler</button>
@@ -1512,6 +1589,49 @@
                             <button class="time-btn add" onclick="ADMIN.addTime(60)">+1 Dakika</button>
                         </div>
                         <button class="btn" style="width:100%; margin-top:15px; background:#500; color:#faa; border:1px solid var(--accent);" onclick="ADMIN.endGame()">⏹️ Oyunu Bitir</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Karakterler Bölümü -->
+            <div id="adminSectionCharacters" class="admin-section" style="display:none;">
+                <h3 style="color:var(--gold); font-size:18px; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">👥 Karakter Yönetimi</h3>
+
+                <!-- Karakter Ekleme Formu -->
+                <div style="background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <h4 style="color: #4dd4d4; margin-bottom: 15px; font-size: 16px;">➕ Yeni Karakter Ekle</h4>
+
+                    <div style="display: grid; gap: 12px;">
+                        <input type="text" id="charName" placeholder="İsim *" maxlength="100" style="width: 100%; margin: 0; padding: 12px; background: #000; border: 1px solid #333; color: #fff;">
+
+                        <input type="text" id="charPhotoUrl" placeholder="Fotoğraf URL'si" maxlength="500" style="width: 100%; margin: 0; padding: 12px; background: #000; border: 1px solid #333; color: #fff;">
+
+                        <textarea id="charDescription" placeholder="Açıklama / Karakter Bilgisi" maxlength="1000" style="width: 100%; margin: 0; padding: 12px; background: #000; border: 1px solid #333; color: #fff; min-height: 100px; resize: vertical;"></textarea>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <input type="number" id="charAge" placeholder="Yaş (opsiyonel)" min="0" max="150" style="width: 100%; margin: 0; padding: 12px; background: #000; border: 1px solid #333; color: #fff;">
+
+                            <input type="text" id="charOccupation" placeholder="Meslek (opsiyonel)" maxlength="100" style="width: 100%; margin: 0; padding: 12px; background: #000; border: 1px solid #333; color: #fff;">
+                        </div>
+
+                        <textarea id="charAdditionalInfo" placeholder="Ek Bilgiler (opsiyonel)" maxlength="1000" style="width: 100%; margin: 0; padding: 12px; background: #000; border: 1px solid #333; color: #fff; min-height: 80px; resize: vertical;"></textarea>
+
+                        <button class="btn btn-primary" style="width: 100%; margin: 0; padding: 12px;" onclick="CHARACTER.addCharacter()">✅ Karakter Ekle</button>
+                    </div>
+                </div>
+
+                <!-- Karakter Listesi -->
+                <div style="background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: #4dd4d4; font-size: 16px; margin: 0;">📋 Kayıtlı Karakterler</h4>
+                        <span id="characterCount" style="color: #666; font-size: 12px;">0 karakter</span>
+                    </div>
+
+                    <div id="charactersList" style="max-height: 600px; overflow-y: auto;">
+                        <div style="text-align: center; padding: 40px 20px; color: #555;">
+                            <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.3;">👤</div>
+                            <div style="font-size: 14px;">Henüz karakter eklenmemiş</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -3328,16 +3448,22 @@
 
                     // Seçili butonu vurgula
                     if (section === 'game') buttons[0].classList.add('btn-primary');
-                    else if (section === 'users') buttons[1].classList.add('btn-primary');
-                    else if (section === 'scoring') buttons[2].classList.add('btn-primary');
-                    else if (section === 'notifications') buttons[3].classList.add('btn-primary');
-                    else if (section === 'chat') buttons[4].classList.add('btn-primary');
-                    else if (section === 'adminmessages') buttons[5].classList.add('btn-primary');
-                    else if (section === 'stats') buttons[6].classList.add('btn-primary');
-                    else if (section === 'credits') buttons[7].classList.add('btn-primary');
-                    else if (section === 'iplogs') buttons[8].classList.add('btn-primary');
+                    else if (section === 'characters') buttons[1].classList.add('btn-primary');
+                    else if (section === 'users') buttons[2].classList.add('btn-primary');
+                    else if (section === 'scoring') buttons[3].classList.add('btn-primary');
+                    else if (section === 'notifications') buttons[4].classList.add('btn-primary');
+                    else if (section === 'chat') buttons[5].classList.add('btn-primary');
+                    else if (section === 'adminmessages') buttons[6].classList.add('btn-primary');
+                    else if (section === 'stats') buttons[7].classList.add('btn-primary');
+                    else if (section === 'credits') buttons[8].classList.add('btn-primary');
+                    else if (section === 'iplogs') buttons[9].classList.add('btn-primary');
 
                     this.currentSection = section;
+
+                    // Karakterler bölümü açıldıysa karakterleri yükle
+                    if (section === 'characters') {
+                        CHARACTER.loadCharacters();
+                    }
 
                     // Admin Mesajları bölümü açıldıysa mesajları yükle
                     if (section === 'adminmessages') {
@@ -5339,6 +5465,516 @@
                             POKE.hidePokeModal();
                         } else {
                             toast(response.error || 'Dürtme gönderilemedi!', true);
+                        }
+                    });
+                }
+            };
+
+            // KARAKTER YÖNETİMİ FONKSİYONLARI
+            window.CHARACTER = {
+                addCharacter: function() {
+                    const name = document.getElementById('charName').value.trim();
+                    const photoUrl = document.getElementById('charPhotoUrl').value.trim();
+                    const description = document.getElementById('charDescription').value.trim();
+                    const age = document.getElementById('charAge').value;
+                    const occupation = document.getElementById('charOccupation').value.trim();
+                    const additionalInfo = document.getElementById('charAdditionalInfo').value.trim();
+
+                    // Validasyon
+                    if (!name) {
+                        toast('Karakter ismi zorunludur!', true);
+                        return;
+                    }
+
+                    // Socket'e gönder
+                    socket.emit('add-character', {
+                        name: name,
+                        photoUrl: photoUrl || null,
+                        description: description || null,
+                        age: age ? parseInt(age) : null,
+                        occupation: occupation || null,
+                        additionalInfo: additionalInfo || null
+                    }, function(response) {
+                        if (response.success) {
+                            toast('✅ Karakter başarıyla eklendi!');
+
+                            // Formu temizle
+                            document.getElementById('charName').value = '';
+                            document.getElementById('charPhotoUrl').value = '';
+                            document.getElementById('charDescription').value = '';
+                            document.getElementById('charAge').value = '';
+                            document.getElementById('charOccupation').value = '';
+                            document.getElementById('charAdditionalInfo').value = '';
+
+                            // Listeyi yenile
+                            CHARACTER.loadCharacters();
+                        } else {
+                            toast(response.error || 'Karakter eklenemedi!', true);
+                        }
+                    });
+                },
+
+                loadCharacters: function() {
+                    socket.emit('get-characters', function(characters) {
+                        CHARACTER.renderCharacters(characters);
+                    });
+                },
+
+                renderCharacters: function(characters) {
+                    const container = document.getElementById('charactersList');
+                    const countSpan = document.getElementById('characterCount');
+
+                    countSpan.textContent = characters.length + ' karakter';
+
+                    if (characters.length === 0) {
+                        container.innerHTML = `
+                            <div style="text-align: center; padding: 40px 20px; color: #555;">
+                                <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.3;">👤</div>
+                                <div style="font-size: 14px;">Henüz karakter eklenmemiş</div>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    let html = '';
+                    characters.forEach(function(char) {
+                        html += `
+                            <div style="background: #0a0a0a; border: 1px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 12px;">
+                                <div style="display: flex; gap: 15px; align-items: start;">
+                                    ${char.photo_url ? `
+                                        <img src="${char.photo_url}" alt="${char.name}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #444;">
+                                    ` : `
+                                        <div style="width: 80px; height: 80px; background: #222; border-radius: 8px; border: 2px solid #444; display: flex; align-items: center; justify-content: center; font-size: 32px;">👤</div>
+                                    `}
+
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                                            <h4 style="color: #4dd4d4; margin: 0; font-size: 16px; font-weight: 600;">${escapeHtml(char.name)}</h4>
+                                            <button onclick="CHARACTER.deleteCharacter('${char.id}')" style="background: #500; border: 1px solid #800; color: #faa; padding: 4px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#700'" onmouseout="this.style.background='#500'">🗑️ Sil</button>
+                                        </div>
+
+                                        ${char.age || char.occupation ? `
+                                            <div style="display: flex; gap: 12px; margin-bottom: 8px; flex-wrap: wrap;">
+                                                ${char.age ? `<span style="color: #888; font-size: 12px;">📅 ${char.age} yaşında</span>` : ''}
+                                                ${char.occupation ? `<span style="color: #888; font-size: 12px;">💼 ${escapeHtml(char.occupation)}</span>` : ''}
+                                            </div>
+                                        ` : ''}
+
+                                        ${char.description ? `
+                                            <p style="color: #aaa; font-size: 13px; margin: 0 0 8px 0; line-height: 1.5;">${escapeHtml(char.description)}</p>
+                                        ` : ''}
+
+                                        ${char.additional_info ? `
+                                            <details style="margin-top: 8px;">
+                                                <summary style="color: #666; font-size: 12px; cursor: pointer; user-select: none;">Ek Bilgiler</summary>
+                                                <p style="color: #888; font-size: 12px; margin: 8px 0 0 0; padding-left: 12px; border-left: 2px solid #333; line-height: 1.5;">${escapeHtml(char.additional_info)}</p>
+                                            </details>
+                                        ` : ''}
+
+                                        <div style="color: #555; font-size: 11px; margin-top: 8px;">
+                                            Eklendi: ${new Date(char.created_at).toLocaleString('tr-TR')}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    container.innerHTML = html;
+                },
+
+                deleteCharacter: function(characterId) {
+                    if (!confirm('Bu karakteri silmek istediğinizden emin misiniz?')) {
+                        return;
+                    }
+
+                    socket.emit('delete-character', characterId, function(response) {
+                        if (response.success) {
+                            toast('🗑️ Karakter silindi');
+                            CHARACTER.loadCharacters();
+                        } else {
+                            toast(response.error || 'Karakter silinemedi!', true);
+                        }
+                    });
+                }
+            };
+
+            // MURDER BOARD FONKSİYONLARI
+            window.MURDERBOARD = {
+                connectionMode: false,
+                connectionStart: null,
+                boardItems: [],
+                connections: [],
+                draggedItem: null,
+                dragOffset: { x: 0, y: 0 },
+
+                openMurderBoard: function() {
+                    // Karakter listesini yükle
+                    socket.emit('get-characters-for-board', function(characters) {
+                        const dropdown = document.getElementById('characterDropdown');
+                        dropdown.innerHTML = '<option value="">Karakter seçin...</option>';
+
+                        characters.forEach(function(char) {
+                            const option = document.createElement('option');
+                            option.value = char.id;
+                            option.textContent = char.name;
+                            option.dataset.photoUrl = char.photo_url || '';
+                            option.dataset.name = char.name;
+                            dropdown.appendChild(option);
+                        });
+                    });
+
+                    // Board verilerini yükle
+                    MURDERBOARD.loadBoard();
+
+                    // Takım adını göster
+                    document.getElementById('mbTeamName').textContent = currentUser ? (currentUser.teamId || 'Takım') : 'Takım';
+
+                    // Sayfayı göster
+                    showPage('pgMurderBoard', true);
+                },
+
+                closeMurderBoard: function() {
+                    showPage('pgTeam', false);
+                },
+
+                showCharacterSelector: function() {
+                    document.getElementById('characterSelectorModal').style.display = 'flex';
+                },
+
+                hideCharacterSelector: function() {
+                    document.getElementById('characterSelectorModal').style.display = 'none';
+                    document.getElementById('characterDropdown').value = '';
+                    document.getElementById('characterNote').value = '';
+                },
+
+                addCharacterToBoard: function() {
+                    const dropdown = document.getElementById('characterDropdown');
+                    const note = document.getElementById('characterNote').value.trim();
+
+                    if (!dropdown.value) {
+                        toast('Lütfen bir karakter seçin!', true);
+                        return;
+                    }
+
+                    const selectedOption = dropdown.options[dropdown.selectedIndex];
+                    const characterId = dropdown.value;
+                    const characterName = selectedOption.dataset.name;
+                    const photoUrl = selectedOption.dataset.photoUrl;
+
+                    // Rastgele pozisyon
+                    const x = Math.random() * 300 + 50;
+                    const y = Math.random() * 200 + 50;
+
+                    const itemData = {
+                        characterId: characterId,
+                        characterName: characterName,
+                        photoUrl: photoUrl,
+                        note: note,
+                        x: x,
+                        y: y
+                    };
+
+                    // Server'a kaydet
+                    socket.emit('add-board-item', itemData, function(response) {
+                        if (response.success) {
+                            toast('✅ Karakter eklendi');
+                            MURDERBOARD.hideCharacterSelector();
+                            MURDERBOARD.loadBoard();
+                        } else {
+                            toast(response.error || 'Karakter eklenemedi!', true);
+                        }
+                    });
+                },
+
+                loadBoard: function() {
+                    if (!currentUser || !currentUser.teamId) return;
+
+                    socket.emit('get-board-items', function(data) {
+                        MURDERBOARD.boardItems = data.items || [];
+                        MURDERBOARD.connections = data.connections || [];
+                        MURDERBOARD.renderBoard();
+                    });
+                },
+
+                renderBoard: function() {
+                    const canvas = document.getElementById('murderBoardCanvas');
+                    const emptyState = document.getElementById('boardEmptyState');
+                    const itemCount = document.getElementById('mbItemCount');
+
+                    // Öğe sayısını güncelle
+                    itemCount.textContent = MURDERBOARD.boardItems.length;
+
+                    // Empty state kontrolü
+                    if (MURDERBOARD.boardItems.length === 0) {
+                        emptyState.style.display = 'block';
+                    } else {
+                        emptyState.style.display = 'none';
+                    }
+
+                    // Mevcut öğeleri temizle (SVG hariç)
+                    Array.from(canvas.children).forEach(function(child) {
+                        if (child.id !== 'connectionsLayer' && child.id !== 'boardEmptyState') {
+                            canvas.removeChild(child);
+                        }
+                    });
+
+                    // Bağlantıları çiz
+                    MURDERBOARD.renderConnections();
+
+                    // Karakterleri ekle
+                    MURDERBOARD.boardItems.forEach(function(item) {
+                        const itemEl = MURDERBOARD.createItemElement(item);
+                        canvas.appendChild(itemEl);
+                    });
+                },
+
+                createItemElement: function(item) {
+                    const div = document.createElement('div');
+                    div.className = 'board-item';
+                    div.dataset.itemId = item.id;
+                    div.style.cssText = 'position: absolute; left: ' + item.x + 'px; top: ' + item.y + 'px; width: 120px; background: #fff; border: 2px solid #333; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); cursor: move; user-select: none; z-index: 10;';
+
+                    // Pin efekti
+                    const pin = document.createElement('div');
+                    pin.style.cssText = 'position: absolute; top: -8px; left: 50%; transform: translateX(-50%); width: 16px; height: 16px; background: radial-gradient(circle, #d44d4d, #8b0000); border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 1;';
+                    div.appendChild(pin);
+
+                    // Fotoğraf veya placeholder
+                    if (item.photo_url) {
+                        const img = document.createElement('img');
+                        img.src = item.photo_url;
+                        img.style.cssText = 'width: 100%; height: 100px; object-fit: cover; border-radius: 6px 6px 0 0; display: block;';
+                        div.appendChild(img);
+                    } else {
+                        const placeholder = document.createElement('div');
+                        placeholder.style.cssText = 'width: 100%; height: 100px; background: #ddd; border-radius: 6px 6px 0 0; display: flex; align-items: center; justify-content: center; font-size: 48px;';
+                        placeholder.textContent = '👤';
+                        div.appendChild(placeholder);
+                    }
+
+                    // İsim
+                    const name = document.createElement('div');
+                    name.style.cssText = 'padding: 8px; font-size: 12px; font-weight: 600; color: #000; text-align: center; border-bottom: 1px solid #ddd;';
+                    name.textContent = item.character_name;
+                    div.appendChild(name);
+
+                    // Not
+                    if (item.note) {
+                        const note = document.createElement('div');
+                        note.style.cssText = 'padding: 6px 8px; font-size: 10px; color: #555; max-height: 60px; overflow-y: auto; font-style: italic;';
+                        note.textContent = item.note;
+                        div.appendChild(note);
+                    }
+
+                    // Sil butonu
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = '🗑️';
+                    deleteBtn.style.cssText = 'position: absolute; top: 4px; right: 4px; background: rgba(255,255,255,0.9); border: 1px solid #d44d4d; border-radius: 4px; padding: 2px 6px; font-size: 12px; cursor: pointer; z-index: 2;';
+                    deleteBtn.onclick = function(e) {
+                        e.stopPropagation();
+                        MURDERBOARD.deleteItem(item.id);
+                    };
+                    div.appendChild(deleteBtn);
+
+                    // Drag event'leri
+                    div.addEventListener('mousedown', function(e) {
+                        if (MURDERBOARD.connectionMode) {
+                            MURDERBOARD.handleConnectionClick(item.id);
+                            return;
+                        }
+                        MURDERBOARD.startDrag(e, item.id);
+                    });
+
+                    div.addEventListener('touchstart', function(e) {
+                        if (MURDERBOARD.connectionMode) {
+                            MURDERBOARD.handleConnectionClick(item.id);
+                            return;
+                        }
+                        MURDERBOARD.startDrag(e.touches[0], item.id);
+                    });
+
+                    return div;
+                },
+
+                startDrag: function(e, itemId) {
+                    const item = MURDERBOARD.boardItems.find(function(i) { return i.id === itemId; });
+                    if (!item) return;
+
+                    MURDERBOARD.draggedItem = item;
+
+                    const itemEl = document.querySelector('[data-item-id="' + itemId + '"]');
+                    const rect = itemEl.getBoundingClientRect();
+                    const canvasRect = document.getElementById('murderBoardCanvas').getBoundingClientRect();
+
+                    MURDERBOARD.dragOffset = {
+                        x: e.clientX - rect.left,
+                        y: e.clientY - rect.top
+                    };
+
+                    itemEl.style.zIndex = '100';
+
+                    document.addEventListener('mousemove', MURDERBOARD.onDrag);
+                    document.addEventListener('mouseup', MURDERBOARD.stopDrag);
+                    document.addEventListener('touchmove', MURDERBOARD.onDragTouch);
+                    document.addEventListener('touchend', MURDERBOARD.stopDrag);
+                },
+
+                onDrag: function(e) {
+                    if (!MURDERBOARD.draggedItem) return;
+
+                    const canvasRect = document.getElementById('murderBoardCanvas').getBoundingClientRect();
+                    const x = e.clientX - canvasRect.left - MURDERBOARD.dragOffset.x;
+                    const y = e.clientY - canvasRect.top - MURDERBOARD.dragOffset.y;
+
+                    const itemEl = document.querySelector('[data-item-id="' + MURDERBOARD.draggedItem.id + '"]');
+                    itemEl.style.left = x + 'px';
+                    itemEl.style.top = y + 'px';
+
+                    MURDERBOARD.renderConnections();
+                },
+
+                onDragTouch: function(e) {
+                    MURDERBOARD.onDrag(e.touches[0]);
+                },
+
+                stopDrag: function() {
+                    if (!MURDERBOARD.draggedItem) return;
+
+                    const itemEl = document.querySelector('[data-item-id="' + MURDERBOARD.draggedItem.id + '"]');
+                    itemEl.style.zIndex = '10';
+
+                    const x = parseInt(itemEl.style.left);
+                    const y = parseInt(itemEl.style.top);
+
+                    socket.emit('update-board-item-position', {
+                        itemId: MURDERBOARD.draggedItem.id,
+                        x: x,
+                        y: y
+                    });
+
+                    MURDERBOARD.draggedItem.x = x;
+                    MURDERBOARD.draggedItem.y = y;
+                    MURDERBOARD.draggedItem = null;
+
+                    document.removeEventListener('mousemove', MURDERBOARD.onDrag);
+                    document.removeEventListener('mouseup', MURDERBOARD.stopDrag);
+                    document.removeEventListener('touchmove', MURDERBOARD.onDragTouch);
+                    document.removeEventListener('touchend', MURDERBOARD.stopDrag);
+                },
+
+                toggleConnectionMode: function() {
+                    MURDERBOARD.connectionMode = !MURDERBOARD.connectionMode;
+                    MURDERBOARD.connectionStart = null;
+
+                    const btn = document.getElementById('btnAddConnection');
+                    if (MURDERBOARD.connectionMode) {
+                        btn.style.background = 'linear-gradient(135deg, #1a4d1a, #0d3310)';
+                        btn.style.borderColor = '#4dd44d';
+                        btn.style.color = '#4dd44d';
+                        toast('🔗 Bağlantı modu aktif - İki karakter seçin');
+                    } else {
+                        btn.style.background = 'linear-gradient(135deg, #4d4d1a, #333310)';
+                        btn.style.borderColor = '#d4d44d';
+                        btn.style.color = '#d4d44d';
+                    }
+                },
+
+                handleConnectionClick: function(itemId) {
+                    if (!MURDERBOARD.connectionStart) {
+                        MURDERBOARD.connectionStart = itemId;
+                        toast('İkinci karakteri seçin');
+                    } else {
+                        if (MURDERBOARD.connectionStart === itemId) {
+                            toast('Aynı karaktere bağlantı eklenemez!', true);
+                            MURDERBOARD.connectionStart = null;
+                            return;
+                        }
+
+                        socket.emit('add-board-connection', {
+                            fromItemId: MURDERBOARD.connectionStart,
+                            toItemId: itemId
+                        }, function(response) {
+                            if (response.success) {
+                                toast('✅ Bağlantı eklendi');
+                                MURDERBOARD.loadBoard();
+                                MURDERBOARD.connectionStart = null;
+                                MURDERBOARD.toggleConnectionMode();
+                            } else {
+                                toast(response.error || 'Bağlantı eklenemedi!', true);
+                            }
+                        });
+                    }
+                },
+
+                renderConnections: function() {
+                    const svg = document.getElementById('connectionsLayer');
+                    svg.innerHTML = '';
+
+                    MURDERBOARD.connections.forEach(function(conn) {
+                        const fromItem = MURDERBOARD.boardItems.find(function(i) { return i.id === conn.from_item_id; });
+                        const toItem = MURDERBOARD.boardItems.find(function(i) { return i.id === conn.to_item_id; });
+
+                        if (!fromItem || !toItem) return;
+
+                        const fromX = fromItem.x + 60;
+                        const fromY = fromItem.y + 50;
+                        const toX = toItem.x + 60;
+                        const toY = toItem.y + 50;
+
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', fromX);
+                        line.setAttribute('y1', fromY);
+                        line.setAttribute('x2', toX);
+                        line.setAttribute('y2', toY);
+                        line.setAttribute('stroke', '#d44d4d');
+                        line.setAttribute('stroke-width', '3');
+                        line.setAttribute('stroke-dasharray', '5,5');
+                        line.style.cursor = 'pointer';
+
+                        line.addEventListener('click', function() {
+                            if (confirm('Bu bağlantıyı silmek istiyor musunuz?')) {
+                                MURDERBOARD.deleteConnection(conn.id);
+                            }
+                        });
+
+                        svg.appendChild(line);
+                    });
+                },
+
+                deleteItem: function(itemId) {
+                    if (!confirm('Bu karakteri kaldırmak istiyor musunuz?')) return;
+
+                    socket.emit('delete-board-item', itemId, function(response) {
+                        if (response.success) {
+                            toast('🗑️ Karakter kaldırıldı');
+                            MURDERBOARD.loadBoard();
+                        } else {
+                            toast(response.error || 'Karakter kaldırılamadı!', true);
+                        }
+                    });
+                },
+
+                deleteConnection: function(connectionId) {
+                    socket.emit('delete-board-connection', connectionId, function(response) {
+                        if (response.success) {
+                            toast('🗑️ Bağlantı silindi');
+                            MURDERBOARD.loadBoard();
+                        } else {
+                            toast(response.error || 'Bağlantı silinemedi!', true);
+                        }
+                    });
+                },
+
+                clearBoard: function() {
+                    if (!confirm('Tüm murder board\'u temizlemek istediğinizden emin misiniz?')) return;
+
+                    socket.emit('clear-board', function(response) {
+                        if (response.success) {
+                            toast('🗑️ Murder board temizlendi');
+                            MURDERBOARD.loadBoard();
+                        } else {
+                            toast(response.error || 'Temizlenemedi!', true);
                         }
                     });
                 }

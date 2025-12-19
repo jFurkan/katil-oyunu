@@ -1,29 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dir \"C:\\Program Files\\PostgreSQL\" /b)",
-      "Bash(net start:*)",
-      "Bash(sc query:*)",
-      "Bash(findstr:*)",
-      "Bash(wmic service:*)",
-      "Bash(\"C:\\Program Files\\PostgreSQL\\18\\bin\\pg_ctl.exe\" status -D \"C:\\Program Files\\PostgreSQL\\18\\data\")",
-      "Bash(npm start)",
-      "Bash(taskkill:*)",
-      "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(psql:*)",
-      "Bash(\"C:\\Program Files\\PostgreSQL\\18\\bin\\psql.exe\" -U postgres -d katil_oyunu -f \"c:\\Users\\Furkan\\Desktop\\katil-oyunu\\migrate_database.sql\")",
-      "Bash(powershell -Command \"Remove-Item -Path ''.\\nul'' -Force\")",
-      "Bash(git rm:*)",
-      "Bash(git checkout:*)",
+      "Bash(git push)",
+      "Bash(git add:*)",
+      "Bash(npm start)",
       "Bash(netstat:*)",
-      "Bash(powershell -Command \"Get-Content ''public\\index.html'' | Select-Object -Last 200 | Select-String -Pattern ''function|const |let |var '' -Context 2,2\")",
-      "Bash(powershell -Command \"Get-Content ''public\\index.html'' -Raw | Select-String -Pattern ''var GAME = \\{'' -Context 10,30\")",
-      "Bash(powershell -Command \"(Get-Content ''public\\index.html'' -Raw).Length\")",
-      "Bash(powershell -Command \"Get-Content ''public\\index.html'' | Select-Object -Last 50\")",
-      "Bash(powershell -Command:*)",
-      "Bash(git merge:*)"
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(git reset:*)",
+      "Bash(git push:*)",
+      "Bash(sc query:*)"
     ],
     "deny": [],
     "ask": []

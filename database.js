@@ -209,6 +209,47 @@ async function initDatabase() {
             ON users (LOWER(nickname))
         `);
 
+        // Characters tablosu (Karakter yönetimi)
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS characters (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                photo_url TEXT,
+                description TEXT,
+                age INTEGER,
+                occupation TEXT,
+                additional_info TEXT,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        `);
+
+        // Murder Board Items tablosu
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS murder_board_items (
+                id TEXT PRIMARY KEY,
+                team_id TEXT REFERENCES teams(id) ON DELETE CASCADE,
+                character_id TEXT REFERENCES characters(id) ON DELETE CASCADE,
+                character_name TEXT NOT NULL,
+                photo_url TEXT,
+                note TEXT,
+                x INTEGER DEFAULT 0,
+                y INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        `);
+
+        // Murder Board Connections tablosu
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS murder_board_connections (
+                id TEXT PRIMARY KEY,
+                team_id TEXT REFERENCES teams(id) ON DELETE CASCADE,
+                from_item_id TEXT REFERENCES murder_board_items(id) ON DELETE CASCADE,
+                to_item_id TEXT REFERENCES murder_board_items(id) ON DELETE CASCADE,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        `);
+
         console.log('✓ Database initialized');
     } catch (err) {
         console.error('Database init error:', err);

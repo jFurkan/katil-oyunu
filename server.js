@@ -1572,6 +1572,333 @@ io.on('connection', async (socket) => {
 
     // [REMOVED] Duplicate delete-user handler - see line 1835 for the correct implementation
 
+    // KARAKTER YÖNETİMİ
+
+    // Karakter ekle (admin)
+    socket.on('add-character', async (characterData, callback) => {
+        // GÜVENLİK: Admin kontrolü
+        if (!socket.data.isAdmin) {
+            callback({ success: false, error: 'Yetkisiz işlem!' });
+            console.log('⚠️  Yetkisiz admin işlemi: add-character -', socket.id);
+            return;
+        }
+
+        try {
+            // Validasyon
+            if (!characterData.name || characterData.name.trim().length === 0) {
+                callback({ success: false, error: 'Karakter ismi zorunludur!' });
+                return;
+            }
+
+            // XSS koruması - HTML etiketlerini temizle
+            const safeName = validator.escape(characterData.name.trim());
+            const safeDescription = characterData.description ? validator.escape(characterData.description.trim()) : null;
+            const safeOccupation = characterData.occupation ? validator.escape(characterData.occupation.trim()) : null;
+            const safeAdditionalInfo = characterData.additionalInfo ? validator.escape(characterData.additionalInfo.trim()) : null;
+
+            // URL validasyonu
+            let safePhotoUrl = null;
+            if (characterData.photoUrl && characterData.photoUrl.trim().length > 0) {
+                if (!validator.isURL(characterData.photoUrl.trim(), { protocols: ['http', 'https'], require_protocol: true })) {
+                    callback({ success: false, error: 'Geçersiz fotoğraf URL\'si!' });
+                    return;
+                }
+                safePhotoUrl = characterData.photoUrl.trim();
+            }
+
+            // Yaş validasyonu
+            let age = null;
+            if (characterData.age) {
+                age = parseInt(characterData.age);
+                if (isNaN(age) || age < 0 || age > 150) {
+                    callback({ success: false, error: 'Geçersiz yaş değeri!' });
+                    return;
+                }
+            }
+
+            // UUID oluştur
+            const characterId = 'char_' + crypto.randomBytes(8).toString('hex');
+
+            // Database'e kaydet
+            await pool.query(
+                `INSERT INTO characters (id, name, photo_url, description, age, occupation, additional_info)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                [characterId, safeName, safePhotoUrl, safeDescription, age, safeOccupation, safeAdditionalInfo]
+            );
+
+            callback({ success: true, characterId: characterId });
+            console.log('✓ Karakter eklendi:', safeName, '- ID:', characterId);
+        } catch (err) {
+            console.error('Karakter ekleme hatası:', err);
+            callback({ success: false, error: 'Karakter eklenemedi!' });
+        }
+    });
+
+    // Karakterleri getir
+    socket.on('get-characters', async (callback) => {
+        // GÜVENLİK: Admin kontrolü
+        if (!socket.data.isAdmin) {
+            callback([]);
+            console.log('⚠️  Yetkisiz admin işlemi: get-characters -', socket.id);
+            return;
+        }
+
+        try {
+            const result = await pool.query('SELECT * FROM characters ORDER BY created_at DESC');
+            callback(result.rows);
+        } catch (err) {
+            console.error('Karakter listesi getirme hatası:', err);
+            callback([]);
+        }
+    });
+
+    // Karakter sil (admin)
+    socket.on('delete-character', async (characterId, callback) => {
+        // GÜVENLİK: Admin kontrolü
+        if (!socket.data.isAdmin) {
+            callback({ success: false, error: 'Yetkisiz işlem!' });
+            console.log('⚠️  Yetkisiz admin işlemi: delete-character -', socket.id);
+            return;
+        }
+
+        try {
+            const result = await pool.query('DELETE FROM characters WHERE id = $1 RETURNING name', [characterId]);
+
+            if (result.rowCount === 0) {
+                callback({ success: false, error: 'Karakter bulunamadı!' });
+                return;
+            }
+
+            const characterName = result.rows[0].name;
+            callback({ success: true });
+            console.log('Karakter silindi:', characterName);
+        } catch (err) {
+            console.error('Karakter silme hatası:', err);
+            callback({ success: false, error: 'Karakter silinemedi!' });
+        }
+    });
+
+    // MURDER BOARD YÖNETİMİ
+
+    // Karakterleri board için getir (takım üyeleri)
+    socket.on('get-characters-for-board', async (callback) => {
+        try {
+            const result = await pool.query('SELECT id, name, photo_url FROM characters ORDER BY name');
+            callback(result.rows);
+        } catch (err) {
+            console.error('Karakter listesi getirme hatası:', err);
+            callback([]);
+        }
+    });
+
+    // Board öğelerini ve bağlantılarını getir
+    socket.on('get-board-items', async (callback) => {
+        const teamId = socket.data.teamId;
+
+        if (!teamId) {
+            callback({ items: [], connections: [] });
+            return;
+        }
+
+        try {
+            const itemsResult = await pool.query(
+                'SELECT * FROM murder_board_items WHERE team_id = $1 ORDER BY created_at',
+                [teamId]
+            );
+
+            const connectionsResult = await pool.query(
+                'SELECT * FROM murder_board_connections WHERE team_id = $1 ORDER BY created_at',
+                [teamId]
+            );
+
+            callback({
+                items: itemsResult.rows,
+                connections: connectionsResult.rows
+            });
+        } catch (err) {
+            console.error('Board öğelerini getirme hatası:', err);
+            callback({ items: [], connections: [] });
+        }
+    });
+
+    // Board'a karakter ekle
+    socket.on('add-board-item', async (itemData, callback) => {
+        const teamId = socket.data.teamId;
+
+        if (!teamId) {
+            callback({ success: false, error: 'Takım bulunamadı!' });
+            return;
+        }
+
+        try {
+            // Validasyon
+            if (!itemData.characterId || !itemData.characterName) {
+                callback({ success: false, error: 'Karakter bilgisi eksik!' });
+                return;
+            }
+
+            // XSS koruması
+            const safeName = validator.escape(itemData.characterName);
+            const safeNote = itemData.note ? validator.escape(itemData.note) : null;
+            const safePhotoUrl = itemData.photoUrl || null;
+
+            // UUID oluştur
+            const itemId = 'mbitem_' + crypto.randomBytes(8).toString('hex');
+
+            // Database'e kaydet
+            await pool.query(
+                `INSERT INTO murder_board_items (id, team_id, character_id, character_name, photo_url, note, x, y)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                [itemId, teamId, itemData.characterId, safeName, safePhotoUrl, safeNote, Math.floor(itemData.x), Math.floor(itemData.y)]
+            );
+
+            callback({ success: true, itemId: itemId });
+            console.log('✓ Murder board item eklendi:', safeName, '- Team:', teamId);
+        } catch (err) {
+            console.error('Board item ekleme hatası:', err);
+            callback({ success: false, error: 'Öğe eklenemedi!' });
+        }
+    });
+
+    // Board öğesi pozisyonunu güncelle
+    socket.on('update-board-item-position', async (data) => {
+        const teamId = socket.data.teamId;
+
+        if (!teamId) return;
+
+        try {
+            await pool.query(
+                'UPDATE murder_board_items SET x = $1, y = $2 WHERE id = $3 AND team_id = $4',
+                [Math.floor(data.x), Math.floor(data.y), data.itemId, teamId]
+            );
+        } catch (err) {
+            console.error('Pozisyon güncelleme hatası:', err);
+        }
+    });
+
+    // Board öğesini sil
+    socket.on('delete-board-item', async (itemId, callback) => {
+        const teamId = socket.data.teamId;
+
+        if (!teamId) {
+            callback({ success: false, error: 'Takım bulunamadı!' });
+            return;
+        }
+
+        try {
+            const result = await pool.query(
+                'DELETE FROM murder_board_items WHERE id = $1 AND team_id = $2 RETURNING character_name',
+                [itemId, teamId]
+            );
+
+            if (result.rowCount === 0) {
+                callback({ success: false, error: 'Öğe bulunamadı!' });
+                return;
+            }
+
+            callback({ success: true });
+            console.log('Murder board item silindi:', result.rows[0].character_name);
+        } catch (err) {
+            console.error('Board item silme hatası:', err);
+            callback({ success: false, error: 'Öğe silinemedi!' });
+        }
+    });
+
+    // Board'a bağlantı ekle
+    socket.on('add-board-connection', async (connData, callback) => {
+        const teamId = socket.data.teamId;
+
+        if (!teamId) {
+            callback({ success: false, error: 'Takım bulunamadı!' });
+            return;
+        }
+
+        try {
+            // Aynı bağlantı var mı kontrol et
+            const existing = await pool.query(
+                `SELECT id FROM murder_board_connections
+                 WHERE team_id = $1 AND (
+                    (from_item_id = $2 AND to_item_id = $3) OR
+                    (from_item_id = $3 AND to_item_id = $2)
+                 )`,
+                [teamId, connData.fromItemId, connData.toItemId]
+            );
+
+            if (existing.rowCount > 0) {
+                callback({ success: false, error: 'Bu bağlantı zaten var!' });
+                return;
+            }
+
+            // UUID oluştur
+            const connId = 'mbconn_' + crypto.randomBytes(8).toString('hex');
+
+            // Database'e kaydet
+            await pool.query(
+                `INSERT INTO murder_board_connections (id, team_id, from_item_id, to_item_id)
+                 VALUES ($1, $2, $3, $4)`,
+                [connId, teamId, connData.fromItemId, connData.toItemId]
+            );
+
+            callback({ success: true, connectionId: connId });
+            console.log('✓ Murder board bağlantısı eklendi - Team:', teamId);
+        } catch (err) {
+            console.error('Bağlantı ekleme hatası:', err);
+            callback({ success: false, error: 'Bağlantı eklenemedi!' });
+        }
+    });
+
+    // Board bağlantısını sil
+    socket.on('delete-board-connection', async (connectionId, callback) => {
+        const teamId = socket.data.teamId;
+
+        if (!teamId) {
+            callback({ success: false, error: 'Takım bulunamadı!' });
+            return;
+        }
+
+        try {
+            const result = await pool.query(
+                'DELETE FROM murder_board_connections WHERE id = $1 AND team_id = $2',
+                [connectionId, teamId]
+            );
+
+            if (result.rowCount === 0) {
+                callback({ success: false, error: 'Bağlantı bulunamadı!' });
+                return;
+            }
+
+            callback({ success: true });
+            console.log('Murder board bağlantısı silindi');
+        } catch (err) {
+            console.error('Bağlantı silme hatası:', err);
+            callback({ success: false, error: 'Bağlantı silinemedi!' });
+        }
+    });
+
+    // Board'u temizle
+    socket.on('clear-board', async (callback) => {
+        const teamId = socket.data.teamId;
+
+        if (!teamId) {
+            callback({ success: false, error: 'Takım bulunamadı!' });
+            return;
+        }
+
+        try {
+            // Önce bağlantıları sil (foreign key)
+            await pool.query('DELETE FROM murder_board_connections WHERE team_id = $1', [teamId]);
+
+            // Sonra öğeleri sil
+            const result = await pool.query('DELETE FROM murder_board_items WHERE team_id = $1', [teamId]);
+
+            callback({ success: true, count: result.rowCount });
+            console.log('Murder board temizlendi - Team:', teamId, '- Silinen öğe:', result.rowCount);
+        } catch (err) {
+            console.error('Board temizleme hatası:', err);
+            callback({ success: false, error: 'Board temizlenemedi!' });
+        }
+    });
+
     // Oyunu sıfırla (admin)
     socket.on('reset-game', async (callback) => {
         // GÜVENLİK: Admin kontrolü
