@@ -5950,7 +5950,7 @@
 
                             // Listeyi yenile
                             CHARACTER.loadCharacters();
-                            GAME.loadGameCharacters(); // Oyun kontrolü listesini güncelle
+                            ADMIN.loadGameCharacters(); // Oyun kontrolü listesini güncelle
                         } else {
                             toast(response.error || 'Karakter eklenemedi!', true);
                         }
@@ -6042,6 +6042,7 @@
                         if (response.success) {
                             toast('🗑️ Karakter silindi');
                             CHARACTER.loadCharacters();
+                            ADMIN.loadGameCharacters(); // Oyun kontrolü listesini güncelle
                         } else {
                             toast(response.error || 'Karakter silinemedi!', true);
                         }
