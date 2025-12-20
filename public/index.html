@@ -1727,6 +1727,7 @@
                 <button class="btn" onclick="ADMIN.showSection('stats')">📊 İstatistikler</button>
                 <button class="btn" onclick="ADMIN.showSection('credits')">👥 Emeği Geçenler</button>
                 <button class="btn" onclick="ADMIN.showSection('iplogs')">🔍 IP Logları</button>
+                <button class="btn" style="background: linear-gradient(135deg, #8b0000, #450000); border-color: #ff4444;" onclick="ADMIN.showSection('reset')">🔄 Oyunu Sıfırla</button>
             </div>
 
             <!-- Oyun Kontrol Bölümü -->
@@ -2233,6 +2234,46 @@
                             <div style="color:#666; text-align:center; padding:30px;">Yükleniyor...</div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Oyunu Sıfırla Bölümü -->
+            <div id="adminSectionReset" class="admin-section" style="display:none;">
+                <h3 style="color:#ff4444; font-size:18px; margin-bottom:20px; border-bottom:1px solid #ff4444; padding-bottom:10px;">🔄 Oyunu Tamamen Sıfırla</h3>
+
+                <!-- Uyarı Mesajı -->
+                <div style="background:#3d0000; border:2px solid #ff4444; padding:20px; margin-bottom:30px; border-radius:12px;">
+                    <h3 style="color:#ff4444; font-size:16px; margin-bottom:15px;">⚠️ TEHLİKELİ İŞLEM - DİKKATLE OKUYUN!</h3>
+                    <p style="color:#ffaaaa; font-size:14px; line-height:1.8; margin:0;">
+                        Bu işlem GERİ ALINAMAZ ve aşağıdaki <strong>TÜM VERİLERİ SİLER:</strong>
+                    </p>
+                    <ul style="color:#ffaaaa; font-size:14px; line-height:2; margin:15px 0 0 20px;">
+                        <li><strong>Tüm Kullanıcılar</strong> - Kayıtlı tüm oyuncular silinecek</li>
+                        <li><strong>Tüm Takımlar</strong> - Oluşturulan tüm takımlar silinecek</li>
+                        <li><strong>Tüm Karakterler</strong> - Eklenen tüm karakterler silinecek</li>
+                        <li><strong>Tüm İpuçları</strong> - Genel ve takım ipuçları silinecek</li>
+                        <li><strong>Tüm Murder Board Verileri</strong> - Karakter kartları ve bağlantılar silinecek</li>
+                        <li><strong>Tüm Chat Mesajları</strong> - Takım mesajları silinecek</li>
+                        <li><strong>Tüm IP Logları</strong> - IP aktivite kayıtları silinecek</li>
+                        <li><strong>Tüm Rozetler</strong> - Oluşturulan rozetler silinecek</li>
+                        <li><strong>Emeği Geçenler</strong> - Credits kayıtları silinecek</li>
+                    </ul>
+                    <p style="color:#ff8888; font-size:15px; font-weight:600; margin:20px 0 0 0;">
+                        💡 Bu işlem sadece yeni bir oyuna başlamadan önce kullanılmalıdır.
+                    </p>
+                </div>
+
+                <!-- Sıfırlama İşlemi -->
+                <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:30px;">
+                    <h3 style="color:#888; font-size:15px; margin-bottom:20px;">Sıfırlama İşlemi</h3>
+
+                    <p style="color:#aaa; font-size:14px; margin-bottom:20px;">
+                        İşlemi onaylamak için aşağıdaki butona basın. İkinci bir onay ekranı göreceksiniz.
+                    </p>
+
+                    <button class="btn" style="background:linear-gradient(135deg, #8b0000, #450000); border-color:#ff4444; color:#ff4444; font-weight:600; width:100%; padding:16px;" onclick="GAME_RESET.showConfirmModal()">
+                        🔄 Oyunu Sıfırlamak İstiyorum
+                    </button>
                 </div>
             </div>
         </div>
@@ -6528,11 +6569,28 @@
                             });
                         }
 
-                        // Mouse listener'ları temizle
+                        // Tüm document listener'ları temizle
+                        document.removeEventListener('pointermove', onPointerMove);
+                        document.removeEventListener('pointerup', onPointerUp);
+                        document.removeEventListener('pointercancel', onPointerUp);
+                        document.removeEventListener('touchmove', onPointerMove);
+                        document.removeEventListener('touchend', onPointerUp);
+                        document.removeEventListener('touchcancel', onPointerUp);
                         document.removeEventListener('mousemove', onPointerMove);
                         document.removeEventListener('mouseup', onPointerUp);
 
                         if (e.preventDefault) e.preventDefault();
+                    };
+
+                    var onPointerDownHandler = function(e) {
+                        // Pointer için özel handler (document listener'ları ekle)
+                        onPointerDown(e);
+                        if (isDragging && e.type.includes('pointer')) {
+                            // Pointer event için document listener'ları ekle
+                            document.addEventListener('pointermove', onPointerMove, { passive: false });
+                            document.addEventListener('pointerup', onPointerUp);
+                            document.addEventListener('pointercancel', onPointerUp);
+                        }
                     };
 
                     var onMouseDown = function(e) {
@@ -6544,17 +6602,21 @@
                         }
                     };
 
+                    var onTouchStart = function(e) {
+                        // Touch için özel handler (document listener'ları ekle)
+                        onPointerDown(e);
+                        if (isDragging) {
+                            document.addEventListener('touchmove', onPointerMove, { passive: false });
+                            document.addEventListener('touchend', onPointerUp, { passive: false });
+                            document.addEventListener('touchcancel', onPointerUp, { passive: false });
+                        }
+                    };
+
                     // Pointer events (modern, tüm cihazları destekler)
-                    div.addEventListener('pointerdown', onPointerDown, { passive: false });
-                    div.addEventListener('pointermove', onPointerMove, { passive: false });
-                    div.addEventListener('pointerup', onPointerUp, { passive: false });
-                    div.addEventListener('pointercancel', onPointerUp, { passive: false });
+                    div.addEventListener('pointerdown', onPointerDownHandler, { passive: false });
 
                     // Fallback: Touch events (eski mobil tarayıcılar için)
-                    div.addEventListener('touchstart', onPointerDown, { passive: false });
-                    div.addEventListener('touchmove', onPointerMove, { passive: false });
-                    div.addEventListener('touchend', onPointerUp, { passive: false });
-                    div.addEventListener('touchcancel', onPointerUp, { passive: false });
+                    div.addEventListener('touchstart', onTouchStart, { passive: false });
 
                     // Fallback: Mouse events (eski tarayıcılar için)
                     div.addEventListener('mousedown', onMouseDown, { passive: false });
@@ -7126,6 +7188,85 @@
                 icon.style.transform = 'rotate(180deg)';
             }
         }
+
+        // ============================================
+        // GAME RESET SYSTEM
+        // ============================================
+        const GAME_RESET = {
+            showConfirmModal: function() {
+                const modal = document.getElementById('resetConfirmModal');
+                const input = document.getElementById('resetConfirmInput');
+
+                // Input'u temizle
+                input.value = '';
+
+                // Modal'ı göster (flex olarak)
+                modal.style.display = 'flex';
+
+                // Input'a focus
+                setTimeout(function() {
+                    input.focus();
+                }, 100);
+            },
+
+            hideConfirmModal: function() {
+                const modal = document.getElementById('resetConfirmModal');
+                modal.style.display = 'none';
+            },
+
+            confirmReset: function() {
+                const input = document.getElementById('resetConfirmInput');
+                const confirmText = input.value.trim().toUpperCase();
+
+                if (confirmText !== 'SIFIRLA') {
+                    toast('Onaylamak için "SIFIRLA" yazmalısınız!', true);
+                    input.focus();
+                    return;
+                }
+
+                // Confirmation geçti, server'a istek gönder
+                toast('Oyun sıfırlanıyor, lütfen bekleyin...');
+
+                socket.emit('reset-game', function(response) {
+                    if (response.success) {
+                        GAME_RESET.hideConfirmModal();
+                        toast('✅ Oyun başarıyla sıfırlandı! Sayfa yenileniyor...');
+
+                        // 2 saniye sonra sayfayı yenile
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        toast(response.error || 'Sıfırlama başarısız!', true);
+                    }
+                });
+            }
+        };
     </script>
+
+    <!-- Reset Confirmation Modal -->
+    <div id="resetConfirmModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000; display:none; align-items:center; justify-content:center;">
+        <div style="background:linear-gradient(135deg, #1a0a0a, #0a0000); border:3px solid #ff4444; border-radius:16px; padding:40px; max-width:600px; width:90%; box-shadow:0 0 50px rgba(255,68,68,0.5);">
+            <h2 style="color:#ff4444; font-size:24px; margin-bottom:20px; text-align:center;">⚠️ SON ONAY</h2>
+
+            <p style="color:#ffaaaa; font-size:16px; line-height:1.8; margin-bottom:30px; text-align:center;">
+                Bu işlem <strong style="color:#ff4444;">GERİ ALINAMAZ</strong>.<br>
+                Tüm oyun verileri <strong>KALICI OLARAK SİLİNECEK</strong>.<br><br>
+                Devam etmek istediğinizden emin misiniz?
+            </p>
+
+            <div style="background:#3d0000; border:1px solid #8b0000; border-radius:8px; padding:15px; margin-bottom:30px;">
+                <p style="color:#ffcccc; font-size:14px; margin:0; text-align:center;">
+                    <strong>Onaylamak için aşağıya "SIFIRLA" yazın:</strong>
+                </p>
+                <input type="text" id="resetConfirmInput" placeholder="SIFIRLA yazın..." style="width:100%; margin-top:15px; padding:12px; background:#000; border:2px solid #ff4444; color:#fff; text-align:center; font-size:16px; text-transform:uppercase;" maxlength="8">
+            </div>
+
+            <div style="display:flex; gap:15px;">
+                <button class="btn" style="flex:1; background:#333; border-color:#666; color:#aaa; padding:14px; font-size:16px;" onclick="GAME_RESET.hideConfirmModal()">❌ İptal</button>
+                <button class="btn" style="flex:1; background:linear-gradient(135deg, #8b0000, #450000); border-color:#ff4444; color:#ff4444; padding:14px; font-size:16px; font-weight:600;" onclick="GAME_RESET.confirmReset()">🔄 SIFIRLA</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

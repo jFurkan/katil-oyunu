@@ -2090,18 +2090,69 @@ io.on('connection', async (socket) => {
         }
 
         try {
-            const result = await pool.query('DELETE FROM teams RETURNING *');
-            const count = result.rowCount;
+            console.log('🔄 OYUN SIFIRLANIYOR - TÜM VERİLER SİLİNİYOR...');
 
-            callback({ success: true, count: count });
+            // Sırayla tüm tabloları sıfırla (foreign key constraints nedeniyle sıra önemli)
 
+            // 1. Murder board connections (önce bağlantılar)
+            await pool.query('DELETE FROM murder_board_connections');
+            console.log('  ✓ Murder board bağlantıları silindi');
+
+            // 2. Murder board items
+            await pool.query('DELETE FROM murder_board_items');
+            console.log('  ✓ Murder board kartları silindi');
+
+            // 3. Team messages
+            await pool.query('DELETE FROM team_messages');
+            console.log('  ✓ Takım mesajları silindi');
+
+            // 4. Team badges
+            await pool.query('DELETE FROM team_badges');
+            console.log('  ✓ Takım rozetleri silindi');
+
+            // 5. Badges
+            await pool.query('DELETE FROM badges');
+            console.log('  ✓ Rozetler silindi');
+
+            // 6. Clues (takım ipuçları)
+            await pool.query('DELETE FROM clues');
+            console.log('  ✓ Takım ipuçları silindi');
+
+            // 7. General clues
+            await pool.query('DELETE FROM general_clues');
+            console.log('  ✓ Genel ipuçları silindi');
+
+            // 8. Users (kullanıcılar)
+            await pool.query('DELETE FROM users');
+            console.log('  ✓ Kullanıcılar silindi');
+
+            // 9. Teams (takımlar - cascade silme otomatik olacak ama yine de)
+            const teamsResult = await pool.query('DELETE FROM teams RETURNING *');
+            console.log('  ✓ Takımlar silindi:', teamsResult.rowCount);
+
+            // 10. Characters (karakterler)
+            await pool.query('DELETE FROM characters');
+            console.log('  ✓ Karakterler silindi');
+
+            // 11. IP Activity (IP logları)
+            await pool.query('DELETE FROM ip_activity');
+            console.log('  ✓ IP logları silindi');
+
+            // 12. Credits (emeği geçenler)
+            await pool.query('DELETE FROM credits');
+            console.log('  ✓ Credits silindi');
+
+            callback({ success: true });
+
+            // Tüm clientlara bildir
             const teams = await getAllTeams();
             io.emit('teams-update', teams);
             io.emit('game-reset');
-            console.log('Oyun sıfırlandı! ' + count + ' takım silindi.');
+
+            console.log('✅ OYUN TAMAMEN SIFIRLANDI! Tüm veriler temizlendi.');
         } catch (err) {
-            console.error('Oyun sıfırlama hatası:', err);
-            callback({ success: false, error: 'Oyun sıfırlanamadı!' });
+            console.error('❌ Oyun sıfırlama hatası:', err);
+            callback({ success: false, error: 'Oyun sıfırlanamadı! Hata: ' + err.message });
         }
     });
 
