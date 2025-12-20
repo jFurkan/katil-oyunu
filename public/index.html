@@ -3862,9 +3862,9 @@
                                 </div>
 
                                 <label style="position: relative; display: inline-block; width: 50px; height: 26px; cursor: pointer;">
-                                    <input type="checkbox" ${isVisible ? 'checked' : ''} onchange="ADMIN.toggleGameCharacterVisibility('${char.id}', this.checked)" style="opacity: 0; width: 0; height: 0;">
-                                    <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: ${isVisible ? '#1a4d1a' : '#333'}; border-radius: 26px; transition: 0.3s;"></span>
-                                    <span style="position: absolute; height: 18px; width: 18px; left: ${isVisible ? '28px' : '4px'}; bottom: 4px; background: ${isVisible ? '#4dd44d' : '#888'}; border-radius: 50%; transition: 0.3s;"></span>
+                                    <input type="checkbox" ${isVisible ? 'checked' : ''} onchange="ADMIN.toggleGameCharacterVisibility('${char.id}', this.checked, this)" style="opacity: 0; width: 0; height: 0;">
+                                    <span class="toggle-bg" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: ${isVisible ? '#1a4d1a' : '#333'}; border-radius: 26px; transition: 0.3s;"></span>
+                                    <span class="toggle-btn" style="position: absolute; height: 18px; width: 18px; left: ${isVisible ? '28px' : '4px'}; bottom: 4px; background: ${isVisible ? '#4dd44d' : '#888'}; border-radius: 50%; transition: 0.3s;"></span>
                                 </label>
                             </div>
                         `;
@@ -3873,13 +3873,30 @@
                     container.innerHTML = html;
                 },
 
-                toggleGameCharacterVisibility: function(characterId, visible) {
+                toggleGameCharacterVisibility: function(characterId, visible, checkboxElement) {
                     console.log('toggleGameCharacterVisibility çağrıldı:', characterId, visible);
 
                     if (!socketConnected) {
                         toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         console.error('Socket bağlantısı yok!');
                         return;
+                    }
+
+                    // Toggle görselini güncelle
+                    const label = checkboxElement.parentElement;
+                    const toggleBg = label.querySelector('.toggle-bg');
+                    const toggleBtn = label.querySelector('.toggle-btn');
+
+                    if (toggleBg && toggleBtn) {
+                        if (visible) {
+                            toggleBg.style.background = '#1a4d1a';
+                            toggleBtn.style.background = '#4dd44d';
+                            toggleBtn.style.left = '28px';
+                        } else {
+                            toggleBg.style.background = '#333';
+                            toggleBtn.style.background = '#888';
+                            toggleBtn.style.left = '4px';
+                        }
                     }
 
                     socket.emit('toggle-character-visibility', {
@@ -3890,6 +3907,19 @@
                         if (response.success) {
                             toast(visible ? '👁️ Karakter açıldı - Takımlar görebilir' : '🔒 Karakter kapatıldı');
                         } else {
+                            // Hata varsa toggle'ı geri al
+                            checkboxElement.checked = !visible;
+                            if (toggleBg && toggleBtn) {
+                                if (!visible) {
+                                    toggleBg.style.background = '#1a4d1a';
+                                    toggleBtn.style.background = '#4dd44d';
+                                    toggleBtn.style.left = '28px';
+                                } else {
+                                    toggleBg.style.background = '#333';
+                                    toggleBtn.style.background = '#888';
+                                    toggleBtn.style.left = '4px';
+                                }
+                            }
                             toast(response.error || 'İşlem başarısız!', true);
                             ADMIN.loadGameCharacters(); // Hata varsa listeyi yenile
                         }
@@ -5840,6 +5870,16 @@
                 }
             });
 
+            // Karakter görünürlüğü değişti
+            socket.on('character-visibility-changed', function(data) {
+                console.log('Karakter görünürlüğü değişti:', data);
+
+                // Takım sayfasında Murder Board karakterlerini yeniden yükle
+                if (document.getElementById('pgTeam').classList.contains('active')) {
+                    MURDERBOARD.loadAvailableCharacters();
+                }
+            });
+
             // POKE (Dürtme) Yönetimi
             var POKE = {
                 // Rate limiting cache (client-side, son dürtme zamanları)
@@ -6131,12 +6171,18 @@
                 zoomLevel: 1,
                 renderScheduled: false, // requestAnimationFrame için flag
 
-                openMurderBoard: function() {
+                loadAvailableCharacters: function() {
                     // Karakter listesini yükle
                     socket.emit('get-characters-for-board', function(characters) {
+                        console.log('Karakterler yüklendi (Murder Board):', characters);
                         MURDERBOARD.allCharacters = characters;
                         MURDERBOARD.updateCharacterDropdown();
                     });
+                },
+
+                openMurderBoard: function() {
+                    // Karakter listesini yükle
+                    MURDERBOARD.loadAvailableCharacters();
 
                     // Board verilerini yükle
                     MURDERBOARD.loadBoard();

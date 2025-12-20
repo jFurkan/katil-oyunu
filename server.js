@@ -1759,6 +1759,9 @@ io.on('connection', async (socket) => {
 
             callback({ success: true });
             console.log('✓ Karakter görünürlüğü değişti:', characterId, '- Görünür:', visible);
+
+            // Takımlara karakter listesini güncellemeleri için event gönder
+            io.emit('character-visibility-changed', { characterId: characterId, visible: visible });
         } catch (err) {
             console.error('Karakter görünürlük hatası:', err);
             callback({ success: false, error: 'İşlem başarısız!' });
