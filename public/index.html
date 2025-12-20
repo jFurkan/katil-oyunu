@@ -3812,13 +3812,26 @@
                 },
 
                 loadGameCharacters: function() {
+                    console.log('loadGameCharacters çağrıldı');
+                    if (!socketConnected) {
+                        console.error('Socket bağlantısı yok, karakterler yüklenemiyor!');
+                        return;
+                    }
+
                     socket.emit('get-characters', function(characters) {
+                        console.log('Karakterler yüklendi:', characters);
                         ADMIN.renderGameCharacters(characters);
                     });
                 },
 
                 renderGameCharacters: function(characters) {
+                    console.log('renderGameCharacters çağrıldı, karakter sayısı:', characters.length);
                     const container = document.getElementById('gameCharactersList');
+
+                    if (!container) {
+                        console.error('gameCharactersList container bulunamadı!');
+                        return;
+                    }
 
                     if (characters.length === 0) {
                         container.innerHTML = `
@@ -3861,10 +3874,19 @@
                 },
 
                 toggleGameCharacterVisibility: function(characterId, visible) {
+                    console.log('toggleGameCharacterVisibility çağrıldı:', characterId, visible);
+
+                    if (!socketConnected) {
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        console.error('Socket bağlantısı yok!');
+                        return;
+                    }
+
                     socket.emit('toggle-character-visibility', {
                         characterId: characterId,
                         visible: visible
                     }, function(response) {
+                        console.log('Toggle response:', response);
                         if (response.success) {
                             toast(visible ? '👁️ Karakter açıldı - Takımlar görebilir' : '🔒 Karakter kapatıldı');
                         } else {
