@@ -1683,11 +1683,14 @@
 
             <!-- Cork Board Canvas -->
             <div id="murderBoardWrapper" style="background: linear-gradient(135deg, #2a1a0a, #1a1005); border: 3px solid #6b4423; border-radius: 8px; padding: 20px; position: relative; overflow: auto; max-height: 700px;">
-                <!-- Cork Board Texture Overlay -->
-                <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><filter id=%22noise%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 stitchTiles=%22stitch%22/></filter><rect width=%22100%22 height=%22100%22 filter=%22url(%23noise)%22 opacity=%220.15%22/></svg>'); pointer-events: none;"></div>
+                <!-- Cork Board Texture Overlay (sabit arka plan) -->
+                <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><filter id=%22noise%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 stitchTiles=%22stitch%22/></filter><rect width=%22100%22 height=%22100%22 filter=%22url(%23noise)%22 opacity=%220.15%22/></svg>'); pointer-events: none; z-index: 0;"></div>
 
-                <!-- Board Container -->
-                <div id="murderBoardCanvas" style="position: relative; min-height: 600px; min-width: 800px; background: rgba(139, 90, 43, 0.3); border-radius: 8px; border: 2px solid rgba(107, 68, 35, 0.5); transform-origin: top left; transition: transform 0.2s ease;">
+                <!-- Açık kahverengi arka plan (sabit - zoom'dan etkilenmesin) -->
+                <div style="position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px; background: rgba(139, 90, 43, 0.3); border-radius: 8px; border: 2px solid rgba(107, 68, 35, 0.5); pointer-events: none; z-index: 1;"></div>
+
+                <!-- Board Container (zoom olacak) -->
+                <div id="murderBoardCanvas" style="position: relative; min-height: 600px; min-width: 800px; background: transparent; transform-origin: top left; transition: transform 0.2s ease; z-index: 2;">
                     <!-- Karakterler ve bağlantılar buraya dinamik eklenecek -->
                     <svg id="connectionsLayer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;">
                         <!-- Bağlantı çizgileri buraya eklenecek -->
@@ -6118,12 +6121,16 @@
                     MURDERBOARD.draggedItem = item;
 
                     const itemEl = document.querySelector('[data-item-id="' + itemId + '"]');
-                    const rect = itemEl.getBoundingClientRect();
                     const canvasRect = document.getElementById('murderBoardCanvas').getBoundingClientRect();
 
+                    // Zoom'u hesaba katarak offset hesapla
+                    const zoom = MURDERBOARD.zoomLevel;
+                    const canvasX = (e.clientX - canvasRect.left) / zoom;
+                    const canvasY = (e.clientY - canvasRect.top) / zoom;
+
                     MURDERBOARD.dragOffset = {
-                        x: e.clientX - rect.left,
-                        y: e.clientY - rect.top
+                        x: canvasX - item.x,
+                        y: canvasY - item.y
                     };
 
                     itemEl.style.zIndex = '100';
@@ -6138,8 +6145,14 @@
                     if (!MURDERBOARD.draggedItem) return;
 
                     const canvasRect = document.getElementById('murderBoardCanvas').getBoundingClientRect();
-                    const x = e.clientX - canvasRect.left - MURDERBOARD.dragOffset.x;
-                    const y = e.clientY - canvasRect.top - MURDERBOARD.dragOffset.y;
+                    const zoom = MURDERBOARD.zoomLevel;
+
+                    // Zoom'u hesaba katarak pozisyon hesapla
+                    const canvasX = (e.clientX - canvasRect.left) / zoom;
+                    const canvasY = (e.clientY - canvasRect.top) / zoom;
+
+                    const x = canvasX - MURDERBOARD.dragOffset.x;
+                    const y = canvasY - MURDERBOARD.dragOffset.y;
 
                     const itemEl = document.querySelector('[data-item-id="' + MURDERBOARD.draggedItem.id + '"]');
                     itemEl.style.left = x + 'px';

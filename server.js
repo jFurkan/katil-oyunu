@@ -1612,11 +1612,18 @@ io.on('connection', async (socket) => {
             // URL validasyonu
             let safePhotoUrl = null;
             if (characterData.photoUrl && characterData.photoUrl.trim().length > 0) {
-                if (!validator.isURL(characterData.photoUrl.trim(), { protocols: ['http', 'https'], require_protocol: true })) {
+                const photoUrl = characterData.photoUrl.trim();
+
+                // Local path (/uploads/...) veya tam URL kabul et
+                const isLocalPath = photoUrl.startsWith('/');
+                const isValidUrl = validator.isURL(photoUrl, { protocols: ['http', 'https'], require_protocol: true });
+
+                if (!isLocalPath && !isValidUrl) {
                     callback({ success: false, error: 'Geçersiz fotoğraf URL\'si!' });
                     return;
                 }
-                safePhotoUrl = characterData.photoUrl.trim();
+
+                safePhotoUrl = photoUrl;
             }
 
             // Yaş validasyonu
