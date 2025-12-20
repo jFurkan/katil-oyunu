@@ -6360,7 +6360,7 @@
                     const div = document.createElement('div');
                     div.className = 'board-item';
                     div.dataset.itemId = item.id;
-                    div.style.cssText = 'position: absolute; left: ' + item.x + 'px; top: ' + item.y + 'px; width: 120px; background: #fff; border: 2px solid #333; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); cursor: move; user-select: none; touch-action: none; z-index: 10;';
+                    div.style.cssText = 'position: absolute; left: ' + item.x + 'px; top: ' + item.y + 'px; width: 120px; background: #fff; border: 2px solid #333; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); cursor: move; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; touch-action: none; z-index: 10;';
 
                     // Pin efekti
                     const pin = document.createElement('div');
@@ -6410,53 +6410,131 @@
                         MURDERBOARD.showEditNoteModal(item.id);
                     });
 
-                    // Drag event'leri
-                    div.addEventListener('mousedown', function(e) {
-                        e.preventDefault(); // Canvas scroll'u engelle
-                        e.stopPropagation(); // Event bubbling engelle
+                    // Modern pointer-based drag (hem mouse hem touch için)
+                    var isDragging = false;
+                    var startPointerX = 0;
+                    var startPointerY = 0;
+                    var startItemX = 0;
+                    var startItemY = 0;
+                    var dragStartTime = 0;
+                    var hasMoved = false;
 
-                        if (MURDERBOARD.connectionMode) {
-                            MURDERBOARD.handleConnectionClick(item.id);
-                            return;
+                    var getPointerCoords = function(e) {
+                        // Touch event'ten koordinat al
+                        if (e.touches && e.touches.length) {
+                            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
                         }
-                        MURDERBOARD.startDrag(e, item.id);
-                    });
+                        // Mouse/pointer event'ten koordinat al
+                        return { x: e.clientX, y: e.clientY };
+                    };
 
-                    // Touch event'leri (mobil için)
-                    var touchStartTime = 0;
-                    var touchHasMoved = false;
-
-                    div.addEventListener('touchstart', function(e) {
+                    var onPointerDown = function(e) {
                         if (MURDERBOARD.connectionMode) {
                             e.preventDefault();
                             MURDERBOARD.handleConnectionClick(item.id);
                             return;
                         }
 
-                        touchStartTime = Date.now();
-                        touchHasMoved = false;
+                        dragStartTime = Date.now();
+                        hasMoved = false;
+                        isDragging = true;
 
-                        // Hemen drag başlat
-                        MURDERBOARD.startDrag(e.touches[0], item.id);
+                        var coords = getPointerCoords(e);
+                        startPointerX = coords.x;
+                        startPointerY = coords.y;
+                        startItemX = item.x;
+                        startItemY = item.y;
+
+                        div.style.zIndex = '100';
+                        div.style.cursor = 'grabbing';
 
                         e.preventDefault();
                         e.stopPropagation();
-                    }, { passive: false });
+                    };
 
-                    div.addEventListener('touchmove', function(e) {
-                        touchHasMoved = true;
+                    var onPointerMove = function(e) {
+                        if (!isDragging) return;
+
+                        hasMoved = true;
+                        var coords = getPointerCoords(e);
+                        var canvas = document.getElementById('murderBoardCanvas');
+                        var zoom = MURDERBOARD.zoomLevel;
+
+                        // Canvas koordinat sisteminde hareket miktarını hesapla
+                        var deltaX = (coords.x - startPointerX) / zoom;
+                        var deltaY = (coords.y - startPointerY) / zoom;
+
+                        var newX = startItemX + deltaX;
+                        var newY = startItemY + deltaY;
+
+                        // Negatif değerleri engelle
+                        newX = Math.max(0, newX);
+                        newY = Math.max(0, newY);
+
+                        div.style.left = newX + 'px';
+                        div.style.top = newY + 'px';
+
+                        // Board items'ı güncelle (bağlantılar için)
+                        item.x = newX;
+                        item.y = newY;
+
+                        MURDERBOARD.scheduleConnectionRender();
+
                         e.preventDefault();
                         e.stopPropagation();
-                    }, { passive: false });
+                    };
 
-                    div.addEventListener('touchend', function(e) {
-                        // Çok kısa dokunma ve hareket yoksa (tıklama gibi)
-                        if (!touchHasMoved && (Date.now() - touchStartTime) < 200) {
-                            // Not düzenleme modalını aç
+                    var onPointerUp = function(e) {
+                        if (!isDragging) return;
+
+                        isDragging = false;
+                        div.style.zIndex = '10';
+                        div.style.cursor = 'move';
+
+                        var dragDuration = Date.now() - dragStartTime;
+
+                        // Çok kısa dokunma ve hareket yoksa (tıklama gibi) - sadece mobilde
+                        if (!hasMoved && dragDuration < 200 && e.type.includes('touch')) {
                             MURDERBOARD.showEditNoteModal(item.id);
+                        } else if (hasMoved) {
+                            // Server'a pozisyonu kaydet
+                            socket.emit('update-board-item-position', {
+                                itemId: item.id,
+                                x: Math.floor(item.x),
+                                y: Math.floor(item.y)
+                            });
                         }
-                        e.preventDefault();
-                    }, { passive: false });
+
+                        // Mouse listener'ları temizle
+                        document.removeEventListener('mousemove', onPointerMove);
+                        document.removeEventListener('mouseup', onPointerUp);
+
+                        if (e.preventDefault) e.preventDefault();
+                    };
+
+                    var onMouseDown = function(e) {
+                        // Mouse için özel handler (document listener'ları ekle)
+                        onPointerDown(e);
+                        if (isDragging) {
+                            document.addEventListener('mousemove', onPointerMove, { passive: false });
+                            document.addEventListener('mouseup', onPointerUp);
+                        }
+                    };
+
+                    // Pointer events (modern, tüm cihazları destekler)
+                    div.addEventListener('pointerdown', onPointerDown, { passive: false });
+                    div.addEventListener('pointermove', onPointerMove, { passive: false });
+                    div.addEventListener('pointerup', onPointerUp, { passive: false });
+                    div.addEventListener('pointercancel', onPointerUp, { passive: false });
+
+                    // Fallback: Touch events (eski mobil tarayıcılar için)
+                    div.addEventListener('touchstart', onPointerDown, { passive: false });
+                    div.addEventListener('touchmove', onPointerMove, { passive: false });
+                    div.addEventListener('touchend', onPointerUp, { passive: false });
+                    div.addEventListener('touchcancel', onPointerUp, { passive: false });
+
+                    // Fallback: Mouse events (eski tarayıcılar için)
+                    div.addEventListener('mousedown', onMouseDown, { passive: false });
 
                     return div;
                 },
