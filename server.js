@@ -1691,6 +1691,45 @@ io.on('connection', async (socket) => {
         }
     });
 
+    // Yüklenmiş karakter fotoğraflarını listele (admin)
+    socket.on('get-uploaded-photos', async (callback) => {
+        // GÜVENLİK: Admin kontrolü
+        if (!socket.data.isAdmin) {
+            callback({ success: false, error: 'Yetkisiz işlem!' });
+            console.log('⚠️  Yetkisiz admin işlemi: get-uploaded-photos -', socket.id);
+            return;
+        }
+
+        try {
+            const fs = require('fs').promises;
+            const path = require('path');
+            const uploadsDir = path.join(__dirname, 'public', 'uploads', 'characters');
+
+            // Klasör yoksa oluştur
+            try {
+                await fs.access(uploadsDir);
+            } catch {
+                await fs.mkdir(uploadsDir, { recursive: true });
+            }
+
+            const files = await fs.readdir(uploadsDir);
+
+            // Sadece resim dosyalarını filtrele
+            const imageFiles = files.filter(file => {
+                const ext = path.extname(file).toLowerCase();
+                return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
+            });
+
+            // Dosya yollarını URL'ye çevir
+            const photoUrls = imageFiles.map(file => '/uploads/characters/' + file);
+
+            callback({ success: true, photos: photoUrls });
+        } catch (err) {
+            console.error('Fotoğraf listesi hatası:', err);
+            callback({ success: false, error: 'Fotoğraflar yüklenemedi!' });
+        }
+    });
+
     // MURDER BOARD YÖNETİMİ
 
     // Karakterleri board için getir (takım üyeleri)

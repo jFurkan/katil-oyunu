@@ -1761,7 +1761,11 @@
                     <div style="display: grid; gap: 12px;">
                         <input type="text" id="charName" placeholder="İsim *" maxlength="100" style="width: 100%; margin: 0; padding: 12px; background: #000; border: 1px solid #333; color: #fff;">
 
-                        <input type="text" id="charPhotoUrl" placeholder="Fotoğraf URL'si" maxlength="500" style="width: 100%; margin: 0; padding: 12px; background: #000; border: 1px solid #333; color: #fff;">
+                        <!-- Fotoğraf URL / Dosyadan Seç -->
+                        <div style="display: flex; gap: 8px; align-items: stretch;">
+                            <input type="text" id="charPhotoUrl" placeholder="Fotoğraf URL'si" maxlength="500" style="flex: 1; margin: 0; padding: 12px; background: #000; border: 1px solid #333; color: #fff;">
+                            <button class="btn" style="margin: 0; padding: 12px 16px; white-space: nowrap; background: #222; border-color: #4dd4d4; color: #4dd4d4;" onclick="CHARACTER.openPhotoSelector()">📂 Dosyadan Seç</button>
+                        </div>
 
                         <textarea id="charDescription" placeholder="Açıklama / Karakter Bilgisi" maxlength="1000" style="width: 100%; margin: 0; padding: 12px; background: #000; border: 1px solid #333; color: #fff; min-height: 100px; resize: vertical;"></textarea>
 
@@ -1789,6 +1793,24 @@
                             <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.3;">👤</div>
                             <div style="font-size: 14px;">Henüz karakter eklenmemiş</div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Fotoğraf Seçici Modal -->
+                <div id="photoSelectorModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10000; align-items: center; justify-content: center;">
+                    <div style="background: #1a1a1a; border: 2px solid #4d1a1a; border-radius: 12px; padding: 25px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                        <h3 style="margin: 0 0 15px 0; color: #4dd4d4; font-size: 18px;">📂 Yüklenmiş Fotoğraflar</h3>
+
+                        <div style="color: #888; font-size: 12px; margin-bottom: 15px; padding: 10px; background: #0a0a0a; border: 1px solid #333; border-radius: 6px;">
+                            💡 <strong>Bilgi:</strong> Fotoğrafları <code style="background: #222; padding: 2px 6px; border-radius: 3px;">public/uploads/characters/</code> klasörüne yükleyin.<br>
+                            Desteklenen formatlar: JPG, JPEG, PNG, GIF, WEBP
+                        </div>
+
+                        <div id="photoGallery" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                            <!-- Fotoğraflar buraya yüklenecek -->
+                        </div>
+
+                        <button class="btn" style="width: 100%; margin: 0;" onclick="CHARACTER.closePhotoSelector()">❌ Kapat</button>
                     </div>
                 </div>
             </div>
@@ -5766,6 +5788,52 @@
                             toast(response.error || 'Karakter silinemedi!', true);
                         }
                     });
+                },
+
+                openPhotoSelector: function() {
+                    // Fotoğraf seçici modal'ı aç
+                    document.getElementById('photoSelectorModal').style.display = 'flex';
+
+                    // Yüklenmiş fotoğrafları getir
+                    socket.emit('get-uploaded-photos', function(response) {
+                        const gallery = document.getElementById('photoGallery');
+
+                        if (!response.success || response.photos.length === 0) {
+                            gallery.innerHTML = `
+                                <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: #555;">
+                                    <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.3;">📂</div>
+                                    <div style="font-size: 14px;">Henüz fotoğraf yüklenmemiş</div>
+                                    <div style="font-size: 12px; margin-top: 8px; opacity: 0.7;">Fotoğrafları <code style="background: #222; padding: 2px 6px; border-radius: 3px;">public/uploads/characters/</code> klasörüne yükleyin</div>
+                                </div>
+                            `;
+                            return;
+                        }
+
+                        // Fotoğrafları listele
+                        let html = '';
+                        response.photos.forEach(function(photoUrl) {
+                            html += `
+                                <div onclick="CHARACTER.selectPhoto('${photoUrl}')" style="cursor: pointer; border: 2px solid #333; border-radius: 8px; overflow: hidden; transition: all 0.2s; aspect-ratio: 1;" onmouseover="this.style.borderColor='#4dd4d4'; this.style.transform='scale(1.05)'" onmouseout="this.style.borderColor='#333'; this.style.transform='scale(1)'">
+                                    <img src="${photoUrl}" alt="Karakter" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                                </div>
+                            `;
+                        });
+
+                        gallery.innerHTML = html;
+                    });
+                },
+
+                closePhotoSelector: function() {
+                    document.getElementById('photoSelectorModal').style.display = 'none';
+                },
+
+                selectPhoto: function(photoUrl) {
+                    // Seçilen fotoğrafı input'a yaz
+                    document.getElementById('charPhotoUrl').value = photoUrl;
+                    toast('✅ Fotoğraf seçildi');
+
+                    // Modal'ı kapat
+                    CHARACTER.closePhotoSelector();
                 }
             };
 
@@ -6070,6 +6138,10 @@
                     const itemEl = document.querySelector('[data-item-id="' + MURDERBOARD.draggedItem.id + '"]');
                     itemEl.style.left = x + 'px';
                     itemEl.style.top = y + 'px';
+
+                    // Drag sırasında boardItems'daki pozisyonu da güncelle (bağlantılar için)
+                    MURDERBOARD.draggedItem.x = x;
+                    MURDERBOARD.draggedItem.y = y;
 
                     MURDERBOARD.renderConnections();
                 },
