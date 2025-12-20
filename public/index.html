@@ -6096,6 +6096,9 @@
 
                     // Drag event'leri
                     div.addEventListener('mousedown', function(e) {
+                        e.preventDefault(); // Canvas scroll'u engelle
+                        e.stopPropagation(); // Event bubbling engelle
+
                         if (MURDERBOARD.connectionMode) {
                             MURDERBOARD.handleConnectionClick(item.id);
                             return;
@@ -6104,12 +6107,15 @@
                     });
 
                     div.addEventListener('touchstart', function(e) {
+                        e.preventDefault(); // Canvas scroll'u engelle
+                        e.stopPropagation(); // Event bubbling engelle
+
                         if (MURDERBOARD.connectionMode) {
                             MURDERBOARD.handleConnectionClick(item.id);
                             return;
                         }
                         MURDERBOARD.startDrag(e.touches[0], item.id);
-                    });
+                    }, { passive: false }); // passive: false -> preventDefault çalışsın
 
                     return div;
                 },
@@ -6137,12 +6143,14 @@
 
                     document.addEventListener('mousemove', MURDERBOARD.onDrag);
                     document.addEventListener('mouseup', MURDERBOARD.stopDrag);
-                    document.addEventListener('touchmove', MURDERBOARD.onDragTouch);
+                    document.addEventListener('touchmove', MURDERBOARD.onDragTouch, { passive: false });
                     document.addEventListener('touchend', MURDERBOARD.stopDrag);
                 },
 
                 onDrag: function(e) {
                     if (!MURDERBOARD.draggedItem) return;
+
+                    e.preventDefault(); // Canvas scroll'u engelle
 
                     const canvasRect = document.getElementById('murderBoardCanvas').getBoundingClientRect();
                     const zoom = MURDERBOARD.zoomLevel;
@@ -6177,6 +6185,7 @@
                 },
 
                 onDragTouch: function(e) {
+                    e.preventDefault(); // Touch scroll'u engelle
                     MURDERBOARD.onDrag(e.touches[0]);
                 },
 
@@ -6201,7 +6210,7 @@
 
                     document.removeEventListener('mousemove', MURDERBOARD.onDrag);
                     document.removeEventListener('mouseup', MURDERBOARD.stopDrag);
-                    document.removeEventListener('touchmove', MURDERBOARD.onDragTouch);
+                    document.removeEventListener('touchmove', MURDERBOARD.onDragTouch, { passive: false });
                     document.removeEventListener('touchend', MURDERBOARD.stopDrag);
                 },
 
