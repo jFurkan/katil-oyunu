@@ -1785,6 +1785,14 @@
 
                         <textarea id="charAdditionalInfo" placeholder="Ek Bilgiler (opsiyonel)" maxlength="1000" style="width: 100%; margin: 0; padding: 12px; background: #000; border: 1px solid #333; color: #fff; min-height: 80px; resize: vertical;"></textarea>
 
+                        <!-- Görünürlük Toggle -->
+                        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #0a0a0a; border: 1px solid #333; border-radius: 8px;">
+                            <input type="checkbox" id="charVisibleToTeams" style="width: 20px; height: 20px; cursor: pointer;">
+                            <label for="charVisibleToTeams" style="color: #4dd4d4; font-size: 14px; cursor: pointer; user-select: none; flex: 1;">
+                                👁️ Takımlar için görünür (Murder Board'da gözüksün)
+                            </label>
+                        </div>
+
                         <button class="btn btn-primary" style="width: 100%; margin: 0; padding: 12px;" onclick="CHARACTER.addCharacter()">✅ Karakter Ekle</button>
                     </div>
                 </div>
@@ -5679,6 +5687,7 @@
                     const age = document.getElementById('charAge').value;
                     const occupation = document.getElementById('charOccupation').value.trim();
                     const additionalInfo = document.getElementById('charAdditionalInfo').value.trim();
+                    const visibleToTeams = document.getElementById('charVisibleToTeams').checked;
 
                     // Validasyon
                     if (!name) {
@@ -5693,7 +5702,8 @@
                         description: description || null,
                         age: age ? parseInt(age) : null,
                         occupation: occupation || null,
-                        additionalInfo: additionalInfo || null
+                        additionalInfo: additionalInfo || null,
+                        visibleToTeams: visibleToTeams
                     }, function(response) {
                         if (response.success) {
                             toast('✅ Karakter başarıyla eklendi!');
@@ -5705,6 +5715,7 @@
                             document.getElementById('charAge').value = '';
                             document.getElementById('charOccupation').value = '';
                             document.getElementById('charAdditionalInfo').value = '';
+                            document.getElementById('charVisibleToTeams').checked = false;
 
                             // Listeyi yenile
                             CHARACTER.loadCharacters();
@@ -5748,9 +5759,14 @@
                                     `}
 
                                     <div style="flex: 1; min-width: 0;">
-                                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px; gap: 8px;">
                                             <h4 style="color: #4dd4d4; margin: 0; font-size: 16px; font-weight: 600;">${escapeHtml(char.name)}</h4>
-                                            <button onclick="CHARACTER.deleteCharacter('${char.id}')" style="background: #500; border: 1px solid #800; color: #faa; padding: 4px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#700'" onmouseout="this.style.background='#500'">🗑️ Sil</button>
+                                            <div style="display: flex; gap: 6px;">
+                                                <button onclick="CHARACTER.toggleVisibility('${char.id}', ${!char.visible_to_teams})" style="background: ${char.visible_to_teams ? '#1a4d1a' : '#4d4d1a'}; border: 1px solid ${char.visible_to_teams ? '#4dd44d' : '#888'}; color: ${char.visible_to_teams ? '#4dd44d' : '#888'}; padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.2s;" title="${char.visible_to_teams ? 'Takımlar için görünür' : 'Takımlar için gizli'}">
+                                                    ${char.visible_to_teams ? '👁️' : '🔒'}
+                                                </button>
+                                                <button onclick="CHARACTER.deleteCharacter('${char.id}')" style="background: #500; border: 1px solid #800; color: #faa; padding: 4px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#700'" onmouseout="this.style.background='#500'">🗑️ Sil</button>
+                                            </div>
                                         </div>
 
                                         ${char.age || char.occupation ? `
@@ -5781,6 +5797,20 @@
                     });
 
                     container.innerHTML = html;
+                },
+
+                toggleVisibility: function(characterId, visible) {
+                    socket.emit('toggle-character-visibility', {
+                        characterId: characterId,
+                        visible: visible
+                    }, function(response) {
+                        if (response.success) {
+                            toast(visible ? '👁️ Karakter görünür yapıldı' : '🔒 Karakter gizlendi');
+                            CHARACTER.loadCharacters();
+                        } else {
+                            toast(response.error || 'İşlem başarısız!', true);
+                        }
+                    });
                 },
 
                 deleteCharacter: function(characterId) {
@@ -6247,10 +6277,10 @@
                             toItemId: itemId
                         }, function(response) {
                             if (response.success) {
-                                toast('✅ Bağlantı eklendi');
+                                toast('✅ Bağlantı eklendi - Başka bir karakter seçerek devam edebilirsiniz');
                                 MURDERBOARD.loadBoard();
-                                MURDERBOARD.connectionStart = null;
-                                MURDERBOARD.toggleConnectionMode();
+                                // Bağlantı modunu kapatma - devam edebilsin
+                                MURDERBOARD.connectionStart = null; // Sadece başlangıç noktasını sıfırla
                             } else {
                                 toast(response.error || 'Bağlantı eklenemedi!', true);
                             }

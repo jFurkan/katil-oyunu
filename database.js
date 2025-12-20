@@ -219,9 +219,16 @@ async function initDatabase() {
                 age INTEGER,
                 occupation TEXT,
                 additional_info TEXT,
+                visible_to_teams BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT NOW(),
                 updated_at TIMESTAMP DEFAULT NOW()
             )
+        `);
+
+        // Migration: visible_to_teams kolonu ekle (mevcut tablolar için)
+        await pool.query(`
+            ALTER TABLE characters
+            ADD COLUMN IF NOT EXISTS visible_to_teams BOOLEAN DEFAULT FALSE
         `);
 
         // Murder Board Items tablosu

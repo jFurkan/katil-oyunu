@@ -1636,18 +1636,21 @@ io.on('connection', async (socket) => {
                 }
             }
 
+            // Görünürlük kontrolü (default: false)
+            const visibleToTeams = characterData.visibleToTeams === true;
+
             // UUID oluştur
             const characterId = 'char_' + crypto.randomBytes(8).toString('hex');
 
             // Database'e kaydet
             await pool.query(
-                `INSERT INTO characters (id, name, photo_url, description, age, occupation, additional_info)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-                [characterId, safeName, safePhotoUrl, safeDescription, age, safeOccupation, safeAdditionalInfo]
+                `INSERT INTO characters (id, name, photo_url, description, age, occupation, additional_info, visible_to_teams)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                [characterId, safeName, safePhotoUrl, safeDescription, age, safeOccupation, safeAdditionalInfo, visibleToTeams]
             );
 
             callback({ success: true, characterId: characterId });
-            console.log('✓ Karakter eklendi:', safeName, '- ID:', characterId);
+            console.log('✓ Karakter eklendi:', safeName, '- ID:', characterId, '- Görünür:', visibleToTeams);
         } catch (err) {
             console.error('Karakter ekleme hatası:', err);
             callback({ success: false, error: 'Karakter eklenemedi!' });
@@ -1737,12 +1740,39 @@ io.on('connection', async (socket) => {
         }
     });
 
+    // Karakter görünürlüğünü değiştir (admin)
+    socket.on('toggle-character-visibility', async (data, callback) => {
+        // GÜVENLİK: Admin kontrolü
+        if (!socket.data.isAdmin) {
+            callback({ success: false, error: 'Yetkisiz işlem!' });
+            console.log('⚠️  Yetkisiz admin işlemi: toggle-character-visibility -', socket.id);
+            return;
+        }
+
+        try {
+            const { characterId, visible } = data;
+
+            await pool.query(
+                'UPDATE characters SET visible_to_teams = $1 WHERE id = $2',
+                [visible, characterId]
+            );
+
+            callback({ success: true });
+            console.log('✓ Karakter görünürlüğü değişti:', characterId, '- Görünür:', visible);
+        } catch (err) {
+            console.error('Karakter görünürlük hatası:', err);
+            callback({ success: false, error: 'İşlem başarısız!' });
+        }
+    });
+
     // MURDER BOARD YÖNETİMİ
 
-    // Karakterleri board için getir (takım üyeleri)
+    // Karakterleri board için getir (takım üyeleri - SADECE VISIBLE OLANLAR)
     socket.on('get-characters-for-board', async (callback) => {
         try {
-            const result = await pool.query('SELECT id, name, photo_url FROM characters ORDER BY name');
+            const result = await pool.query(
+                'SELECT id, name, photo_url FROM characters WHERE visible_to_teams = true ORDER BY name'
+            );
             callback(result.rows);
         } catch (err) {
             console.error('Karakter listesi getirme hatası:', err);
