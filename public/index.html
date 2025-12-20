@@ -1018,6 +1018,11 @@
                 min-height: 350px !important;
             }
 
+            /* Murder Board Wrapper - yatayda daha kısa */
+            #murderBoardWrapper {
+                max-height: 400px !important;
+            }
+
             /* Modal'lar - yatayda ekrana sığsın */
             #characterSelectorModal > div,
             #editNoteModal > div {
@@ -1677,12 +1682,12 @@
             </div>
 
             <!-- Cork Board Canvas -->
-            <div style="background: linear-gradient(135deg, #2a1a0a, #1a1005); border: 3px solid #6b4423; border-radius: 8px; padding: 20px; position: relative; overflow: hidden;">
+            <div id="murderBoardWrapper" style="background: linear-gradient(135deg, #2a1a0a, #1a1005); border: 3px solid #6b4423; border-radius: 8px; padding: 20px; position: relative; overflow: auto; max-height: 700px;">
                 <!-- Cork Board Texture Overlay -->
                 <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><filter id=%22noise%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 stitchTiles=%22stitch%22/></filter><rect width=%22100%22 height=%22100%22 filter=%22url(%23noise)%22 opacity=%220.15%22/></svg>'); pointer-events: none;"></div>
 
                 <!-- Board Container -->
-                <div id="murderBoardCanvas" style="position: relative; min-height: 600px; background: rgba(139, 90, 43, 0.3); border-radius: 8px; border: 2px solid rgba(107, 68, 35, 0.5);">
+                <div id="murderBoardCanvas" style="position: relative; min-height: 600px; min-width: 800px; background: rgba(139, 90, 43, 0.3); border-radius: 8px; border: 2px solid rgba(107, 68, 35, 0.5); transform-origin: top left; transition: transform 0.2s ease;">
                     <!-- Karakterler ve bağlantılar buraya dinamik eklenecek -->
                     <svg id="connectionsLayer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;">
                         <!-- Bağlantı çizgileri buraya eklenecek -->
@@ -6310,8 +6315,14 @@
                 updateZoom: function() {
                     const canvas = document.getElementById('murderBoardCanvas');
                     if (canvas) {
+                        // Transform uygula
                         canvas.style.transform = 'scale(' + MURDERBOARD.zoomLevel + ')';
-                        canvas.style.transformOrigin = 'top left';
+
+                        // Canvas boyutunu zoom seviyesine göre ayarla (scrollbar için)
+                        const baseWidth = 800;
+                        const baseHeight = 600;
+                        canvas.style.minWidth = baseWidth + 'px';
+                        canvas.style.minHeight = baseHeight + 'px';
                     }
 
                     // Zoom yüzdesini güncelle
