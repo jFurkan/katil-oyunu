@@ -1011,6 +1011,137 @@
             }
         }
 
+        /* Mobil Yatay (Landscape) Mod - Kapsamlı Optimizasyonlar */
+        @media (max-height: 700px) and (orientation: landscape) {
+            /* Murder Board Canvas - yatayda daha kısa yap */
+            #murderBoardCanvas {
+                min-height: 350px !important;
+            }
+
+            /* Modal'lar - yatayda ekrana sığsın */
+            #characterSelectorModal > div,
+            #editNoteModal > div {
+                max-height: 70vh !important;
+                padding: 15px !important;
+            }
+
+            #characterSelectorModal h3,
+            #editNoteModal h3 {
+                font-size: 16px !important;
+                margin-bottom: 10px !important;
+            }
+
+            #characterNote,
+            #editNoteTextarea {
+                min-height: 60px !important;
+            }
+
+            /* Header - daha kompakt */
+            header {
+                padding: 10px 0 !important;
+            }
+
+            h1 {
+                font-size: 20px !important;
+                margin-bottom: 5px !important;
+            }
+
+            h2 {
+                font-size: 18px !important;
+            }
+
+            h3 {
+                font-size: 16px !important;
+            }
+
+            /* Form box - daha kompakt */
+            .form-box {
+                margin-top: 10px !important;
+                padding: 12px !important;
+            }
+
+            /* Buttons - daha küçük padding */
+            .btn {
+                padding: 8px 12px !important;
+                font-size: 13px !important;
+                margin-bottom: 6px !important;
+            }
+
+            /* Input fields - daha küçük */
+            input,
+            textarea,
+            select {
+                padding: 8px !important;
+                margin-bottom: 8px !important;
+                font-size: 13px !important;
+            }
+
+            /* Team sayfası - daha kompakt */
+            .team-info {
+                padding: 12px !important;
+            }
+
+            .team-info h2 {
+                font-size: 18px !important;
+            }
+
+            /* Takım menü butonları - yatayda daha küçük */
+            .team-menu .btn {
+                padding: 8px !important;
+                font-size: 12px !important;
+            }
+
+            /* Admin panel - daha kompakt */
+            .admin-head {
+                padding: 12px !important;
+            }
+
+            .admin-section {
+                padding: 12px !important;
+                margin-bottom: 12px !important;
+            }
+
+            /* Lider tablosu - daha kompakt */
+            .leaderboard-item {
+                padding: 8px !important;
+            }
+
+            /* Chat container - yatayda daha kısa */
+            #teamChatMessages,
+            #interTeamChatMessages {
+                max-height: 200px !important;
+            }
+
+            /* Zoom controls - daha küçük */
+            #zoomLevel {
+                font-size: 11px !important;
+            }
+
+            /* Murder board toolbar - yatayda daha kompakt */
+            #pgMurderBoard .btn {
+                padding: 6px 10px !important;
+                font-size: 12px !important;
+            }
+
+            /* Board items - karakterler daha küçük */
+            .board-item {
+                transform: scale(0.9) !important;
+            }
+
+            /* Empty state - daha küçük */
+            #boardEmptyState div:first-child {
+                font-size: 48px !important;
+            }
+
+            #boardEmptyState div:nth-child(2) {
+                font-size: 14px !important;
+            }
+
+            #boardEmptyState div:nth-child(3) {
+                font-size: 11px !important;
+            }
+        }
+
         /* Dokunmatik ekranlar için hover devre dışı */
         @media (hover: none) and (pointer: coarse) {
             .btn:hover,
@@ -1489,7 +1620,7 @@
             </div>
 
             <!-- Toolbar -->
-            <div style="background: #111; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+            <div style="background: #111; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
                 <button id="btnAddCharacter" class="btn btn-primary" style="background: linear-gradient(135deg, #1a4d1a, #0d3310); border-color: #4dd44d; color: #4dd44d;" onclick="MURDERBOARD.showCharacterSelector()">
                     ➕ Karakter Ekle
                 </button>
@@ -1499,6 +1630,14 @@
                 <button class="btn" style="background: linear-gradient(135deg, #4d1a4d, #331033); border-color: #d44dd4; color: #d44dd4;" onclick="MURDERBOARD.clearBoard()">
                     🗑️ Temizle
                 </button>
+
+                <!-- Zoom Kontrolleri -->
+                <div style="margin-left: auto; display: flex; gap: 8px; align-items: center; background: #0a0a0a; border: 1px solid #333; border-radius: 8px; padding: 4px;">
+                    <button class="btn" style="margin: 0; padding: 6px 12px; font-size: 16px; background: #222; border-color: #444;" onclick="MURDERBOARD.zoomOut()">−</button>
+                    <span id="zoomLevel" style="color: #888; font-size: 12px; min-width: 50px; text-align: center;">100%</span>
+                    <button class="btn" style="margin: 0; padding: 6px 12px; font-size: 16px; background: #222; border-color: #444;" onclick="MURDERBOARD.zoomIn()">+</button>
+                    <button class="btn" style="margin: 0; padding: 6px 12px; font-size: 12px; background: #222; border-color: #444;" onclick="MURDERBOARD.resetZoom()">Reset</button>
+                </div>
             </div>
 
             <!-- Karakter Seçici Modal -->
@@ -5640,6 +5779,7 @@
                 dragOffset: { x: 0, y: 0 },
                 editingItemId: null,
                 allCharacters: [],
+                zoomLevel: 1,
 
                 openMurderBoard: function() {
                     // Karakter listesini yükle
@@ -5651,8 +5791,20 @@
                     // Board verilerini yükle
                     MURDERBOARD.loadBoard();
 
-                    // Takım adını göster
-                    document.getElementById('mbTeamName').textContent = currentUser ? (currentUser.teamId || 'Takım') : 'Takım';
+                    // Takım adını göster (UUID değil, takım adı)
+                    if (currentUser && currentUser.teamId) {
+                        socket.emit('get-team', currentUser.teamId, function(team) {
+                            if (team) {
+                                document.getElementById('mbTeamName').textContent = team.name;
+                            }
+                        });
+                    } else {
+                        document.getElementById('mbTeamName').textContent = 'Takım';
+                    }
+
+                    // Zoom sıfırla
+                    MURDERBOARD.zoomLevel = 1;
+                    MURDERBOARD.updateZoom();
 
                     // Sayfayı göster
                     showPage('pgMurderBoard', true);
@@ -6065,6 +6217,36 @@
                             toast(response.error || 'Temizlenemedi!', true);
                         }
                     });
+                },
+
+                // Zoom fonksiyonları
+                zoomIn: function() {
+                    MURDERBOARD.zoomLevel = Math.min(MURDERBOARD.zoomLevel + 0.1, 2);
+                    MURDERBOARD.updateZoom();
+                },
+
+                zoomOut: function() {
+                    MURDERBOARD.zoomLevel = Math.max(MURDERBOARD.zoomLevel - 0.1, 0.5);
+                    MURDERBOARD.updateZoom();
+                },
+
+                resetZoom: function() {
+                    MURDERBOARD.zoomLevel = 1;
+                    MURDERBOARD.updateZoom();
+                },
+
+                updateZoom: function() {
+                    const canvas = document.getElementById('murderBoardCanvas');
+                    if (canvas) {
+                        canvas.style.transform = 'scale(' + MURDERBOARD.zoomLevel + ')';
+                        canvas.style.transformOrigin = 'top left';
+                    }
+
+                    // Zoom yüzdesini güncelle
+                    const zoomDisplay = document.getElementById('zoomLevel');
+                    if (zoomDisplay) {
+                        zoomDisplay.textContent = Math.round(MURDERBOARD.zoomLevel * 100) + '%';
+                    }
                 }
             };
 
