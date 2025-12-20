@@ -6418,6 +6418,9 @@
                     var startItemY = 0;
                     var dragStartTime = 0;
                     var hasMoved = false;
+                    var offsetX = 0;
+                    var offsetY = 0;
+                    var lastPointerEventTime = 0; // Pointer event tekrarını önle
 
                     var getPointerCoords = function(e) {
                         // Touch event'ten koordinat al
@@ -6429,8 +6432,17 @@
                     };
 
                     var onPointerDown = function(e) {
+                        // Pointer event varsa touch'ı 100ms ignore et (çift tetiklenmeyi önle)
+                        if (e.type === 'pointerdown') {
+                            lastPointerEventTime = Date.now();
+                        } else if (e.type.includes('touch') && Date.now() - lastPointerEventTime < 100) {
+                            return; // Touch ignore et
+                        }
+
                         if (MURDERBOARD.connectionMode) {
+                            // Connection mode'da drag başlatma, sadece click handle et
                             e.preventDefault();
+                            e.stopPropagation();
                             MURDERBOARD.handleConnectionClick(item.id);
                             return;
                         }
@@ -6440,6 +6452,16 @@
                         isDragging = true;
 
                         var coords = getPointerCoords(e);
+                        var canvas = document.getElementById('murderBoardCanvas');
+                        var canvasRect = canvas.getBoundingClientRect();
+                        var zoom = MURDERBOARD.zoomLevel;
+
+                        // Mouse/touch'ın karakter içindeki offsetini hesapla (senkronizasyon için)
+                        var canvasX = (coords.x - canvasRect.left) / zoom;
+                        var canvasY = (coords.y - canvasRect.top) / zoom;
+                        offsetX = canvasX - item.x;
+                        offsetY = canvasY - item.y;
+
                         startPointerX = coords.x;
                         startPointerY = coords.y;
                         startItemX = item.x;
@@ -6458,14 +6480,15 @@
                         hasMoved = true;
                         var coords = getPointerCoords(e);
                         var canvas = document.getElementById('murderBoardCanvas');
+                        var canvasRect = canvas.getBoundingClientRect();
                         var zoom = MURDERBOARD.zoomLevel;
 
-                        // Canvas koordinat sisteminde hareket miktarını hesapla
-                        var deltaX = (coords.x - startPointerX) / zoom;
-                        var deltaY = (coords.y - startPointerY) / zoom;
+                        // Mouse/touch pozisyonunu canvas koordinatına çevir ve offset'i çıkar
+                        var canvasX = (coords.x - canvasRect.left) / zoom;
+                        var canvasY = (coords.y - canvasRect.top) / zoom;
 
-                        var newX = startItemX + deltaX;
-                        var newY = startItemY + deltaY;
+                        var newX = canvasX - offsetX;
+                        var newY = canvasY - offsetY;
 
                         // Negatif değerleri engelle
                         newX = Math.max(0, newX);
