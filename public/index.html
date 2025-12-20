@@ -1682,15 +1682,12 @@
             </div>
 
             <!-- Cork Board Canvas -->
-            <div id="murderBoardWrapper" style="background: linear-gradient(135deg, #2a1a0a, #1a1005); border: 3px solid #6b4423; border-radius: 8px; padding: 20px; position: relative; overflow: auto; max-height: 700px;">
-                <!-- Cork Board Texture Overlay (sabit arka plan) -->
+            <div id="murderBoardWrapper" style="background: rgba(139, 90, 43, 0.3); border: 3px solid #6b4423; border-radius: 8px; padding: 20px; position: relative; overflow: auto; max-height: 700px;">
+                <!-- Cork Board Texture Overlay -->
                 <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><filter id=%22noise%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 stitchTiles=%22stitch%22/></filter><rect width=%22100%22 height=%22100%22 filter=%22url(%23noise)%22 opacity=%220.15%22/></svg>'); pointer-events: none; z-index: 0;"></div>
 
-                <!-- Açık kahverengi arka plan (sabit - zoom'dan etkilenmesin) -->
-                <div style="position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px; background: rgba(139, 90, 43, 0.3); border-radius: 8px; border: 2px solid rgba(107, 68, 35, 0.5); pointer-events: none; z-index: 1;"></div>
-
                 <!-- Board Container (zoom olacak) -->
-                <div id="murderBoardCanvas" style="position: relative; min-height: 600px; min-width: 800px; background: transparent; transform-origin: top left; transition: transform 0.2s ease; z-index: 2;">
+                <div id="murderBoardCanvas" style="position: relative; min-height: 600px; min-width: 800px; background: transparent; transform-origin: top left; transition: transform 0.2s ease; z-index: 2; border: 2px solid rgba(107, 68, 35, 0.5); border-radius: 8px;">
                     <!-- Karakterler ve bağlantılar buraya dinamik eklenecek -->
                     <svg id="connectionsLayer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;">
                         <!-- Bağlantı çizgileri buraya eklenecek -->
@@ -6425,51 +6422,41 @@
                         MURDERBOARD.startDrag(e, item.id);
                     });
 
-                    // Touch event'leri (mobil için long press)
-                    var touchTimer = null;
-                    var touchMoved = false;
-                    var touchStartEvent = null;
+                    // Touch event'leri (mobil için)
+                    var touchStartTime = 0;
+                    var touchHasMoved = false;
 
                     div.addEventListener('touchstart', function(e) {
-                        touchMoved = false;
-                        touchStartEvent = e;
-
-                        // touch-action: none zaten scroll'u engelliyor
-                        // Sadece event bubbling'i durdur
-                        e.stopPropagation();
-
                         if (MURDERBOARD.connectionMode) {
+                            e.preventDefault();
                             MURDERBOARD.handleConnectionClick(item.id);
                             return;
                         }
 
-                        // Long press için timer başlat (300ms)
-                        touchTimer = setTimeout(function() {
-                            if (!touchMoved && touchStartEvent) {
-                                MURDERBOARD.startDrag(touchStartEvent.touches[0], item.id);
-                            }
-                        }, 300);
-                    }, { passive: true });
+                        touchStartTime = Date.now();
+                        touchHasMoved = false;
+
+                        // Hemen drag başlat
+                        MURDERBOARD.startDrag(e.touches[0], item.id);
+
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }, { passive: false });
 
                     div.addEventListener('touchmove', function(e) {
-                        // Eğer drag başlamışsa canvas scroll'u engelle
-                        if (MURDERBOARD.draggedItem) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                        } else {
-                            // Henüz drag başlamamış, hareket tespit edildi
-                            touchMoved = true;
-                            clearTimeout(touchTimer);
-                        }
+                        touchHasMoved = true;
+                        e.preventDefault();
+                        e.stopPropagation();
                     }, { passive: false });
 
                     div.addEventListener('touchend', function(e) {
-                        clearTimeout(touchTimer);
-                        touchStartEvent = null;
-                        if (!touchMoved && !MURDERBOARD.draggedItem) {
-                            // Kısa dokunma - hiçbir şey yapma (ya da başka bir aksiyon eklenebilir)
+                        // Çok kısa dokunma ve hareket yoksa (tıklama gibi)
+                        if (!touchHasMoved && (Date.now() - touchStartTime) < 200) {
+                            // Not düzenleme modalını aç
+                            MURDERBOARD.showEditNoteModal(item.id);
                         }
-                    });
+                        e.preventDefault();
+                    }, { passive: false });
 
                     return div;
                 },
