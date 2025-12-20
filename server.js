@@ -1810,6 +1810,41 @@ io.on('connection', async (socket) => {
         }
     });
 
+    // Admin için başka bir takımın board'unu getir
+    socket.on('get-team-board', async (teamId, callback) => {
+        // GÜVENLİK: Admin kontrolü
+        if (!socket.data.isAdmin) {
+            callback({ items: [], connections: [] });
+            console.log('⚠️  Yetkisiz admin işlemi: get-team-board -', socket.id);
+            return;
+        }
+
+        if (!teamId) {
+            callback({ items: [], connections: [] });
+            return;
+        }
+
+        try {
+            const itemsResult = await pool.query(
+                'SELECT * FROM murder_board_items WHERE team_id = $1 ORDER BY created_at',
+                [teamId]
+            );
+
+            const connectionsResult = await pool.query(
+                'SELECT * FROM murder_board_connections WHERE team_id = $1 ORDER BY created_at',
+                [teamId]
+            );
+
+            callback({
+                items: itemsResult.rows,
+                connections: connectionsResult.rows
+            });
+        } catch (err) {
+            console.error('Team board getirme hatası:', err);
+            callback({ items: [], connections: [] });
+        }
+    });
+
     // Board'a karakter ekle
     socket.on('add-board-item', async (itemData, callback) => {
         const teamId = socket.data.teamId;
@@ -1843,6 +1878,9 @@ io.on('connection', async (socket) => {
 
             callback({ success: true, itemId: itemId });
             console.log('✓ Murder board item eklendi:', safeName, '- Team:', teamId);
+
+            // Admin paneldeki canlı izleme için event gönder
+            io.emit('board-item-added', { teamId: teamId, itemId: itemId });
         } catch (err) {
             console.error('Board item ekleme hatası:', err);
             callback({ success: false, error: 'Öğe eklenemedi!' });
@@ -1860,6 +1898,14 @@ io.on('connection', async (socket) => {
                 'UPDATE murder_board_items SET x = $1, y = $2 WHERE id = $3 AND team_id = $4',
                 [Math.floor(data.x), Math.floor(data.y), data.itemId, teamId]
             );
+
+            // Admin paneldeki canlı izleme için event gönder
+            io.emit('board-item-position-updated', {
+                teamId: teamId,
+                itemId: data.itemId,
+                x: Math.floor(data.x),
+                y: Math.floor(data.y)
+            });
         } catch (err) {
             console.error('Pozisyon güncelleme hatası:', err);
         }
@@ -1918,6 +1964,9 @@ io.on('connection', async (socket) => {
 
             callback({ success: true });
             console.log('Murder board item silindi:', result.rows[0].character_name);
+
+            // Admin paneldeki canlı izleme için event gönder
+            io.emit('board-item-deleted', { teamId: teamId, itemId: itemId });
         } catch (err) {
             console.error('Board item silme hatası:', err);
             callback({ success: false, error: 'Öğe silinemedi!' });
@@ -1961,6 +2010,9 @@ io.on('connection', async (socket) => {
 
             callback({ success: true, connectionId: connId });
             console.log('✓ Murder board bağlantısı eklendi - Team:', teamId);
+
+            // Admin paneldeki canlı izleme için event gönder
+            io.emit('board-connection-added', { teamId: teamId, connectionId: connId });
         } catch (err) {
             console.error('Bağlantı ekleme hatası:', err);
             callback({ success: false, error: 'Bağlantı eklenemedi!' });
@@ -1989,6 +2041,9 @@ io.on('connection', async (socket) => {
 
             callback({ success: true });
             console.log('Murder board bağlantısı silindi');
+
+            // Admin paneldeki canlı izleme için event gönder
+            io.emit('board-connection-deleted', { teamId: teamId, connectionId: connectionId });
         } catch (err) {
             console.error('Bağlantı silme hatası:', err);
             callback({ success: false, error: 'Bağlantı silinemedi!' });
@@ -2013,6 +2068,9 @@ io.on('connection', async (socket) => {
 
             callback({ success: true, count: result.rowCount });
             console.log('Murder board temizlendi - Team:', teamId, '- Silinen öğe:', result.rowCount);
+
+            // Admin paneldeki canlı izleme için event gönder
+            io.emit('board-cleared', { teamId: teamId });
         } catch (err) {
             console.error('Board temizleme hatası:', err);
             callback({ success: false, error: 'Board temizlenemedi!' });

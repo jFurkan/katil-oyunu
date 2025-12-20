@@ -1726,6 +1726,7 @@
                 <button class="btn" onclick="ADMIN.showSection('notifications')">📢 Bildirimler</button>
                 <button class="btn" onclick="ADMIN.showSection('chat')">💬 Chat İzleme</button>
                 <button class="btn" onclick="ADMIN.showSection('adminmessages')">👑 Admin Mesajları</button>
+                <button class="btn" onclick="ADMIN.showSection('murderboard')">🔍 Murder Board İzleme</button>
                 <button class="btn" onclick="ADMIN.showSection('stats')">📊 İstatistikler</button>
                 <button class="btn" onclick="ADMIN.showSection('credits')">👥 Emeği Geçenler</button>
                 <button class="btn" onclick="ADMIN.showSection('iplogs')">🔍 IP Logları</button>
@@ -1754,6 +1755,19 @@
                             <button class="time-btn add" onclick="ADMIN.addTime(60)">+1 Dakika</button>
                         </div>
                         <button class="btn" style="width:100%; margin-top:15px; background:#500; color:#faa; border:1px solid var(--accent);" onclick="ADMIN.endGame()">⏹️ Oyunu Bitir</button>
+                    </div>
+
+                    <!-- Karakter Görünürlük Kontrolü -->
+                    <div style="margin-top: 30px; background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 20px;">
+                        <h4 style="color: #4dd4d4; margin: 0 0 15px 0; font-size: 16px;">👁️ Karakter Görünürlük Kontrolü</h4>
+                        <p style="color: #888; font-size: 12px; margin: 0 0 15px 0;">Açtığınız karakterler takımların Murder Board'larında görünür olur.</p>
+
+                        <div id="gameCharactersList">
+                            <div style="text-align: center; padding: 40px 20px; color: #555;">
+                                <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.3;">👤</div>
+                                <div style="font-size: 14px;">Henüz karakter eklenmemiş</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1785,12 +1799,8 @@
 
                         <textarea id="charAdditionalInfo" placeholder="Ek Bilgiler (opsiyonel)" maxlength="1000" style="width: 100%; margin: 0; padding: 12px; background: #000; border: 1px solid #333; color: #fff; min-height: 80px; resize: vertical;"></textarea>
 
-                        <!-- Görünürlük Toggle -->
-                        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #0a0a0a; border: 1px solid #333; border-radius: 8px;">
-                            <input type="checkbox" id="charVisibleToTeams" style="width: 20px; height: 20px; cursor: pointer;">
-                            <label for="charVisibleToTeams" style="color: #4dd4d4; font-size: 14px; cursor: pointer; user-select: none; flex: 1;">
-                                👁️ Takımlar için görünür (Murder Board'da gözüksün)
-                            </label>
+                        <div style="padding: 10px; background: #0a0a0a; border: 1px solid #333; border-radius: 8px; color: #888; font-size: 12px;">
+                            💡 <strong>Not:</strong> Karakter görünürlüğünü "Oyun Kontrolü" bölümünden yönetebilirsiniz.
                         </div>
 
                         <button class="btn btn-primary" style="width: 100%; margin: 0; padding: 12px;" onclick="CHARACTER.addCharacter()">✅ Karakter Ekle</button>
@@ -1997,6 +2007,79 @@
                     <div style="font-size:48px; margin-bottom:15px; opacity:0.5;">🔍</div>
                     <div style="font-size:16px; margin-bottom:8px;">Bir takım seçin</div>
                     <div style="font-size:13px; color:#444;">Seçtiğiniz takıma mesaj gönderebilir ve gelen mesajları görüntüleyebilirsiniz</div>
+                </div>
+            </div>
+
+            <!-- Murder Board İzleme Bölümü -->
+            <div id="adminSectionMurderboard" class="admin-section" style="display:none;">
+                <h3 style="color:var(--gold); font-size:18px; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <span>🔍 Murder Board İzleme</span>
+                    <button class="btn btn-primary" style="width:auto; padding:8px 16px; margin:0; font-size:13px;" onclick="ADMIN_BOARD.refreshBoard()">🔄 Yenile</button>
+                </h3>
+
+                <!-- Takım Seçimi -->
+                <div style="background:#1a1a1a; border:1px solid #333; border-radius:12px; padding:20px; margin-bottom:20px;">
+                    <label style="display:block; color:#888; font-size:13px; margin-bottom:10px;">📋 Takım Seçin</label>
+                    <select id="adminBoardTeamSelect" onchange="ADMIN_BOARD.selectTeam(this.value)" style="width:100%; padding:12px; background:#000; border:1px solid #333; color:#fff; border-radius:8px; cursor:pointer;">
+                        <option value="">-- Takım Seçin --</option>
+                    </select>
+                </div>
+
+                <!-- Murder Board Görünümü -->
+                <div id="adminBoardViewContainer" style="display:none;">
+                    <!-- Bilgi Kartı -->
+                    <div style="background:#1a1a1a; border:1px solid #333; border-radius:12px; padding:15px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
+                        <div>
+                            <div style="color:#4dd4d4; font-weight:600; font-size:16px; margin-bottom:5px;" id="adminBoardTeamName">-</div>
+                            <div style="color:#888; font-size:13px;">
+                                <span id="adminBoardItemCount">0</span> karakter • <span id="adminBoardConnectionCount">0</span> bağlantı
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn" style="width:auto; padding:8px 16px; margin:0; font-size:13px;" onclick="ADMIN_BOARD.zoomOut()">🔍− Uzaklaş</button>
+                            <button class="btn" style="width:auto; padding:8px 16px; margin:0; font-size:13px;" onclick="ADMIN_BOARD.resetZoom()">⊡ Normal</button>
+                            <button class="btn" style="width:auto; padding:8px 16px; margin:0; font-size:13px;" onclick="ADMIN_BOARD.zoomIn()">🔍+ Yakınlaş</button>
+                        </div>
+                    </div>
+
+                    <!-- Murder Board Canvas -->
+                    <div style="background:#1a1a1a; border:1px solid #333; border-radius:12px; padding:20px; position:relative; overflow:hidden;">
+                        <!-- Zoom Kontrollü Wrapper -->
+                        <div style="overflow:auto; max-height:600px; border-radius:8px; position:relative;">
+                            <!-- Sabit Arka Plan -->
+                            <div style="position:absolute; top:0; left:0; right:0; bottom:0; background:url('https://www.transparenttextures.com/patterns/cork-board.png') repeat; opacity:0.15; z-index:0; pointer-events:none;"></div>
+
+                            <!-- Arka Plan Rengi -->
+                            <div style="position:absolute; top:0; left:0; right:0; bottom:0; background:#2d1f1a; z-index:1; pointer-events:none;"></div>
+
+                            <!-- Board Container -->
+                            <div id="adminBoardCanvas" style="position:relative; min-height:600px; min-width:800px; background:transparent; transform-origin:top left; transition:transform 0.2s ease; z-index:2;">
+                                <!-- SVG Bağlantı Katmanı -->
+                                <svg id="adminConnectionsLayer" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1;">
+                                    <!-- Bağlantı çizgileri -->
+                                </svg>
+
+                                <!-- Boş Durum -->
+                                <div id="adminBoardEmptyState" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; color:#555; z-index:5;">
+                                    <div style="font-size:64px; margin-bottom:15px; opacity:0.3;">🕵️</div>
+                                    <div style="font-size:18px; margin-bottom:8px;">Bu takımın henüz murder board'u boş</div>
+                                    <div style="font-size:13px; color:#444;">Takım karakterleri eklediğinde buradan izleyebilirsiniz</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Canlı Güncelleme Bildirimi -->
+                    <div style="margin-top:15px; padding:12px; background:#0a0a0a; border:1px solid #333; border-radius:8px; color:#888; font-size:12px; text-align:center;">
+                        ⚡ Canlı izleme aktif - Takımın yaptığı değişiklikler otomatik olarak burada görünür
+                    </div>
+                </div>
+
+                <!-- Boş Durum (Takım Seçilmemiş) -->
+                <div id="adminBoardEmptyStateMain" style="text-align:center; padding:60px 20px; color:#555;">
+                    <div style="font-size:48px; margin-bottom:15px; opacity:0.5;">🔍</div>
+                    <div style="font-size:16px; margin-bottom:8px;">Bir takım seçin</div>
+                    <div style="font-size:13px; color:#444;">Seçtiğiniz takımın murder board'unu canlı olarak izleyebilirsiniz</div>
                 </div>
             </div>
 
@@ -3052,6 +3135,70 @@
                         else { toast(res.error, true); }
                     });
                 },
+
+                loadGameCharacters: function() {
+                    socket.emit('get-characters', function(characters) {
+                        ADMIN.renderGameCharacters(characters);
+                    });
+                },
+
+                renderGameCharacters: function(characters) {
+                    const container = document.getElementById('gameCharactersList');
+
+                    if (characters.length === 0) {
+                        container.innerHTML = `
+                            <div style="text-align: center; padding: 40px 20px; color: #555;">
+                                <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.3;">👤</div>
+                                <div style="font-size: 14px;">Henüz karakter eklenmemiş</div>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    let html = '';
+                    characters.forEach(function(char) {
+                        const isVisible = char.visible_to_teams;
+                        html += `
+                            <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #0a0a0a; border: 1px solid #333; border-radius: 8px; margin-bottom: 10px;">
+                                ${char.photo_url ? `
+                                    <img src="${char.photo_url}" alt="${char.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 2px solid #444;">
+                                ` : `
+                                    <div style="width: 50px; height: 50px; background: #222; border-radius: 6px; border: 2px solid #444; display: flex; align-items: center; justify-content: center; font-size: 24px;">👤</div>
+                                `}
+
+                                <div style="flex: 1; min-width: 0;">
+                                    <div style="color: #4dd4d4; font-weight: 600; font-size: 14px;">${escapeHtml(char.name)}</div>
+                                    <div style="color: #666; font-size: 11px; margin-top: 2px;">
+                                        ${char.age ? char.age + ' yaş' : ''} ${char.occupation ? ' • ' + escapeHtml(char.occupation) : ''}
+                                    </div>
+                                </div>
+
+                                <label style="position: relative; display: inline-block; width: 50px; height: 26px; cursor: pointer;">
+                                    <input type="checkbox" ${isVisible ? 'checked' : ''} onchange="ADMIN.toggleGameCharacterVisibility('${char.id}', this.checked)" style="opacity: 0; width: 0; height: 0;">
+                                    <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: ${isVisible ? '#1a4d1a' : '#333'}; border-radius: 26px; transition: 0.3s;"></span>
+                                    <span style="position: absolute; height: 18px; width: 18px; left: ${isVisible ? '28px' : '4px'}; bottom: 4px; background: ${isVisible ? '#4dd44d' : '#888'}; border-radius: 50%; transition: 0.3s;"></span>
+                                </label>
+                            </div>
+                        `;
+                    });
+
+                    container.innerHTML = html;
+                },
+
+                toggleGameCharacterVisibility: function(characterId, visible) {
+                    socket.emit('toggle-character-visibility', {
+                        characterId: characterId,
+                        visible: visible
+                    }, function(response) {
+                        if (response.success) {
+                            toast(visible ? '👁️ Karakter açıldı - Takımlar görebilir' : '🔒 Karakter kapatıldı');
+                        } else {
+                            toast(response.error || 'İşlem başarısız!', true);
+                            ADMIN.loadGameCharacters(); // Hata varsa listeyi yenile
+                        }
+                    });
+                },
+
                 exitTeam: function() {
                     currentTeamId = null;
                     router.navigate('/lobby');
@@ -3662,11 +3809,17 @@
                     else if (section === 'notifications') buttons[4].classList.add('btn-primary');
                     else if (section === 'chat') buttons[5].classList.add('btn-primary');
                     else if (section === 'adminmessages') buttons[6].classList.add('btn-primary');
-                    else if (section === 'stats') buttons[7].classList.add('btn-primary');
-                    else if (section === 'credits') buttons[8].classList.add('btn-primary');
-                    else if (section === 'iplogs') buttons[9].classList.add('btn-primary');
+                    else if (section === 'murderboard') buttons[7].classList.add('btn-primary');
+                    else if (section === 'stats') buttons[8].classList.add('btn-primary');
+                    else if (section === 'credits') buttons[9].classList.add('btn-primary');
+                    else if (section === 'iplogs') buttons[10].classList.add('btn-primary');
 
                     this.currentSection = section;
+
+                    // Oyun kontrolü bölümü açıldıysa karakterleri yükle
+                    if (section === 'game') {
+                        ADMIN.loadGameCharacters();
+                    }
 
                     // Karakterler bölümü açıldıysa karakterleri yükle
                     if (section === 'characters') {
@@ -3676,6 +3829,11 @@
                     // Admin Mesajları bölümü açıldıysa mesajları yükle
                     if (section === 'adminmessages') {
                         ADMIN.loadAdminMessages();
+                    }
+
+                    // Murder Board İzleme bölümü açıldıysa takımları ve board'u yükle
+                    if (section === 'murderboard') {
+                        ADMIN_BOARD.init();
                     }
 
                     // Kullanıcılar bölümü açıldıysa listeyi render et
@@ -5585,6 +5743,77 @@
                 toast('👋 ' + data.fromTeamName + ' sizi dürttü!', false);
             });
 
+            // Murder Board Güncellemeleri (Admin için canlı izleme)
+            socket.on('board-item-added', function(data) {
+                // Admin panelde Murder Board İzleme bölümündeyse ve bu takımı izliyorsa güncelle
+                if (document.getElementById('pgAdmin').classList.contains('active') &&
+                    document.getElementById('adminSectionMurderboard').style.display !== 'none' &&
+                    ADMIN_BOARD.selectedTeamId === data.teamId) {
+                    ADMIN_BOARD.loadBoard();
+                }
+            });
+
+            socket.on('board-item-deleted', function(data) {
+                // Admin panelde Murder Board İzleme bölümündeyse ve bu takımı izliyorsa güncelle
+                if (document.getElementById('pgAdmin').classList.contains('active') &&
+                    document.getElementById('adminSectionMurderboard').style.display !== 'none' &&
+                    ADMIN_BOARD.selectedTeamId === data.teamId) {
+                    ADMIN_BOARD.loadBoard();
+                }
+            });
+
+            socket.on('board-item-position-updated', function(data) {
+                // Admin panelde Murder Board İzleme bölümündeyse ve bu takımı izliyorsa güncelle
+                if (document.getElementById('pgAdmin').classList.contains('active') &&
+                    document.getElementById('adminSectionMurderboard').style.display !== 'none' &&
+                    ADMIN_BOARD.selectedTeamId === data.teamId) {
+
+                    // Sadece pozisyonu güncelle (performance için tam yenileme yapmıyoruz)
+                    const item = ADMIN_BOARD.boardItems.find(function(i) { return i.id === data.itemId; });
+                    if (item) {
+                        item.x = data.x;
+                        item.y = data.y;
+
+                        // Sadece bağlantıları yeniden çiz
+                        ADMIN_BOARD.renderConnections();
+
+                        // Item'ın pozisyonunu DOM'da güncelle
+                        const itemEl = document.querySelector('#adminBoardCanvas [style*="left: ' + item.x + 'px"]');
+                        if (itemEl) {
+                            itemEl.style.left = data.x + 'px';
+                            itemEl.style.top = data.y + 'px';
+                        }
+                    }
+                }
+            });
+
+            socket.on('board-connection-added', function(data) {
+                // Admin panelde Murder Board İzleme bölümündeyse ve bu takımı izliyorsa güncelle
+                if (document.getElementById('pgAdmin').classList.contains('active') &&
+                    document.getElementById('adminSectionMurderboard').style.display !== 'none' &&
+                    ADMIN_BOARD.selectedTeamId === data.teamId) {
+                    ADMIN_BOARD.loadBoard();
+                }
+            });
+
+            socket.on('board-connection-deleted', function(data) {
+                // Admin panelde Murder Board İzleme bölümündeyse ve bu takımı izliyorsa güncelle
+                if (document.getElementById('pgAdmin').classList.contains('active') &&
+                    document.getElementById('adminSectionMurderboard').style.display !== 'none' &&
+                    ADMIN_BOARD.selectedTeamId === data.teamId) {
+                    ADMIN_BOARD.loadBoard();
+                }
+            });
+
+            socket.on('board-cleared', function(data) {
+                // Admin panelde Murder Board İzleme bölümündeyse ve bu takımı izliyorsa güncelle
+                if (document.getElementById('pgAdmin').classList.contains('active') &&
+                    document.getElementById('adminSectionMurderboard').style.display !== 'none' &&
+                    ADMIN_BOARD.selectedTeamId === data.teamId) {
+                    ADMIN_BOARD.loadBoard();
+                }
+            });
+
             // POKE (Dürtme) Yönetimi
             var POKE = {
                 // Rate limiting cache (client-side, son dürtme zamanları)
@@ -5687,7 +5916,6 @@
                     const age = document.getElementById('charAge').value;
                     const occupation = document.getElementById('charOccupation').value.trim();
                     const additionalInfo = document.getElementById('charAdditionalInfo').value.trim();
-                    const visibleToTeams = document.getElementById('charVisibleToTeams').checked;
 
                     // Validasyon
                     if (!name) {
@@ -5695,7 +5923,7 @@
                         return;
                     }
 
-                    // Socket'e gönder
+                    // Socket'e gönder (varsayılan: görünür değil)
                     socket.emit('add-character', {
                         name: name,
                         photoUrl: photoUrl || null,
@@ -5703,10 +5931,10 @@
                         age: age ? parseInt(age) : null,
                         occupation: occupation || null,
                         additionalInfo: additionalInfo || null,
-                        visibleToTeams: visibleToTeams
+                        visibleToTeams: false
                     }, function(response) {
                         if (response.success) {
-                            toast('✅ Karakter başarıyla eklendi!');
+                            toast('✅ Karakter başarıyla eklendi! Görünürlüğünü "Oyun Kontrolü" bölümünden ayarlayabilirsiniz.');
 
                             // Formu temizle
                             document.getElementById('charName').value = '';
@@ -5715,10 +5943,10 @@
                             document.getElementById('charAge').value = '';
                             document.getElementById('charOccupation').value = '';
                             document.getElementById('charAdditionalInfo').value = '';
-                            document.getElementById('charVisibleToTeams').checked = false;
 
                             // Listeyi yenile
                             CHARACTER.loadCharacters();
+                            GAME.loadGameCharacters(); // Oyun kontrolü listesini güncelle
                         } else {
                             toast(response.error || 'Karakter eklenemedi!', true);
                         }
@@ -5759,14 +5987,16 @@
                                     `}
 
                                     <div style="flex: 1; min-width: 0;">
-                                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px; gap: 8px;">
-                                            <h4 style="color: #4dd4d4; margin: 0; font-size: 16px; font-weight: 600;">${escapeHtml(char.name)}</h4>
-                                            <div style="display: flex; gap: 6px;">
-                                                <button onclick="CHARACTER.toggleVisibility('${char.id}', ${!char.visible_to_teams})" style="background: ${char.visible_to_teams ? '#1a4d1a' : '#4d4d1a'}; border: 1px solid ${char.visible_to_teams ? '#4dd44d' : '#888'}; color: ${char.visible_to_teams ? '#4dd44d' : '#888'}; padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.2s;" title="${char.visible_to_teams ? 'Takımlar için görünür' : 'Takımlar için gizli'}">
-                                                    ${char.visible_to_teams ? '👁️' : '🔒'}
-                                                </button>
-                                                <button onclick="CHARACTER.deleteCharacter('${char.id}')" style="background: #500; border: 1px solid #800; color: #faa; padding: 4px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#700'" onmouseout="this.style.background='#500'">🗑️ Sil</button>
+                                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                                            <div style="flex: 1;">
+                                                <h4 style="color: #4dd4d4; margin: 0; font-size: 16px; font-weight: 600;">${escapeHtml(char.name)}</h4>
+                                                <div style="margin-top: 4px;">
+                                                    <span style="display: inline-block; padding: 2px 8px; background: ${char.visible_to_teams ? '#1a4d1a' : '#4d4d1a'}; border: 1px solid ${char.visible_to_teams ? '#4dd44d' : '#888'}; color: ${char.visible_to_teams ? '#4dd44d' : '#888'}; border-radius: 4px; font-size: 10px;">
+                                                        ${char.visible_to_teams ? '👁️ Görünür' : '🔒 Gizli'}
+                                                    </span>
+                                                </div>
                                             </div>
+                                            <button onclick="CHARACTER.deleteCharacter('${char.id}')" style="background: #500; border: 1px solid #800; color: #faa; padding: 4px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#700'" onmouseout="this.style.background='#500'">🗑️ Sil</button>
                                         </div>
 
                                         ${char.age || char.occupation ? `
@@ -5797,20 +6027,6 @@
                     });
 
                     container.innerHTML = html;
-                },
-
-                toggleVisibility: function(characterId, visible) {
-                    socket.emit('toggle-character-visibility', {
-                        characterId: characterId,
-                        visible: visible
-                    }, function(response) {
-                        if (response.success) {
-                            toast(visible ? '👁️ Karakter görünür yapıldı' : '🔒 Karakter gizlendi');
-                            CHARACTER.loadCharacters();
-                        } else {
-                            toast(response.error || 'İşlem başarısız!', true);
-                        }
-                    });
                 },
 
                 deleteCharacter: function(characterId) {
@@ -6136,16 +6352,41 @@
                         MURDERBOARD.startDrag(e, item.id);
                     });
 
+                    // Touch event'leri (mobil için long press)
+                    var touchTimer = null;
+                    var touchMoved = false;
+
                     div.addEventListener('touchstart', function(e) {
-                        e.preventDefault(); // Canvas scroll'u engelle
-                        e.stopPropagation(); // Event bubbling engelle
+                        touchMoved = false;
 
                         if (MURDERBOARD.connectionMode) {
+                            e.preventDefault();
+                            e.stopPropagation();
                             MURDERBOARD.handleConnectionClick(item.id);
                             return;
                         }
-                        MURDERBOARD.startDrag(e.touches[0], item.id);
-                    }, { passive: false }); // passive: false -> preventDefault çalışsın
+
+                        // Long press için timer başlat (300ms)
+                        touchTimer = setTimeout(function() {
+                            if (!touchMoved) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                MURDERBOARD.startDrag(e.touches[0], item.id);
+                            }
+                        }, 300);
+                    }, { passive: false });
+
+                    div.addEventListener('touchmove', function(e) {
+                        touchMoved = true;
+                        clearTimeout(touchTimer);
+                    });
+
+                    div.addEventListener('touchend', function(e) {
+                        clearTimeout(touchTimer);
+                        if (!touchMoved && !MURDERBOARD.draggedItem) {
+                            // Kısa dokunma - hiçbir şey yapma (ya da başka bir aksiyon eklenebilir)
+                        }
+                    });
 
                     return div;
                 },
@@ -6290,7 +6531,27 @@
 
                 renderConnections: function() {
                     const svg = document.getElementById('connectionsLayer');
+                    const canvas = document.getElementById('murderBoardCanvas');
                     svg.innerHTML = '';
+
+                    // Tüm karakterlerin pozisyonlarını kontrol ederek gerekli canvas boyutunu hesapla
+                    let maxX = 800; // Minimum genişlik
+                    let maxY = 600; // Minimum yükseklik
+
+                    MURDERBOARD.boardItems.forEach(function(item) {
+                        const itemRight = item.x + 120; // Karakter genişliği
+                        const itemBottom = item.y + 100; // Karakter yüksekliği
+                        if (itemRight > maxX) maxX = itemRight;
+                        if (itemBottom > maxY) maxY = itemBottom;
+                    });
+
+                    // Canvas boyutunu güncelle (padding ekle)
+                    canvas.style.minWidth = (maxX + 100) + 'px';
+                    canvas.style.minHeight = (maxY + 100) + 'px';
+
+                    // SVG boyutunu canvas boyutuna eşitle
+                    svg.style.width = (maxX + 100) + 'px';
+                    svg.style.height = (maxY + 100) + 'px';
 
                     MURDERBOARD.connections.forEach(function(conn) {
                         const fromItem = MURDERBOARD.boardItems.find(function(i) { return i.id === conn.from_item_id; });
@@ -6393,6 +6654,211 @@
                     const zoomDisplay = document.getElementById('zoomLevel');
                     if (zoomDisplay) {
                         zoomDisplay.textContent = Math.round(MURDERBOARD.zoomLevel * 100) + '%';
+                    }
+                }
+            };
+
+            // ADMIN MURDER BOARD İZLEME FONKSİYONLARI
+            window.ADMIN_BOARD = {
+                selectedTeamId: null,
+                boardItems: [],
+                connections: [],
+                zoomLevel: 1,
+
+                init: function() {
+                    // Takımları yükle
+                    this.loadTeams();
+                },
+
+                loadTeams: function() {
+                    socket.emit('get-teams', function(teams) {
+                        const select = document.getElementById('adminBoardTeamSelect');
+                        select.innerHTML = '<option value="">-- Takım Seçin --</option>';
+
+                        teams.forEach(function(team) {
+                            const option = document.createElement('option');
+                            option.value = team.id;
+                            option.textContent = team.name + ' (' + team.score + ' puan)';
+                            select.appendChild(option);
+                        });
+                    });
+                },
+
+                selectTeam: function(teamId) {
+                    if (!teamId) {
+                        // Seçim kaldırıldı
+                        this.selectedTeamId = null;
+                        document.getElementById('adminBoardViewContainer').style.display = 'none';
+                        document.getElementById('adminBoardEmptyStateMain').style.display = 'block';
+                        return;
+                    }
+
+                    this.selectedTeamId = teamId;
+                    document.getElementById('adminBoardViewContainer').style.display = 'block';
+                    document.getElementById('adminBoardEmptyStateMain').style.display = 'none';
+
+                    // Seçili takımın bilgilerini göster
+                    socket.emit('get-teams', function(teams) {
+                        const team = teams.find(function(t) { return t.id === teamId; });
+                        if (team) {
+                            document.getElementById('adminBoardTeamName').textContent = team.name;
+                            document.getElementById('adminBoardTeamName').style.color = team.color || '#4dd4d4';
+                        }
+                    });
+
+                    // Board'u yükle
+                    this.loadBoard();
+                },
+
+                loadBoard: function() {
+                    if (!this.selectedTeamId) return;
+
+                    const self = this;
+                    socket.emit('get-team-board', this.selectedTeamId, function(data) {
+                        self.boardItems = data.items || [];
+                        self.connections = data.connections || [];
+
+                        // Sayıları güncelle
+                        document.getElementById('adminBoardItemCount').textContent = self.boardItems.length;
+                        document.getElementById('adminBoardConnectionCount').textContent = self.connections.length;
+
+                        // Board'u render et
+                        self.renderBoard();
+                    });
+                },
+
+                renderBoard: function() {
+                    const canvas = document.getElementById('adminBoardCanvas');
+                    const emptyState = document.getElementById('adminBoardEmptyState');
+
+                    // Mevcut öğeleri temizle (SVG ve boş durum hariç)
+                    Array.from(canvas.children).forEach(function(child) {
+                        if (child.id !== 'adminConnectionsLayer' && child.id !== 'adminBoardEmptyState') {
+                            canvas.removeChild(child);
+                        }
+                    });
+
+                    // Boş durum kontrolü
+                    if (this.boardItems.length === 0) {
+                        emptyState.style.display = 'block';
+                        return;
+                    }
+
+                    emptyState.style.display = 'none';
+
+                    // Karakterleri render et
+                    this.boardItems.forEach(function(item) {
+                        const div = document.createElement('div');
+                        div.style.position = 'absolute';
+                        div.style.left = item.x + 'px';
+                        div.style.top = item.y + 'px';
+                        div.style.width = '120px';
+                        div.style.background = 'linear-gradient(135deg, #1a1a1a, #0a0a0a)';
+                        div.style.border = '2px solid #333';
+                        div.style.borderRadius = '12px';
+                        div.style.padding = '10px';
+                        div.style.boxShadow = '0 4px 15px rgba(0,0,0,0.5)';
+                        div.style.zIndex = '10';
+                        div.style.cursor = 'default';
+
+                        let html = '';
+
+                        // Fotoğraf
+                        if (item.photo_url) {
+                            html += '<img src="' + item.photo_url + '" alt="' + escapeHtml(item.character_name) + '" style="width:100%; height:80px; object-fit:cover; border-radius:8px; margin-bottom:8px; border:1px solid #444;">';
+                        } else {
+                            html += '<div style="width:100%; height:80px; background:#222; border-radius:8px; margin-bottom:8px; display:flex; align-items:center; justify-content:center; font-size:32px; border:1px solid #444;">👤</div>';
+                        }
+
+                        // İsim
+                        html += '<div style="color:#4dd4d4; font-weight:600; font-size:13px; margin-bottom:5px; text-align:center;">' + escapeHtml(item.character_name) + '</div>';
+
+                        // Not (varsa)
+                        if (item.note) {
+                            html += '<div style="color:#888; font-size:11px; line-height:1.4; margin-top:5px; padding:6px; background:#000; border-radius:6px; max-height:60px; overflow-y:auto;">' + escapeHtml(item.note) + '</div>';
+                        }
+
+                        div.innerHTML = html;
+                        canvas.appendChild(div);
+                    });
+
+                    // Bağlantıları çiz
+                    this.renderConnections();
+                },
+
+                renderConnections: function() {
+                    const svg = document.getElementById('adminConnectionsLayer');
+                    const canvas = document.getElementById('adminBoardCanvas');
+                    svg.innerHTML = '';
+
+                    // Canvas boyutunu hesapla (MURDERBOARD ile aynı mantık)
+                    let maxX = 800;
+                    let maxY = 600;
+
+                    this.boardItems.forEach(function(item) {
+                        const itemRight = item.x + 120;
+                        const itemBottom = item.y + 100;
+                        if (itemRight > maxX) maxX = itemRight;
+                        if (itemBottom > maxY) maxY = itemBottom;
+                    });
+
+                    canvas.style.minWidth = (maxX + 100) + 'px';
+                    canvas.style.minHeight = (maxY + 100) + 'px';
+                    svg.style.width = (maxX + 100) + 'px';
+                    svg.style.height = (maxY + 100) + 'px';
+
+                    const self = this;
+                    this.connections.forEach(function(conn) {
+                        const fromItem = self.boardItems.find(function(i) { return i.id === conn.from_item_id; });
+                        const toItem = self.boardItems.find(function(i) { return i.id === conn.to_item_id; });
+
+                        if (!fromItem || !toItem) return;
+
+                        const fromX = fromItem.x + 60;
+                        const fromY = fromItem.y + 50;
+                        const toX = toItem.x + 60;
+                        const toY = toItem.y + 50;
+
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', fromX);
+                        line.setAttribute('y1', fromY);
+                        line.setAttribute('x2', toX);
+                        line.setAttribute('y2', toY);
+                        line.setAttribute('stroke', '#d44d4d');
+                        line.setAttribute('stroke-width', '3');
+                        line.setAttribute('stroke-dasharray', '5,5');
+
+                        svg.appendChild(line);
+                    });
+                },
+
+                refreshBoard: function() {
+                    if (this.selectedTeamId) {
+                        this.loadBoard();
+                        toast('🔄 Board yenilendi');
+                    }
+                },
+
+                // Zoom fonksiyonları
+                zoomIn: function() {
+                    this.zoomLevel = Math.min(this.zoomLevel + 0.1, 2);
+                    this.updateZoom();
+                },
+
+                zoomOut: function() {
+                    this.zoomLevel = Math.max(this.zoomLevel - 0.1, 0.3);
+                    this.updateZoom();
+                },
+
+                resetZoom: function() {
+                    this.zoomLevel = 1;
+                    this.updateZoom();
+                },
+
+                updateZoom: function() {
+                    const canvas = document.getElementById('adminBoardCanvas');
+                    if (canvas) {
+                        canvas.style.transform = 'scale(' + this.zoomLevel + ')';
                     }
                 }
             };
