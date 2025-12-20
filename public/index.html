@@ -3833,7 +3833,11 @@
 
                     // Murder Board İzleme bölümü açıldıysa takımları ve board'u yükle
                     if (section === 'murderboard') {
-                        ADMIN_BOARD.init();
+                        if (socketConnected) {
+                            ADMIN_BOARD.init();
+                        } else {
+                            console.log('Socket bağlantısı bekliyor...');
+                        }
                     }
 
                     // Kullanıcılar bölümü açıldıysa listeyi render et
@@ -6290,7 +6294,7 @@
                     const div = document.createElement('div');
                     div.className = 'board-item';
                     div.dataset.itemId = item.id;
-                    div.style.cssText = 'position: absolute; left: ' + item.x + 'px; top: ' + item.y + 'px; width: 120px; background: #fff; border: 2px solid #333; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); cursor: move; user-select: none; z-index: 10;';
+                    div.style.cssText = 'position: absolute; left: ' + item.x + 'px; top: ' + item.y + 'px; width: 120px; background: #fff; border: 2px solid #333; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); cursor: move; user-select: none; touch-action: none; z-index: 10;';
 
                     // Pin efekti
                     const pin = document.createElement('div');
@@ -6355,34 +6359,44 @@
                     // Touch event'leri (mobil için long press)
                     var touchTimer = null;
                     var touchMoved = false;
+                    var touchStartEvent = null;
 
                     div.addEventListener('touchstart', function(e) {
                         touchMoved = false;
+                        touchStartEvent = e;
+
+                        // touch-action: none zaten scroll'u engelliyor
+                        // Sadece event bubbling'i durdur
+                        e.stopPropagation();
 
                         if (MURDERBOARD.connectionMode) {
-                            e.preventDefault();
-                            e.stopPropagation();
                             MURDERBOARD.handleConnectionClick(item.id);
                             return;
                         }
 
                         // Long press için timer başlat (300ms)
                         touchTimer = setTimeout(function() {
-                            if (!touchMoved) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                MURDERBOARD.startDrag(e.touches[0], item.id);
+                            if (!touchMoved && touchStartEvent) {
+                                MURDERBOARD.startDrag(touchStartEvent.touches[0], item.id);
                             }
                         }, 300);
-                    }, { passive: false });
+                    }, { passive: true });
 
                     div.addEventListener('touchmove', function(e) {
-                        touchMoved = true;
-                        clearTimeout(touchTimer);
-                    });
+                        // Eğer drag başlamışsa canvas scroll'u engelle
+                        if (MURDERBOARD.draggedItem) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        } else {
+                            // Henüz drag başlamamış, hareket tespit edildi
+                            touchMoved = true;
+                            clearTimeout(touchTimer);
+                        }
+                    }, { passive: false });
 
                     div.addEventListener('touchend', function(e) {
                         clearTimeout(touchTimer);
+                        touchStartEvent = null;
                         if (!touchMoved && !MURDERBOARD.draggedItem) {
                             // Kısa dokunma - hiçbir şey yapma (ya da başka bir aksiyon eklenebilir)
                         }
@@ -6671,9 +6685,24 @@
                 },
 
                 loadTeams: function() {
+                    const self = this;
                     socket.emit('get-teams', function(teams) {
                         const select = document.getElementById('adminBoardTeamSelect');
+                        if (!select) {
+                            console.error('adminBoardTeamSelect bulunamadı!');
+                            return;
+                        }
+
                         select.innerHTML = '<option value="">-- Takım Seçin --</option>';
+
+                        if (!teams || teams.length === 0) {
+                            const option = document.createElement('option');
+                            option.value = '';
+                            option.textContent = 'Henüz takım oluşturulmamış';
+                            option.disabled = true;
+                            select.appendChild(option);
+                            return;
+                        }
 
                         teams.forEach(function(team) {
                             const option = document.createElement('option');
