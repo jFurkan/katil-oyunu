@@ -5853,6 +5853,7 @@
                 editingItemId: null,
                 allCharacters: [],
                 zoomLevel: 1,
+                renderScheduled: false, // requestAnimationFrame için flag
 
                 openMurderBoard: function() {
                     // Karakter listesini yükle
@@ -6148,7 +6149,18 @@
                     MURDERBOARD.draggedItem.x = x;
                     MURDERBOARD.draggedItem.y = y;
 
-                    MURDERBOARD.renderConnections();
+                    // requestAnimationFrame ile optimize render (performans için)
+                    MURDERBOARD.scheduleConnectionRender();
+                },
+
+                scheduleConnectionRender: function() {
+                    if (MURDERBOARD.renderScheduled) return;
+
+                    MURDERBOARD.renderScheduled = true;
+                    requestAnimationFrame(function() {
+                        MURDERBOARD.renderConnections();
+                        MURDERBOARD.renderScheduled = false;
+                    });
                 },
 
                 onDragTouch: function(e) {
@@ -6303,7 +6315,7 @@
                 },
 
                 zoomOut: function() {
-                    MURDERBOARD.zoomLevel = Math.max(MURDERBOARD.zoomLevel - 0.1, 0.5);
+                    MURDERBOARD.zoomLevel = Math.max(MURDERBOARD.zoomLevel - 0.1, 0.3);
                     MURDERBOARD.updateZoom();
                 },
 
