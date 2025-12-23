@@ -39,12 +39,31 @@ const server = http.createServer(app);
 // Railway/Reverse proxy için trust proxy ayarı
 app.set('trust proxy', 1); // Railway, Heroku gibi platformlar için gerekli
 
-// CORS ayarları
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || (process.env.NODE_ENV === 'production' ? false : '*');
+// CORS ayarları - Railway için otomatik algılama
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ||
+    (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` :
+    (process.env.NODE_ENV === 'production' ? true : '*'));  // Production'da tüm HTTPS'e izin ver
+
+console.log('🌐 CORS Origin:', ALLOWED_ORIGIN);
+console.log('🔒 Environment:', process.env.NODE_ENV);
+console.log('🚂 Railway Domain:', process.env.RAILWAY_PUBLIC_DOMAIN || 'yok');
 
 const io = new Server(server, {
     cors: {
-        origin: ALLOWED_ORIGIN || true,  // Production'da env'den, dev'de *
+        origin: function(origin, callback) {
+            // Production'da sadece HTTPS origin'lere izin ver
+            if (process.env.NODE_ENV === 'production') {
+                if (!origin || origin.startsWith('https://')) {
+                    callback(null, true);
+                } else {
+                    console.log('❌ CORS rejected (HTTP):', origin);
+                    callback(new Error('HTTP not allowed'), false);
+                }
+            } else {
+                // Development'da tüm origin'lere izin ver
+                callback(null, true);
+            }
+        },
         methods: ["GET", "POST"],
         credentials: true
     }
@@ -138,6 +157,15 @@ const sessionMiddleware = session({
 
 app.use(sessionMiddleware);
 
+// Session ayarlarını logla
+console.log('🍪 Session Cookie Ayarları:', {
+    httpOnly: sessionMiddleware.cookie?.httpOnly !== false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: '7 gün',
+    name: 'connect.sid'
+});
+
 // Statik dosyalar
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -166,6 +194,18 @@ app.get('/', (req, res) => {
     } else {
         console.log('⚠️  Session bulunamadı - Yeni session oluşturulacak');
     }
+
+    // Response'a hook ekleyerek Set-Cookie header'ını logla
+    const originalWriteHead = res.writeHead;
+    res.writeHead = function(...args) {
+        const setCookieHeader = res.getHeader('Set-Cookie');
+        if (setCookieHeader) {
+            console.log('🍪 Set-Cookie header gönderiliyor:', setCookieHeader);
+        } else {
+            console.log('⚠️  Set-Cookie header YOK!');
+        }
+        return originalWriteHead.apply(res, args);
+    };
 
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -847,13 +887,19 @@ io.use((socket, next) => {
     const origin = socket.handshake.headers.origin;
     const referer = socket.handshake.headers.referer;
 
-    // Development'da origin kontrolü atla
-    if (process.env.NODE_ENV === 'production' && ALLOWED_ORIGIN !== '*') {
-        // Origin varsa kontrol et, yoksa (undefined) izin ver (bazı WebSocket client'lar origin göndermez)
-        if (origin && origin !== ALLOWED_ORIGIN && !referer?.startsWith(ALLOWED_ORIGIN)) {
-            console.log('❌ WebSocket bağlantısı reddedildi - geçersiz origin:', origin);
-            return next(new Error('Origin not allowed'));
+    // Production'da HTTPS kontrolü
+    if (process.env.NODE_ENV === 'production') {
+        // Origin varsa HTTPS olmalı
+        if (origin && !origin.startsWith('https://')) {
+            console.log('❌ WebSocket bağlantısı reddedildi - HTTP origin:', origin);
+            return next(new Error('HTTP not allowed'));
         }
+        // Referer varsa HTTPS olmalı
+        if (referer && !referer.startsWith('https://')) {
+            console.log('❌ WebSocket bağlantısı reddedildi - HTTP referer:', referer);
+            return next(new Error('HTTP not allowed'));
+        }
+        console.log('✅ WebSocket HTTPS origin kabul edildi:', origin || referer || 'no-origin');
     }
 
     // Bağlantı sayısı limiti (DDoS koruması)
