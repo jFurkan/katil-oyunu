@@ -2711,10 +2711,14 @@
             socket.on('connect', function() {
                 socketConnected = true;
                 console.log('Socket bağlantısı kuruldu');
-                console.log('🍪 Browser cookies:', document.cookie || 'yok');
+                console.log('🍪 Browser cookies (JavaScript\'ten görünenler):', document.cookie || 'yok');
+                console.log('ℹ️  NOT: httpOnly cookie\'ler (session) JavaScript\'ten görülmez - bu normal ve güvenlik için iyidir.');
+                console.log('   Session cookie\'leri görmek için: Browser DevTools → Application → Cookies');
 
                 // SESSION RESTORE: Server'dan session kontrolü yap
                 socket.emit('reconnect-user', function(response) {
+                    console.log('🔄 Session restore yanıtı:', response);
+
                     if (response && response.success) {
                         // Admin yetkisini önce set et (routing için gerekli)
                         isAdmin = response.isAdmin || false;
@@ -2733,14 +2737,14 @@
                                 currentTeamId = response.teamId;
                             }
 
-                            console.log('✅ Session restore edildi:', response.nickname, '- Admin:', isAdmin);
+                            console.log('✅ Session restore edildi:', response.nickname, '- Admin:', isAdmin, '- SessionID mevcut');
                         } else if (response.isAdmin) {
                             // Admin-only session (userId yok)
                             currentUser = null;
                             currentTeamId = null;
                             updateCurrentUserDisplay();
 
-                            console.log('✅ Admin session restore edildi (userId yok)');
+                            console.log('✅ Admin session restore edildi - SessionID mevcut');
                         }
                     } else {
                         // Session yok veya süresi dolmuş
@@ -2748,7 +2752,7 @@
                         currentTeamId = null;
                         isAdmin = false;
                         updateCurrentUserDisplay();
-                        console.log('ℹ️  Session bulunamadı');
+                        console.log('⚠️  Session bulunamadı veya süresi dolmuş - Giriş yapmanız gerekebilir');
                     }
 
                     // ROUTING: Session restore sonrası, mevcut URL'e göre sayfa göster
@@ -2826,10 +2830,17 @@
             // UI Yardımcıları
             function toast(msg, err) {
                 var t = document.getElementById('toast');
+                if (!t) {
+                    console.error('Toast element bulunamadı!');
+                    return;
+                }
                 t.textContent = msg;
                 t.className = err ? 'show err' : 'show';
                 setTimeout(function() { t.className = ''; }, 2500);
             }
+
+            // Global scope'a ekle (GAME_RESET gibi diğer objelerden erişim için)
+            window.toast = toast;
 
             function showPage(id, addToHistory = true) {
                 // Mevcut aktif sayfayı bul
