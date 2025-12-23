@@ -149,8 +149,23 @@ app.get('/', (req, res) => {
         userId: req.session?.userId,
         hasCookie: !!req.headers.cookie,
         protocol: req.protocol,
-        secure: req.secure
+        secure: req.secure,
+        host: req.hostname,
+        url: req.url,
+        isProduction: process.env.NODE_ENV === 'production',
+        cookieSettings: {
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            httpOnly: true
+        }
     });
+
+    // Set-Cookie header'ı kontrol et
+    if (req.session && req.session.id) {
+        console.log('✅ Session mevcut - Cookie set edilecek');
+    } else {
+        console.log('⚠️  Session bulunamadı - Yeni session oluşturulacak');
+    }
 
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
