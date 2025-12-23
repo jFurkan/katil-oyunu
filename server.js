@@ -188,26 +188,31 @@ app.get('/', (req, res) => {
         }
     });
 
-    // Set-Cookie header'ı kontrol et
-    if (req.session && req.session.id) {
-        console.log('✅ Session mevcut - Cookie set edilecek');
-    } else {
-        console.log('⚠️  Session bulunamadı - Yeni session oluşturulacak');
-    }
+    // KRİTİK FIX: saveUninitialized: false olduğu için session'ı "kirlet" ve kaydet
+    // Aksi halde Set-Cookie header gönderilmez!
+    req.session.initialized = true;
 
-    // Response'a hook ekleyerek Set-Cookie header'ını logla
-    const originalWriteHead = res.writeHead;
-    res.writeHead = function(...args) {
-        const setCookieHeader = res.getHeader('Set-Cookie');
-        if (setCookieHeader) {
-            console.log('🍪 Set-Cookie header gönderiliyor:', setCookieHeader);
+    req.session.save((err) => {
+        if (err) {
+            console.error('❌ Session save error:', err);
         } else {
-            console.log('⚠️  Set-Cookie header YOK!');
+            console.log('✅ Session kaydedildi:', req.sessionID);
         }
-        return originalWriteHead.apply(res, args);
-    };
 
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+        // Response'a hook ekleyerek Set-Cookie header'ını logla
+        const originalWriteHead = res.writeHead;
+        res.writeHead = function(...args) {
+            const setCookieHeader = res.getHeader('Set-Cookie');
+            if (setCookieHeader) {
+                console.log('🍪 Set-Cookie header gönderiliyor:', setCookieHeader);
+            } else {
+                console.log('⚠️  Set-Cookie header YOK!');
+            }
+            return originalWriteHead.apply(res, args);
+        };
+
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    });
 });
 
 // Favicon route (404 hatasını önle)
@@ -288,7 +293,15 @@ app.get('*', (req, res) => {
         hasCookie: !!req.headers.cookie
     });
 
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    // KRİTİK FIX: saveUninitialized: false için session'ı kirlet
+    req.session.initialized = true;
+
+    req.session.save((err) => {
+        if (err) {
+            console.error('❌ SPA session save error:', err);
+        }
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    });
 });
 
 // Oyun durumu
