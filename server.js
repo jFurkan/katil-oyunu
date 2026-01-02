@@ -99,7 +99,7 @@ app.use(helmet({
 // 2. Rate Limiting - DDoS koruması
 const limiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 dakika
-    max: 100, // IP başına max 100 request
+    max: 300, // IP başına max 300 request (80-100 eş zamanlı kullanıcı için optimize edildi)
     standardHeaders: true,
     legacyHeaders: false,
     message: 'Çok fazla istek gönderdiniz, lütfen 1 dakika sonra tekrar deneyin.'
@@ -159,28 +159,13 @@ console.log('🍪 Session Cookie Ayarları:', {
 
 // Statik dosyalar (index.html hariç - o route'dan serve edilecek)
 app.use(express.static(path.join(__dirname, 'public'), {
-    index: false  // index.html'i otomatik serve etme, app.get('/') route'u kullanacak
+    index: false,  // index.html'i otomatik serve etme, app.get('/') route'u kullanacak
+    maxAge: process.env.NODE_ENV === 'production' ? '1y' : 0,  // Production'da 1 yıl cache
+    immutable: process.env.NODE_ENV === 'production'  // Cache immutable (değişmez)
 }));
 
 // Root endpoint - Railway health check
 app.get('/', (req, res) => {
-    console.log('📄 Ana sayfa yüklendi:', {
-        sessionID: req.sessionID || 'yok',
-        hasSession: !!req.session,
-        userId: req.session?.userId,
-        hasCookie: !!req.headers.cookie,
-        protocol: req.protocol,
-        secure: req.secure,
-        host: req.hostname,
-        url: req.url,
-        isProduction: process.env.NODE_ENV === 'production',
-        cookieSettings: {
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-            httpOnly: true
-        }
-    });
-
     // KRİTİK FIX: saveUninitialized: false olduğu için session'ı "kirlet" ve kaydet
     // Aksi halde Set-Cookie header gönderilmez!
     req.session.initialized = true;
@@ -188,22 +173,7 @@ app.get('/', (req, res) => {
     req.session.save((err) => {
         if (err) {
             console.error('❌ Session save error:', err);
-        } else {
-            console.log('✅ Session kaydedildi:', req.sessionID);
         }
-
-        // Response'a hook ekleyerek Set-Cookie header'ını logla
-        const originalWriteHead = res.writeHead;
-        res.writeHead = function(...args) {
-            const setCookieHeader = res.getHeader('Set-Cookie');
-            if (setCookieHeader) {
-                console.log('🍪 Set-Cookie header gönderiliyor:', setCookieHeader);
-            } else {
-                console.log('⚠️  Set-Cookie header YOK!');
-            }
-            return originalWriteHead.apply(res, args);
-        };
-
         res.sendFile(path.join(__dirname, 'public', 'index.html'));
     });
 });
@@ -892,15 +862,6 @@ io.use((socket, next) => {
 io.use((socket, next) => {
     const origin = socket.handshake.headers.origin;
     const referer = socket.handshake.headers.referer;
-    const cookie = socket.handshake.headers.cookie;
-
-    // Debug: Cookie bilgisini logla
-    console.log('🔍 WebSocket Handshake:', {
-        origin: origin || 'yok',
-        cookie: cookie ? 'var (' + cookie.substring(0, 50) + '...)' : 'YOK!',
-        sessionID: socket.request.sessionID || 'yok',
-        hasSession: !!socket.request.session
-    });
 
     // Production'da HTTPS kontrolü
     if (process.env.NODE_ENV === 'production') {
@@ -914,7 +875,6 @@ io.use((socket, next) => {
             console.log('❌ WebSocket bağlantısı reddedildi - HTTP referer:', referer);
             return next(new Error('HTTP not allowed'));
         }
-        console.log('✅ WebSocket HTTPS origin kabul edildi:', origin || referer || 'no-origin');
     }
 
     // Bağlantı sayısı limiti (DDoS koruması)

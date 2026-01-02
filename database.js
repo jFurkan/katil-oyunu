@@ -9,7 +9,10 @@ const isLocalhost = connectionString.includes('localhost') || connectionString.i
 
 const pool = new Pool({
     connectionString,
-    ssl: (isProduction && !isLocalhost) ? { rejectUnauthorized: false } : false
+    ssl: (isProduction && !isLocalhost) ? { rejectUnauthorized: false } : false,
+    max: 20,  // Railway Hobby plan için optimize edilmiş (80-100 kullanıcı)
+    idleTimeoutMillis: 30000,  // 30 saniye idle connection timeout
+    connectionTimeoutMillis: 5000  // 5 saniye bağlantı timeout
 });
 
 async function initDatabase() {
