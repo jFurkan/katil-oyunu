@@ -157,8 +157,10 @@ console.log('🍪 Session Cookie Ayarları:', {
     name: 'connect.sid'
 });
 
-// Statik dosyalar
-app.use(express.static(path.join(__dirname, 'public')));
+// Statik dosyalar (index.html hariç - o route'dan serve edilecek)
+app.use(express.static(path.join(__dirname, 'public'), {
+    index: false  // index.html'i otomatik serve etme, app.get('/') route'u kullanacak
+}));
 
 // Root endpoint - Railway health check
 app.get('/', (req, res) => {
