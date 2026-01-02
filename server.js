@@ -890,6 +890,15 @@ io.use((socket, next) => {
 io.use((socket, next) => {
     const origin = socket.handshake.headers.origin;
     const referer = socket.handshake.headers.referer;
+    const cookie = socket.handshake.headers.cookie;
+
+    // Debug: Cookie bilgisini logla
+    console.log('🔍 WebSocket Handshake:', {
+        origin: origin || 'yok',
+        cookie: cookie ? 'var (' + cookie.substring(0, 50) + '...)' : 'YOK!',
+        sessionID: socket.request.sessionID || 'yok',
+        hasSession: !!socket.request.session
+    });
 
     // Production'da HTTPS kontrolü
     if (process.env.NODE_ENV === 'production') {
