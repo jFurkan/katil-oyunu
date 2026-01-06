@@ -1420,14 +1420,14 @@ io.on('connection', async (socket) => {
                 return;
             }
 
-            // Takım üye limiti kontrolü (MAX 6 kişi)
+            // Takım üye limiti kontrolü (MAX 9 kişi)
             const memberCount = await pool.query(
                 'SELECT COUNT(*) FROM users WHERE team_id = $1',
                 [data.teamId]
             );
-            const MAX_MEMBERS = 6;
+            const MAX_MEMBERS = 9;
             if (parseInt(memberCount.rows[0].count) >= MAX_MEMBERS) {
-                callback({ success: false, error: 'Takım dolu! (Maksimum 6 kişi)' });
+                callback({ success: false, error: 'Takım dolu! (Maksimum 9 kişi)' });
                 return;
             }
 
