@@ -1420,6 +1420,17 @@ io.on('connection', async (socket) => {
                 return;
             }
 
+            // Takım üye limiti kontrolü (MAX 4 kişi)
+            const memberCount = await pool.query(
+                'SELECT COUNT(*) FROM users WHERE team_id = $1',
+                [data.teamId]
+            );
+            const MAX_MEMBERS = 4;
+            if (parseInt(memberCount.rows[0].count) >= MAX_MEMBERS) {
+                callback({ success: false, error: 'Takım dolu! (Maksimum 4 kişi)' });
+                return;
+            }
+
             // Kullanıcıyı takıma ekle
             await pool.query(
                 'UPDATE users SET team_id = $1, is_captain = FALSE WHERE id = $2',
@@ -1604,25 +1615,24 @@ io.on('connection', async (socket) => {
         }
 
         try {
-            // Mevcut takımı al
-            const teamResult = await pool.query('SELECT * FROM teams WHERE id = $1', [data.teamId]);
-            const team = teamResult.rows[0];
+            // Atomic score update with negative check
+            const updateResult = await pool.query(
+                'UPDATE teams SET score = score + $1 WHERE id = $2 AND (score + $1) >= 0 RETURNING *',
+                [data.amount, data.teamId]
+            );
 
-            if (!team) {
-                callback({ success: false, error: 'Takım bulunamadı!' });
+            if (updateResult.rows.length === 0) {
+                // Takım bulunamadı veya puan negatif olacaktı
+                const teamCheck = await pool.query('SELECT score FROM teams WHERE id = $1', [data.teamId]);
+                if (teamCheck.rows.length === 0) {
+                    callback({ success: false, error: 'Takım bulunamadı!' });
+                } else {
+                    callback({ success: false, error: 'Puan 0 altına düşemez!' });
+                }
                 return;
             }
 
-            const newScore = team.score + data.amount;
-            if (newScore < 0) {
-                callback({ success: false, error: 'Puan 0 altına düşemez!' });
-                return;
-            }
-
-            // Puanı güncelle
-            await pool.query('UPDATE teams SET score = $1 WHERE id = $2', [newScore, data.teamId]);
-
-            team.score = newScore;
+            const team = updateResult.rows[0];
             callback({ success: true, team: team });
 
             // Güncel takım listesini gönder

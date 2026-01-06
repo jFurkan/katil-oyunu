@@ -97,6 +97,15 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_characters_visible
 ON characters(name)
 WHERE visible_to_teams = TRUE;
 
+-- ========================================
+-- 4. UNIQUE CONSTRAINTS (Race Condition Prevention)
+-- ========================================
+
+-- team_badges: Aynı badge'in aynı takıma birden fazla verilmesini engelle
+ALTER TABLE team_badges
+ADD CONSTRAINT IF NOT EXISTS unique_team_badge
+UNIQUE (team_id, badge_id);
+
 COMMIT;
 
 -- ========================================
