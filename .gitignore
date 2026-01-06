@@ -1,6 +1,13 @@
 node_modules/
 .env
+.env.test
+.env.local
 data.json
 credits.json
 *.log
 nul
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/

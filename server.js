@@ -313,41 +313,87 @@ function stopCountdown() {
     }
 }
 
-// Helper fonksiyonlar - PostgreSQL işlemleri
+// ========================================
+// IN-MEMORY CACHE - 100 kullanıcı için DB yükünü azaltır
+// ========================================
+const dataCache = {
+    teams: { data: null, timestamp: 0 },
+    credits: { data: null, timestamp: 0 },
+    generalClues: { data: null, timestamp: 0 },
+    badges: { data: null, timestamp: 0 },
+    users: { data: null, timestamp: 0 }
+};
+
+const CACHE_TTL = 30000; // 30 saniye
+
+function getCached(key, fetchFn) {
+    const now = Date.now();
+    const cached = dataCache[key];
+
+    // Cache valid ise döndür
+    if (cached.data && (now - cached.timestamp) < CACHE_TTL) {
+        return Promise.resolve(cached.data);
+    }
+
+    // Cache expire olmuş veya yok, fetch et
+    return fetchFn().then(data => {
+        dataCache[key] = { data, timestamp: now };
+        return data;
+    });
+}
+
+function invalidateCache(key) {
+    if (key) {
+        dataCache[key].timestamp = 0; // Expire et
+    } else {
+        // Tüm cache'i temizle
+        Object.keys(dataCache).forEach(k => dataCache[k].timestamp = 0);
+    }
+}
+
+// Helper fonksiyonlar - PostgreSQL işlemleri (Cache'li)
 async function getAllTeams() {
-    const result = await pool.query(`
-        SELECT t.*,
-               COALESCE(
-                   (SELECT json_agg(json_build_object('text', text, 'time', time) ORDER BY id)
-                    FROM clues WHERE team_id = t.id),
-                   '[]'
-               ) as clues,
-               COALESCE(
-                   (SELECT json_agg(json_build_object('id', b2.id, 'name', b2.name, 'icon', b2.icon, 'color', b2.color) ORDER BY b2.id)
-                    FROM team_badges tb2
-                    JOIN badges b2 ON tb2.badge_id = b2.id
-                    WHERE tb2.team_id = t.id),
-                   '[]'
-               ) as badges
-        FROM teams t
-        ORDER BY t.created_at
-    `);
-    return result.rows;
+    return getCached('teams', async () => {
+        const result = await pool.query(`
+            SELECT t.*,
+                   COALESCE(
+                       (SELECT json_agg(json_build_object('text', text, 'time', time) ORDER BY id)
+                        FROM clues WHERE team_id = t.id),
+                       '[]'
+                   ) as clues,
+                   COALESCE(
+                       (SELECT json_agg(json_build_object('id', b2.id, 'name', b2.name, 'icon', b2.icon, 'color', b2.color) ORDER BY b2.id)
+                        FROM team_badges tb2
+                        JOIN badges b2 ON tb2.badge_id = b2.id
+                        WHERE tb2.team_id = t.id),
+                       '[]'
+                   ) as badges
+            FROM teams t
+            ORDER BY t.created_at
+        `);
+        return result.rows;
+    });
 }
 
 async function getAllCredits() {
-    const result = await pool.query('SELECT * FROM credits ORDER BY created_at');
-    return result.rows;
+    return getCached('credits', async () => {
+        const result = await pool.query('SELECT * FROM credits ORDER BY created_at');
+        return result.rows;
+    });
 }
 
 async function getAllGeneralClues() {
-    const result = await pool.query('SELECT * FROM general_clues ORDER BY created_at');
-    return result.rows;
+    return getCached('generalClues', async () => {
+        const result = await pool.query('SELECT * FROM general_clues ORDER BY created_at');
+        return result.rows;
+    });
 }
 
 async function getAllBadges() {
-    const result = await pool.query('SELECT * FROM badges ORDER BY created_at');
-    return result.rows;
+    return getCached('badges', async () => {
+        const result = await pool.query('SELECT * FROM badges ORDER BY created_at');
+        return result.rows;
+    });
 }
 
 async function getTeamBadges(teamId) {
@@ -782,7 +828,7 @@ class AdminLoginLimiter {
         this.WINDOW_MS = 15 * 60 * 1000; // 15 dakika
 
         // Her 1 saatte bir eski kayıtları temizle
-        setInterval(() => this.cleanup(), 60 * 60 * 1000);
+        this.cleanupInterval = setInterval(() => this.cleanup(), 60 * 60 * 1000);
     }
 
     check(ip) {
@@ -953,9 +999,10 @@ io.on('connection', async (socket) => {
         }
 
         // GÜVENLİK: Database transaction ile race condition önleme
-        const client = await pool.connect();
+        let client;
 
         try {
+            client = await pool.connect();
             await client.query('BEGIN');
 
             // GÜVENLİK: Input validation & XSS koruması
@@ -1093,11 +1140,19 @@ io.on('connection', async (socket) => {
             }
 
         } catch (err) {
-            await client.query('ROLLBACK');
+            if (client) {
+                try {
+                    await client.query('ROLLBACK');
+                } catch (rollbackErr) {
+                    console.error('ROLLBACK hatası:', rollbackErr);
+                }
+            }
             console.error('Kullanıcı kayıt hatası:', err);
             callback({ success: false, error: 'Kayıt oluşturulamadı!' });
         } finally {
-            client.release();
+            if (client) {
+                client.release();
+            }
         }
     });
 
@@ -1302,6 +1357,8 @@ io.on('connection', async (socket) => {
 
             callback({ success: true, team: team });
 
+            // Cache'i invalidate et (yeni takım eklendi)
+            invalidateCache('teams');
             const teams = await getAllTeams();
             io.emit('teams-update', teams);
 
@@ -1443,6 +1500,7 @@ io.on('connection', async (socket) => {
             callback({ success: true });
 
             // Güncel takım listesini ve takım bilgisini gönder
+            invalidateCache('teams');
             const teams = await getAllTeams();
             io.emit('teams-update', teams);
 
@@ -1568,6 +1626,7 @@ io.on('connection', async (socket) => {
             callback({ success: true, team: team });
 
             // Güncel takım listesini gönder
+            invalidateCache('teams');
             const teams = await getAllTeams();
             io.emit('teams-update', teams);
 
@@ -2207,6 +2266,7 @@ io.on('connection', async (socket) => {
             callback({ success: true });
 
             // Tüm clientlara bildir
+            invalidateCache('teams');
             const teams = await getAllTeams();
             io.emit('teams-update', teams);
             io.emit('game-reset');
@@ -3578,10 +3638,26 @@ async function gracefulShutdown(signal) {
     });
     console.log('✓ Tüm WebSocket bağlantıları kapatıldı');
 
-    // 3. Aktif countdown'ları durdur
+    // 3. Aktif countdown'ları ve cleanup interval'larını durdur
     if (gameState.countdownInterval) {
         clearInterval(gameState.countdownInterval);
         console.log('✓ Oyun countdown\'ı durduruldu');
+    }
+
+    // Rate limiter cleanup interval'larını temizle
+    if (rateLimiter.cleanupInterval) {
+        clearInterval(rateLimiter.cleanupInterval);
+        console.log('✓ Rate limiter cleanup interval temizlendi');
+    }
+
+    if (botProtection.cleanupInterval) {
+        clearInterval(botProtection.cleanupInterval);
+        console.log('✓ Bot protection cleanup interval temizlendi');
+    }
+
+    if (adminLoginLimiter.cleanupInterval) {
+        clearInterval(adminLoginLimiter.cleanupInterval);
+        console.log('✓ Admin login limiter cleanup interval temizlendi');
     }
 
     // 4. Database pool'u temiz kapat
