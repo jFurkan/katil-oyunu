@@ -7,6 +7,9 @@ credits.json
 *.log
 nul
 
+# Claude settings (may contain sensitive data)
+.claude/
+
 # Playwright
 /test-results/
 /playwright-report/

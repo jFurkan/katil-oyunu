@@ -1,8 +1,10 @@
 const { Client } = require('pg');
 const fs = require('fs');
 
+// SECURITY: Never hardcode database credentials
+// Set DATABASE_URL environment variable before running this script
 const client = new Client({
-    connectionString: 'postgresql://postgres:MgRlEtgiexRLKKUBUiblqLXjVIqakZOF@tramway.proxy.rlwy.net:23673/railway',
+    connectionString: process.env.DATABASE_URL,
     ssl: {
         rejectUnauthorized: false
     }
