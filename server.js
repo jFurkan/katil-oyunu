@@ -620,6 +620,12 @@ async function startPhaseTracking(phaseTitle, durationSeconds) {
     }
 
     try {
+        // Eğer aktif faz varsa önce onu kapat
+        if (currentPhaseId) {
+            console.warn('⚠️  Yeni faz başlatılıyor, önceki faz kapatılıyor...');
+            await endPhaseTracking();
+        }
+
         // Yeni faz ID'si oluştur
         currentPhaseId = crypto.randomUUID();
 
@@ -2876,6 +2882,23 @@ io.on('connection', async (socket) => {
             await pool.query('DELETE FROM credits');
             console.log('  ✓ Credits silindi');
 
+            // 13. Game events (oyun olayları)
+            await pool.query('DELETE FROM game_events');
+            console.log('  ✓ Oyun olayları silindi');
+
+            // 14. Phases (fazlar)
+            await pool.query('DELETE FROM phases');
+            console.log('  ✓ Fazlar silindi');
+
+            // 15. Game sessions (oyun oturumları)
+            await pool.query('DELETE FROM game_sessions');
+            console.log('  ✓ Oyun oturumları silindi');
+
+            // Session ve faz değişkenlerini temizle
+            currentSessionId = null;
+            currentPhaseId = null;
+            phaseStartStats = null;
+
             callback({ success: true });
 
             // Tüm clientlara bildir
@@ -2885,12 +2908,6 @@ io.on('connection', async (socket) => {
             io.emit('game-reset');
 
             console.log('✅ OYUN TAMAMEN SIFIRLANDI! Tüm veriler temizlendi.');
-
-            // Session varsa kapat
-            if (currentSessionId) {
-                await pool.query('UPDATE game_sessions SET ended_at = NOW() WHERE id = $1', [currentSessionId]);
-                currentSessionId = null;
-            }
         } catch (err) {
             console.error('❌ Oyun sıfırlama hatası:', err);
             callback({ success: false, error: 'Oyun sıfırlanamadı! Hata: ' + err.message });
@@ -3764,12 +3781,33 @@ io.on('connection', async (socket) => {
         gameState.phaseTitle = phaseTitle;
         startCountdown();
 
-        // Faz kaydı başlat (eğer session aktifse)
-        if (currentSessionId) {
-            startPhaseTracking(phaseTitle, minutesValidation.value * 60).catch(err => {
-                console.error('Faz kaydı başlatılamadı:', err);
-            });
-        }
+        // Session yoksa otomatik başlat ve faz kaydını başlat
+        (async () => {
+            try {
+                if (!currentSessionId) {
+                    // Yeni session oluştur
+                    currentSessionId = crypto.randomUUID();
+                    const teams = await pool.query('SELECT COUNT(*) FROM teams');
+                    const users = await pool.query('SELECT COUNT(*) FROM users');
+
+                    await pool.query(`
+                        INSERT INTO game_sessions (id, started_at, total_teams, total_players)
+                        VALUES ($1, NOW(), $2, $3)
+                    `, [currentSessionId, teams.rows[0].count, users.rows[0].count]);
+
+                    await logGameEvent('game_started', 'Oyun başladı', {
+                        metadata: { phaseTitle: phaseTitle, duration: minutesValidation.value }
+                    });
+
+                    console.log('🎮 Yeni oyun oturumu otomatik başlatıldı:', currentSessionId);
+                }
+
+                // Faz kaydını başlat
+                await startPhaseTracking(phaseTitle, minutesValidation.value * 60);
+            } catch (err) {
+                console.error('Session/faz otomatik başlatma hatası:', err);
+            }
+        })();
 
         io.emit('game-started', {
             countdown: gameState.countdown,
@@ -3847,14 +3885,26 @@ io.on('connection', async (socket) => {
         gameState.countdown = 0;
         gameState.phaseTitle = '';
 
-        // Faz kaydını kapat (eğer aktif faz varsa)
-        if (currentPhaseId) {
-            endPhaseTracking().catch(err => {
-                console.error('Faz kaydı kapatılamadı:', err);
-            });
-        }
+        // Faz kaydını kapat ve session'ı bitir (eğer aktifse)
+        (async () => {
+            try {
+                if (currentPhaseId) {
+                    await endPhaseTracking();
+                }
 
-        io.emit('game-ended');
+                // Session'ı kapat ve final rapor oluştur
+                if (currentSessionId) {
+                    const report = await endGameSessionAuto();
+                    io.emit('game-ended', report);
+                    console.log('Oyun manuel olarak bitirildi. Session kapatıldı.');
+                } else {
+                    io.emit('game-ended');
+                }
+            } catch (err) {
+                console.error('Oyun bitirme hatası:', err);
+                io.emit('game-ended');
+            }
+        })();
 
         // Oyun bitirme bildirimi gönder
         io.emit('notification', {
