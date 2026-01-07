@@ -195,10 +195,12 @@ app.get('/api/health', async (req, res) => {
             teamCount: result.rows[0].team_count
         });
     } catch (err) {
+        // GÜVENLİK: Database error detaylarını logla ama kullanıcıya verme
+        console.error('Health check database error:', err);
         res.status(500).json({
             status: 'ERROR',
             database: 'Disconnected',
-            error: err.message
+            error: 'Internal server error'
         });
     }
 });
@@ -206,13 +208,11 @@ app.get('/api/health', async (req, res) => {
 // Admin korumalı kullanıcı temizleme endpoint'i
 app.post('/api/cleanup-users', async (req, res) => {
     try {
-        // Admin authentication
-        const adminPassword = req.body.password || req.query.password;
-
-        if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
+        // GÜVENLİK: Session-based admin kontrolü
+        if (!req.session || !req.session.isAdmin) {
             return res.status(403).json({
                 success: false,
-                error: 'Yetkisiz erişim - Admin şifresi gerekli'
+                error: 'Yetkisiz erişim - Admin girişi gerekli'
             });
         }
 
@@ -221,9 +221,11 @@ app.post('/api/cleanup-users', async (req, res) => {
 
         res.json(result);
     } catch (error) {
+        // GÜVENLİK: Generic error message
+        console.error('User cleanup error:', error);
         res.status(500).json({
             success: false,
-            error: error.message
+            error: 'Internal server error'
         });
     }
 });
@@ -1615,6 +1617,23 @@ io.on('connection', async (socket) => {
         }
 
         try {
+            // GÜVENLİK: Input validation
+            if (!data.teamId || typeof data.teamId !== 'string') {
+                callback({ success: false, error: 'Geçersiz takım ID!' });
+                return;
+            }
+
+            if (typeof data.amount !== 'number' || !Number.isFinite(data.amount)) {
+                callback({ success: false, error: 'Geçersiz puan miktarı!' });
+                return;
+            }
+
+            // GÜVENLİK: Reasonable range check (-10000 ile +10000)
+            if (data.amount < -10000 || data.amount > 10000) {
+                callback({ success: false, error: 'Puan değişikliği çok büyük! (-10000 ile +10000 arası olmalı)' });
+                return;
+            }
+
             // Atomic score update with negative check
             const updateResult = await pool.query(
                 'UPDATE teams SET score = score + $1 WHERE id = $2 AND (score + $1) >= 0 RETURNING *',
