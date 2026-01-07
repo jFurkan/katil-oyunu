@@ -1773,8 +1773,6 @@
                 <button class="btn" onclick="ADMIN.showSection('credits')">👥 Emeği Geçenler</button>
                 <button class="btn" onclick="ADMIN.showSection('iplogs')">🔍 IP Logları</button>
                 <button class="btn" onclick="ADMIN.showSection('profilephotos')">📸 Profil Fotoğrafları</button>
-                <button class="btn" style="background: linear-gradient(135deg, #1a5d1a, #0d300d); border-color: #4CAF50;" onclick="ADMIN.startGameSession()">🎮 Oyunu Başlat</button>
-                <button class="btn" style="background: linear-gradient(135deg, #d4af37, #8b7500); border-color: #ffd700;" onclick="ADMIN.endGameSession()">🏁 Oyunu Bitir</button>
                 <button class="btn" style="background: linear-gradient(135deg, #8b0000, #450000); border-color: #ff4444;" onclick="ADMIN.showSection('reset')">🔄 Oyunu Sıfırla</button>
             </div>
 
@@ -4198,6 +4196,7 @@
                     else if (section === 'credits') buttons[9].classList.add('btn-primary');
                     else if (section === 'iplogs') buttons[10].classList.add('btn-primary');
                     else if (section === 'profilephotos') buttons[11].classList.add('btn-primary');
+                    else if (section === 'reset') buttons[12].classList.add('btn-primary');
 
                     this.currentSection = section;
 
@@ -4888,6 +4887,15 @@
                             toast('Oyun başlatıldı!');
                             document.getElementById('gameMinutes').value = '';
                             document.getElementById('gameTitle').value = '';
+
+                            // Oyun oturumunu da otomatik başlat
+                            socket.emit('start-game-session', function(sessionRes) {
+                                if (sessionRes.success) {
+                                    console.log('✅ Oyun oturumu otomatik başlatıldı:', sessionRes.sessionId);
+                                } else {
+                                    console.error('❌ Oyun oturumu başlatılamadı:', sessionRes.error);
+                                }
+                            });
                         } else {
                             toast(res.error, true);
                         }
@@ -4928,6 +4936,17 @@
                             isProcessing = false;
                             if (res.success) {
                                 toast('Oyun bitirildi!');
+
+                                // Oyun oturumunu da otomatik bitir ve raporu göster
+                                socket.emit('end-game-session', function(sessionRes) {
+                                    if (sessionRes.success) {
+                                        console.log('✅ Oyun oturumu otomatik bitirildi');
+                                        toast('Final raporu gösteriliyor...');
+                                        GAME.showFinalReport(sessionRes.report);
+                                    } else {
+                                        console.error('❌ Oyun oturumu bitirilemedi:', sessionRes.error);
+                                    }
+                                });
                             } else {
                                 toast(res.error, true);
                             }

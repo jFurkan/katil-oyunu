@@ -564,6 +564,8 @@ function startCountdown() {
 
             if (gameState.countdown === 0) {
                 clearInterval(gameState.countdownInterval);
+                gameState.started = false;
+                gameState.phaseTitle = '';
 
                 const endedPhaseTitle = gameState.phaseTitle || 'OYUN';
 
@@ -574,8 +576,20 @@ function startCountdown() {
                     type: 'announcement'
                 });
 
-                io.emit('game-ended');
-                console.log('Oyun süresi doldu!');
+                // Oyun oturumu aktifse otomatik bitir ve rapor gönder
+                if (currentSessionId) {
+                    endGameSessionAuto().then(report => {
+                        io.emit('game-ended', report);
+                        console.log('Oyun süresi doldu! Oyun oturumu otomatik bitirildi.');
+                    }).catch(err => {
+                        console.error('Oyun oturumu otomatik bitirilemedi:', err);
+                        io.emit('game-ended');
+                        console.log('Oyun süresi doldu!');
+                    });
+                } else {
+                    io.emit('game-ended');
+                    console.log('Oyun süresi doldu!');
+                }
             }
         }
     }, 1000);
@@ -586,6 +600,132 @@ function stopCountdown() {
     if (gameState.countdownInterval) {
         clearInterval(gameState.countdownInterval);
         gameState.countdownInterval = null;
+    }
+}
+
+// Oyun oturumunu otomatik bitir (countdown dolduğunda)
+async function endGameSessionAuto() {
+    if (!currentSessionId) {
+        return null;
+    }
+
+    try {
+        // Final istatistikleri topla
+        const teams = await pool.query(`
+            SELECT t.*,
+                   (SELECT COUNT(*) FROM clues WHERE team_id = t.id) as clue_count,
+                   (SELECT COUNT(*) FROM team_messages WHERE team_id = t.id) as message_count
+            FROM teams t
+            ORDER BY score DESC
+        `);
+
+        const totalClues = await pool.query('SELECT COUNT(*) FROM clues');
+        const totalMessages = await pool.query('SELECT COUNT(*) FROM team_messages');
+        const sessionInfo = await pool.query('SELECT started_at FROM game_sessions WHERE id = $1', [currentSessionId]);
+
+        // Süre hesapla (dakika olarak)
+        const startTime = new Date(sessionInfo.rows[0].started_at);
+        const endTime = new Date();
+        const durationMinutes = Math.round((endTime - startTime) / 60000);
+
+        // Kazanan takım
+        const winnerTeam = teams.rows[0];
+
+        // Session'ı kapat ve istatistikleri kaydet
+        await pool.query(`
+            UPDATE game_sessions
+            SET ended_at = NOW(),
+                winner_team_id = $1,
+                total_clues = $2,
+                total_messages = $3,
+                duration_minutes = $4
+            WHERE id = $5
+        `, [winnerTeam?.id, totalClues.rows[0].count, totalMessages.rows[0].count, durationMinutes, currentSessionId]);
+
+        await logGameEvent('game_ended', `Oyun bitti. Kazanan: ${winnerTeam?.name}`, {
+            teamId: winnerTeam?.id,
+            teamName: winnerTeam?.name,
+            metadata: { duration_minutes: durationMinutes, winner_score: winnerTeam?.score }
+        });
+
+        // Timeline (son 100 event)
+        const timeline = await pool.query(`
+            SELECT event_type, team_name, user_nickname, description, created_at
+            FROM game_events
+            WHERE session_id = $1
+            ORDER BY created_at ASC
+            LIMIT 100
+        `, [currentSessionId]);
+
+        // Rozetler hesapla
+        const badges = [];
+        if (teams.rows.length > 0) {
+            badges.push({ teamId: teams.rows[0].id, teamName: teams.rows[0].name, badge: '🏆 Kazanan Takım', reason: `${teams.rows[0].score} puan` });
+        }
+
+        // En çok ipucu toplayan
+        const mostCluesTeam = teams.rows.reduce((prev, current) =>
+            (parseInt(current.clue_count) > parseInt(prev.clue_count)) ? current : prev
+        , teams.rows[0]);
+        if (mostCluesTeam && parseInt(mostCluesTeam.clue_count) > 0) {
+            badges.push({ teamId: mostCluesTeam.id, teamName: mostCluesTeam.name, badge: '🔍 En Detektif', reason: `${mostCluesTeam.clue_count} ipucu` });
+        }
+
+        // En sosyal takım
+        const mostSocialTeam = teams.rows.reduce((prev, current) =>
+            (parseInt(current.message_count) > parseInt(prev.message_count)) ? current : prev
+        , teams.rows[0]);
+        if (mostSocialTeam && parseInt(mostSocialTeam.message_count) > 0) {
+            badges.push({ teamId: mostSocialTeam.id, teamName: mostSocialTeam.name, badge: '💬 En Sosyal', reason: `${mostSocialTeam.message_count} mesaj` });
+        }
+
+        // İlk ipucu
+        const firstClue = await pool.query(`
+            SELECT c.*, t.name as team_name
+            FROM clues c
+            JOIN teams t ON c.team_id = t.id
+            ORDER BY c.created_at ASC
+            LIMIT 1
+        `);
+        if (firstClue.rows.length > 0) {
+            badges.push({ teamId: firstClue.rows[0].team_id, teamName: firstClue.rows[0].team_name, badge: '⚡ İlk Kan', reason: 'İlk ipucu' });
+        }
+
+        const finalReport = {
+            sessionId: currentSessionId,
+            teams: teams.rows.map(t => ({
+                id: t.id,
+                name: t.name,
+                score: t.score,
+                clueCount: parseInt(t.clue_count),
+                messageCount: parseInt(t.message_count),
+                avatar: t.avatar,
+                color: t.color
+            })),
+            stats: {
+                totalClues: parseInt(totalClues.rows[0].count),
+                totalMessages: parseInt(totalMessages.rows[0].count),
+                durationMinutes: durationMinutes,
+                totalTeams: teams.rows.length
+            },
+            badges: badges,
+            timeline: timeline.rows.map(e => ({
+                type: e.event_type,
+                teamName: e.team_name,
+                userNickname: e.user_nickname,
+                description: e.description,
+                time: e.created_at
+            }))
+        };
+
+        // Session'ı kapat
+        currentSessionId = null;
+
+        console.log('🏁 Oyun oturumu otomatik sonlandırıldı. Kazanan:', winnerTeam?.name);
+        return finalReport;
+    } catch (err) {
+        console.error('Oyun oturumu otomatik bitirme hatası:', err);
+        throw err;
     }
 }
 
