@@ -315,6 +315,32 @@ async function initDatabase() {
             ON game_events(session_id, created_at DESC)
         `);
 
+        // Phases tablosu (Her faz için kayıt)
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS phases (
+                id TEXT PRIMARY KEY,
+                session_id TEXT REFERENCES game_sessions(id) ON DELETE CASCADE,
+                title TEXT NOT NULL,
+                started_at TIMESTAMP DEFAULT NOW(),
+                ended_at TIMESTAMP,
+                duration_seconds INTEGER,
+                duration_minutes INTEGER,
+                total_clues INTEGER DEFAULT 0,
+                total_messages INTEGER DEFAULT 0,
+                total_score_changes INTEGER DEFAULT 0,
+                leading_team_id TEXT REFERENCES teams(id) ON DELETE SET NULL,
+                leading_team_name TEXT,
+                leading_team_score INTEGER,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        `);
+
+        // Phases index (session bazlı sorgular için)
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_phases_session_time
+            ON phases(session_id, started_at DESC)
+        `);
+
         console.log('✓ Database initialized');
     } catch (err) {
         console.error('Database init error:', err);

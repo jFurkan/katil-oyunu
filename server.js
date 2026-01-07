@@ -19,6 +19,8 @@ const { pool, initDatabase } = require('./database');
 // GAME SESSION TRACKING
 // ========================================
 let currentSessionId = null; // Aktif oyun oturumu ID'si
+let currentPhaseId = null; // Aktif faz ID'si
+let phaseStartStats = null; // Faz başlangıç istatistikleri (ipucu, mesaj, vb)
 
 // Event loglama yardımcı fonksiyonu
 async function logGameEvent(eventType, description, options = {}) {
@@ -576,6 +578,13 @@ function startCountdown() {
                     type: 'announcement'
                 });
 
+                // Faz kaydını kapat (eğer aktif faz varsa)
+                if (currentPhaseId) {
+                    endPhaseTracking().catch(err => {
+                        console.error('Faz kaydı kapatılamadı:', err);
+                    });
+                }
+
                 // Oyun oturumu aktifse otomatik bitir ve rapor gönder
                 if (currentSessionId) {
                     endGameSessionAuto().then(report => {
@@ -600,6 +609,138 @@ function stopCountdown() {
     if (gameState.countdownInterval) {
         clearInterval(gameState.countdownInterval);
         gameState.countdownInterval = null;
+    }
+}
+
+// Faz kaydını başlat
+async function startPhaseTracking(phaseTitle, durationSeconds) {
+    if (!currentSessionId) {
+        console.warn('⚠️  Faz kaydı başlatılamadı: Aktif session yok');
+        return;
+    }
+
+    try {
+        // Yeni faz ID'si oluştur
+        currentPhaseId = crypto.randomUUID();
+
+        // Başlangıç istatistiklerini al
+        const cluesCount = await pool.query('SELECT COUNT(*) FROM clues');
+        const messagesCount = await pool.query('SELECT COUNT(*) FROM team_messages');
+        const scoreChangesCount = await pool.query('SELECT COUNT(*) FROM game_events WHERE event_type = $1', ['score_changed']);
+
+        phaseStartStats = {
+            clues: parseInt(cluesCount.rows[0].count),
+            messages: parseInt(messagesCount.rows[0].count),
+            scoreChanges: parseInt(scoreChangesCount.rows[0].count)
+        };
+
+        // Faz kaydını veritabanına ekle
+        await pool.query(`
+            INSERT INTO phases (id, session_id, title, started_at, duration_seconds, duration_minutes)
+            VALUES ($1, $2, $3, NOW(), $4, $5)
+        `, [currentPhaseId, currentSessionId, phaseTitle, durationSeconds, Math.round(durationSeconds / 60)]);
+
+        console.log(`📍 Faz başladı: "${phaseTitle}" (${Math.round(durationSeconds / 60)} dakika) - ID: ${currentPhaseId}`);
+    } catch (err) {
+        console.error('❌ Faz kaydı başlatma hatası:', err);
+        currentPhaseId = null;
+        phaseStartStats = null;
+    }
+}
+
+// Faz kaydını kapat
+async function endPhaseTracking() {
+    if (!currentPhaseId) {
+        return;
+    }
+
+    try {
+        // Bitiş istatistiklerini al
+        const cluesCount = await pool.query('SELECT COUNT(*) FROM clues');
+        const messagesCount = await pool.query('SELECT COUNT(*) FROM team_messages');
+        const scoreChangesCount = await pool.query('SELECT COUNT(*) FROM game_events WHERE event_type = $1', ['score_changed']);
+
+        // Fark hesapla
+        const totalClues = parseInt(cluesCount.rows[0].count) - (phaseStartStats?.clues || 0);
+        const totalMessages = parseInt(messagesCount.rows[0].count) - (phaseStartStats?.messages || 0);
+        const totalScoreChanges = parseInt(scoreChangesCount.rows[0].count) - (phaseStartStats?.scoreChanges || 0);
+
+        // Lider takımı bul
+        const leadingTeamResult = await pool.query(`
+            SELECT id, name, score
+            FROM teams
+            ORDER BY score DESC
+            LIMIT 1
+        `);
+
+        const leadingTeam = leadingTeamResult.rows[0];
+
+        // Faz kaydını güncelle
+        await pool.query(`
+            UPDATE phases
+            SET ended_at = NOW(),
+                total_clues = $1,
+                total_messages = $2,
+                total_score_changes = $3,
+                leading_team_id = $4,
+                leading_team_name = $5,
+                leading_team_score = $6
+            WHERE id = $7
+        `, [
+            totalClues,
+            totalMessages,
+            totalScoreChanges,
+            leadingTeam?.id,
+            leadingTeam?.name,
+            leadingTeam?.score,
+            currentPhaseId
+        ]);
+
+        console.log(`✅ Faz bitti: ${currentPhaseId} - İpucu: ${totalClues}, Mesaj: ${totalMessages}, Puan değişikliği: ${totalScoreChanges}`);
+
+        // Faz listesini güncelle ve broadcast et
+        const phases = await getPhases(currentSessionId);
+        io.emit('phases-update', phases);
+
+        // Temizle
+        currentPhaseId = null;
+        phaseStartStats = null;
+    } catch (err) {
+        console.error('❌ Faz kaydı kapatma hatası:', err);
+    }
+}
+
+// Faz listesini getir
+async function getPhases(sessionId) {
+    if (!sessionId) {
+        return [];
+    }
+
+    try {
+        const result = await pool.query(`
+            SELECT *
+            FROM phases
+            WHERE session_id = $1
+            ORDER BY started_at DESC
+        `, [sessionId]);
+
+        return result.rows.map(phase => ({
+            id: phase.id,
+            title: phase.title,
+            startedAt: phase.started_at,
+            endedAt: phase.ended_at,
+            durationSeconds: phase.duration_seconds,
+            durationMinutes: phase.duration_minutes,
+            totalClues: phase.total_clues || 0,
+            totalMessages: phase.total_messages || 0,
+            totalScoreChanges: phase.total_score_changes || 0,
+            leadingTeamName: phase.leading_team_name,
+            leadingTeamScore: phase.leading_team_score,
+            isActive: !phase.ended_at
+        }));
+    } catch (err) {
+        console.error('❌ Faz listesi alma hatası:', err);
+        return [];
     }
 }
 
@@ -3623,6 +3764,13 @@ io.on('connection', async (socket) => {
         gameState.phaseTitle = phaseTitle;
         startCountdown();
 
+        // Faz kaydı başlat (eğer session aktifse)
+        if (currentSessionId) {
+            startPhaseTracking(phaseTitle, minutesValidation.value * 60).catch(err => {
+                console.error('Faz kaydı başlatılamadı:', err);
+            });
+        }
+
         io.emit('game-started', {
             countdown: gameState.countdown,
             phaseTitle: gameState.phaseTitle
@@ -3698,6 +3846,13 @@ io.on('connection', async (socket) => {
         gameState.started = false;
         gameState.countdown = 0;
         gameState.phaseTitle = '';
+
+        // Faz kaydını kapat (eğer aktif faz varsa)
+        if (currentPhaseId) {
+            endPhaseTracking().catch(err => {
+                console.error('Faz kaydı kapatılamadı:', err);
+            });
+        }
 
         io.emit('game-ended');
 
@@ -4039,6 +4194,25 @@ io.on('connection', async (socket) => {
         } catch (err) {
             console.error('Kullanıcılar getirme hatası:', err);
             callback([]);
+        }
+    });
+
+    // Faz listesini getir (admin)
+    socket.on('get-phases', async (callback) => {
+        if (typeof callback !== 'function') callback = () => {};
+        // GÜVENLİK: Admin kontrolü
+        if (!socket.data.isAdmin) {
+            callback({ success: false, error: 'Yetkisiz işlem!' });
+            console.log('⚠️  Yetkisiz admin işlemi: get-phases -', socket.id);
+            return;
+        }
+
+        try {
+            const phases = await getPhases(currentSessionId);
+            callback({ success: true, phases: phases });
+        } catch (err) {
+            console.error('Faz listesi getirme hatası:', err);
+            callback({ success: false, error: 'Faz listesi getirilemedi!' });
         }
     });
 

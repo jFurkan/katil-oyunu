@@ -1813,6 +1813,19 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Faz Geçmişi -->
+                    <div style="margin-top: 30px; background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 20px;">
+                        <h4 style="color: #4dd4d4; margin: 0 0 15px 0; font-size: 16px;">📋 Faz Geçmişi</h4>
+                        <p style="color: #888; font-size: 12px; margin: 0 0 15px 0;">Her faz için başlangıç, bitiş ve istatistik bilgileri.</p>
+
+                        <div id="phasesList" style="display: flex; flex-direction: column; gap: 10px;">
+                            <div style="text-align: center; padding: 40px 20px; color: #555;">
+                                <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.3;">⏱️</div>
+                                <div style="font-size: 14px;">Henüz faz başlatılmamış</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -4200,9 +4213,10 @@
 
                     this.currentSection = section;
 
-                    // Oyun kontrolü bölümü açıldıysa karakterleri yükle
+                    // Oyun kontrolü bölümü açıldıysa karakterleri ve fazları yükle
                     if (section === 'game') {
                         ADMIN.loadGameCharacters();
+                        ADMIN.loadPhases();
                     }
 
                     // Karakterler bölümü açıldıysa karakterleri yükle
@@ -4376,6 +4390,106 @@
                             ADMIN.loadGameCharacters(); // Hata varsa listeyi yenile
                         }
                     });
+                },
+
+                // FAZ YÖNETİMİ
+                loadPhases: function() {
+                    console.log('loadPhases çağrıldı');
+                    if (!socketConnected) {
+                        console.error('Socket bağlantısı yok, fazlar yüklenemiyor!');
+                        return;
+                    }
+
+                    socket.emit('get-phases', function(response) {
+                        if (response.success) {
+                            console.log('Fazlar yüklendi:', response.phases);
+                            ADMIN.renderPhases(response.phases);
+                        } else {
+                            console.error('Faz yükleme hatası:', response.error);
+                        }
+                    });
+                },
+
+                renderPhases: function(phases) {
+                    console.log('renderPhases çağrıldı, faz sayısı:', phases.length);
+                    const container = document.getElementById('phasesList');
+
+                    if (!container) {
+                        console.error('phasesList container bulunamadı!');
+                        return;
+                    }
+
+                    if (phases.length === 0) {
+                        container.innerHTML = `
+                            <div style="text-align: center; padding: 40px 20px; color: #555;">
+                                <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.3;">⏱️</div>
+                                <div style="font-size: 14px;">Henüz faz başlatılmamış</div>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    let html = '';
+                    phases.forEach(function(phase) {
+                        const startDate = new Date(phase.startedAt);
+                        const endDate = phase.endedAt ? new Date(phase.endedAt) : null;
+                        const isActive = phase.isActive;
+
+                        html += `
+                            <div style="padding: 15px; background: ${isActive ? '#0d2818' : '#0a0a0a'}; border: 1px solid ${isActive ? '#1a5d1a' : '#333'}; border-radius: 8px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                    <div style="font-weight: 600; color: ${isActive ? '#4dd44d' : '#4dd4d4'}; font-size: 14px;">
+                                        ${isActive ? '🟢 ' : ''}${escapeHtml(phase.title)}
+                                    </div>
+                                    <div style="font-size: 11px; color: #666;">
+                                        ${phase.durationMinutes} dakika
+                                    </div>
+                                </div>
+
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 11px; color: #888; margin-bottom: 10px;">
+                                    <div>
+                                        <div style="color: #666;">Başlangıç:</div>
+                                        <div style="color: #aaa;">${formatDate(startDate)}</div>
+                                    </div>
+                                    <div>
+                                        <div style="color: #666;">Bitiş:</div>
+                                        <div style="color: #aaa;">${endDate ? formatDate(endDate) : '---'}</div>
+                                    </div>
+                                </div>
+
+                                ${!isActive ? `
+                                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding-top: 10px; border-top: 1px solid #222;">
+                                        <div style="text-align: center;">
+                                            <div style="color: #666; font-size: 10px;">İpuçları</div>
+                                            <div style="color: #4dd4d4; font-weight: 600; font-size: 13px;">${phase.totalClues}</div>
+                                        </div>
+                                        <div style="text-align: center;">
+                                            <div style="color: #666; font-size: 10px;">Mesajlar</div>
+                                            <div style="color: #4dd4d4; font-weight: 600; font-size: 13px;">${phase.totalMessages}</div>
+                                        </div>
+                                        <div style="text-align: center;">
+                                            <div style="color: #666; font-size: 10px;">Puan Değişimi</div>
+                                            <div style="color: #4dd4d4; font-weight: 600; font-size: 13px;">${phase.totalScoreChanges}</div>
+                                        </div>
+                                    </div>
+
+                                    ${phase.leadingTeamName ? `
+                                        <div style="margin-top: 10px; padding: 8px; background: #0d0d0d; border-radius: 6px; text-align: center; font-size: 11px;">
+                                            <span style="color: #666;">Lider Takım:</span>
+                                            <span style="color: #d4af37; font-weight: 600;">${escapeHtml(phase.leadingTeamName)}</span>
+                                            <span style="color: #888;">(${phase.leadingTeamScore} puan)</span>
+                                        </div>
+                                    ` : ''}
+                                ` : `
+                                    <div style="text-align: center; padding: 10px; color: #4dd44d; font-size: 12px; animation: pulse 2s infinite;">
+                                        ⏱️ Faz devam ediyor...
+                                    </div>
+                                `}
+                            </div>
+                        `;
+                    });
+
+                    container.innerHTML = html;
                 },
 
                 sendGeneralClue: function() {
@@ -6426,20 +6540,47 @@
                 }
             });
 
-            // Oyun bitti
-            socket.on('game-ended', function() {
+            // Oyun bitti (parametresiz - countdown dolduğunda veya manuel bitirme)
+            socket.on('game-ended', function(report) {
                 gameState.started = false;
                 gameState.countdown = 0;
                 gameState.phaseTitle = '';
 
                 // Admin paneli güncelle
-                document.getElementById('gameStartSection').style.display = 'block';
-                document.getElementById('gameRunningSection').style.display = 'none';
+                var startSection = document.getElementById('gameStartSection');
+                var runningSection = document.getElementById('gameRunningSection');
+                if (startSection) startSection.style.display = 'block';
+                if (runningSection) runningSection.style.display = 'none';
+
+                // Admin countdown display'i temizle
+                var adminCountdown = document.getElementById('adminCountdown');
+                if (adminCountdown) {
+                    adminCountdown.textContent = '--:--';
+                    adminCountdown.classList.remove('warning');
+                }
 
                 // Takım sayfası güncelle
                 renderTeamCountdown();
 
-                toast('Oyun bitti!');
+                // Eğer report varsa (otomatik bitişte), göster
+                if (report && report.teams) {
+                    console.log('Oyun bitti, final raporu alındı:', report);
+                    toast('🏁 Oyun bitti! Rapor gösteriliyor...');
+                    GAME.showFinalReport(report);
+                } else {
+                    toast('Oyun bitti!');
+                }
+            });
+
+            // Faz listesi güncellendi (admin için)
+            socket.on('phases-update', function(phases) {
+                console.log('Faz listesi güncellendi:', phases);
+                // Eğer admin ve oyun kontrolü bölümündeyse listeyi güncelle
+                if (isAdmin &&
+                    document.getElementById('pgAdmin').classList.contains('active') &&
+                    document.getElementById('adminSectionGame').style.display !== 'none') {
+                    ADMIN.renderPhases(phases);
+                }
             });
 
             // Kullanıcı silindi (admin tarafından)
