@@ -25,8 +25,11 @@ if (missingEnvVars.length > 0) {
 
 // GÜVENLİK: Admin şifre kontrolü
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-if (ADMIN_PASSWORD.length < 8) {
-    console.warn('⚠️  UYARI: ADMIN_PASSWORD çok kısa! En az 8 karakter önerilir.');
+if (!ADMIN_PASSWORD || ADMIN_PASSWORD.length < 12) {
+    console.error('❌ HATA: ADMIN_PASSWORD çok kısa veya eksik!');
+    console.error('   En az 12 karakter gerekli. Lütfen .env dosyanızı veya Railway environment variables\'ı kontrol edin.');
+    console.error('   Örnek: ADMIN_PASSWORD=Super_Guclu_Sifre_2026');
+    process.exit(1);
 }
 
 console.log('✓ Admin password loaded from environment variables');
@@ -112,8 +115,8 @@ const authLimiter = rateLimit({
     message: 'Çok fazla giriş denemesi, 15 dakika sonra tekrar deneyin.'
 });
 
+// GÜVENLİK: Sadece API route'larını limitle (HTML/statik dosyalar serbest)
 app.use('/api/', limiter);
-app.use(limiter);
 
 // 3. Body size limits - Büyük payload saldırılarını önle
 app.use(express.json({ limit: '100kb' }));
