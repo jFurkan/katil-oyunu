@@ -102,6 +102,7 @@ async function initDatabase() {
                 online BOOLEAN DEFAULT TRUE,
                 ip_address VARCHAR(45),
                 last_activity TIMESTAMP DEFAULT NOW(),
+                profile_photo_url TEXT,
                 created_at TIMESTAMP DEFAULT NOW()
             )
         `);
@@ -115,6 +116,11 @@ async function initDatabase() {
         await pool.query(`
             ALTER TABLE users
             ADD COLUMN IF NOT EXISTS last_activity TIMESTAMP DEFAULT NOW()
+        `);
+
+        await pool.query(`
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS profile_photo_url TEXT
         `);
 
         // Teams tablosuna captain_nickname ekle (eğer yoksa)

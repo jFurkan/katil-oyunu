@@ -1372,6 +1372,51 @@
                         onblur="this.style.borderColor='var(--border-color)'"
                     />
 
+                    <!-- Profil Fotoğrafı Yükleme (Opsiyonel) -->
+                    <div style="margin-bottom: 20px; padding: 15px; background: #1a1a1a; border: 1px solid #333; border-radius: 8px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                            <span style="color: #ccc; font-size: 14px;">📸 Profil Fotoğrafı (opsiyonel)</span>
+                            <span id="photoOptionalLabel" style="color: #666; font-size: 12px;">Atlayabilirsiniz</span>
+                        </div>
+
+                        <!-- Fotoğraf Önizleme -->
+                        <div id="photoPreview" style="display: none; margin-bottom: 15px; text-align: center;">
+                            <img id="photoPreviewImg" src="" alt="Önizleme" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--gold);">
+                            <div style="margin-top: 8px;">
+                                <button class="btn" style="padding: 5px 15px; font-size: 12px; background: #ff4444;" onclick="USER.removeProfilePhoto()">❌ Kaldır</button>
+                            </div>
+                        </div>
+
+                        <!-- Yükleme Butonları -->
+                        <div id="photoUploadButtons" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <button class="btn" style="padding: 10px; font-size: 13px; background: linear-gradient(135deg, #4a5568, #2d3748);" onclick="USER.openCamera()">
+                                📷 Kamera
+                            </button>
+                            <label style="margin: 0;">
+                                <input type="file" id="photoFileInput" accept="image/*" style="display: none;" onchange="USER.handleFileSelect(event)">
+                                <button type="button" class="btn" style="width: 100%; padding: 10px; font-size: 13px; background: linear-gradient(135deg, #4a5568, #2d3748);" onclick="document.getElementById('photoFileInput').click()">
+                                    🖼️ Galeri
+                                </button>
+                            </label>
+                        </div>
+
+                        <!-- Kamera Video (gizli, kamera açıldığında gösterilir) -->
+                        <div id="cameraContainer" style="display: none; margin-top: 15px;">
+                            <video id="cameraVideo" autoplay playsinline style="width: 100%; border-radius: 8px; background: #000;"></video>
+                            <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <button class="btn" style="padding: 10px; font-size: 13px; background: linear-gradient(135deg, #059669, #047857);" onclick="USER.capturePhoto()">
+                                    ✅ Çek
+                                </button>
+                                <button class="btn" style="padding: 10px; font-size: 13px; background: #ff4444;" onclick="USER.closeCamera()">
+                                    ❌ İptal
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Canvas for photo capture (gizli) -->
+                        <canvas id="photoCanvas" style="display: none;"></canvas>
+                    </div>
+
                     <button class="btn btn-primary" style="margin-bottom: 0;" onclick="USER.registerNickname()">🎮 Oyuna Giriş Yap</button>
                 </div>
 
@@ -1727,6 +1772,7 @@
                 <button class="btn" onclick="ADMIN.showSection('stats')">📊 İstatistikler</button>
                 <button class="btn" onclick="ADMIN.showSection('credits')">👥 Emeği Geçenler</button>
                 <button class="btn" onclick="ADMIN.showSection('iplogs')">🔍 IP Logları</button>
+                <button class="btn" onclick="ADMIN.showSection('profilephotos')">📸 Profil Fotoğrafları</button>
                 <button class="btn" style="background: linear-gradient(135deg, #1a5d1a, #0d300d); border-color: #4CAF50;" onclick="ADMIN.startGameSession()">🎮 Oyunu Başlat</button>
                 <button class="btn" style="background: linear-gradient(135deg, #d4af37, #8b7500); border-color: #ffd700;" onclick="ADMIN.endGameSession()">🏁 Oyunu Bitir</button>
                 <button class="btn" style="background: linear-gradient(135deg, #8b0000, #450000); border-color: #ff4444;" onclick="ADMIN.showSection('reset')">🔄 Oyunu Sıfırla</button>
@@ -2237,6 +2283,39 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Profil Fotoğrafları Bölümü -->
+            <div id="adminSectionProfilephotos" class="admin-section" style="display:none;">
+                <h3 style="color:var(--gold); font-size:18px; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">📸 Profil Fotoğrafları Yönetimi</h3>
+
+                <!-- Bilgilendirme -->
+                <div style="background:#1a1a1a; border-left:4px solid var(--gold); padding:15px; margin-bottom:20px; border-radius:8px;">
+                    <p style="color:#aaa; font-size:13px; line-height:1.6; margin:0;">
+                        Kullanıcıların profil fotoğraflarını buradan görüntüleyebilir, silebilir veya değiştirebilirsiniz.
+                        <br><strong style="color:var(--gold);">Fotoğraf Sil:</strong> Kullanıcının profil fotoğrafı kaldırılır (varsayılan avatar gösterilir)
+                        <br><strong style="color:var(--gold);">Fotoğraf Değiştir:</strong> Kullanıcı için yeni bir fotoğraf yükleyebilirsiniz
+                    </p>
+                </div>
+
+                <!-- Yenile Butonu -->
+                <div style="margin-bottom:20px;">
+                    <button class="btn btn-primary" style="width:auto; padding:12px 24px; margin:0;" onclick="PHOTO_ADMIN.loadUsers()">🔄 Kullanıcıları Yenile</button>
+                </div>
+
+                <!-- Kullanıcılar Listesi -->
+                <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h3 style="color:#888; font-size:13px; text-transform:uppercase; letter-spacing:1px;">Kullanıcılar ve Profil Fotoğrafları</h3>
+                        <span id="photoUsersCount" style="color:#666; font-size:12px;">0 kullanıcı</span>
+                    </div>
+                    <div id="photoUsersList" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:15px; min-height:100px;">
+                        <div style="color:#666; text-align:center; padding:30px; grid-column: 1/-1;">Yükleniyor...</div>
+                    </div>
+                </div>
+
+                <!-- Fotoğraf Değiştirme Modal (gizli) -->
+                <input type="file" id="adminPhotoInput" accept="image/*" style="display:none;" onchange="PHOTO_ADMIN.handlePhotoSelect(event)">
             </div>
 
             <!-- Oyunu Sıfırla Bölümü -->
@@ -2971,6 +3050,9 @@
 
             // USER objesi - Kullanıcı işlemleri
             window.USER = {
+                cameraStream: null, // Aktif kamera stream'i
+                selectedPhotoBlob: null, // Seçilen/çekilen fotoğraf
+
                 registerNickname: function() {
                     var nickname = document.getElementById('inpNickname').value.trim();
                     if (!nickname) {
@@ -2991,26 +3073,211 @@
                         isProcessing = false;
                         if (res.success) {
                             // GÜVENLİK: localStorage'a kaydetme, sadece memory'de tut
-                            currentUser = { userId: res.userId, nickname: res.nickname, teamId: null };
+                            currentUser = {
+                                userId: res.userId,
+                                nickname: res.nickname,
+                                teamId: null,
+                                profilePhotoUrl: res.profilePhotoUrl || null
+                            };
                             updateCurrentUserDisplay();
                             console.log('✅ Kayıt başarılı! UserId:', res.userId);
 
-                            // ÖNCE sayfayı değiştir
-                            showPage('pgLobby');
-                            // SONRA URL'i güncelle (history'ye ekleme)
-                            history.pushState(null, null, '/lobby');
-
-                            toast('Hoşgeldin, ' + res.nickname + '!');
+                            // Profil fotoğrafı varsa yükle
+                            if (USER.selectedPhotoBlob) {
+                                USER.uploadProfilePhoto(function(uploadSuccess) {
+                                    if (uploadSuccess) {
+                                        console.log('✅ Profil fotoğrafı yüklendi');
+                                    }
+                                    // Başarılı ya da değil, sayfaya geç
+                                    USER.selectedPhotoBlob = null; // Temizle
+                                    showPage('pgLobby');
+                                    history.pushState(null, null, '/lobby');
+                                    toast('Hoşgeldin, ' + res.nickname + '!');
+                                });
+                            } else {
+                                // Fotoğraf yoksa direkt geç
+                                showPage('pgLobby');
+                                history.pushState(null, null, '/lobby');
+                                toast('Hoşgeldin, ' + res.nickname + '!');
+                            }
                         } else {
                             toast(res.error, true);
                         }
                     });
                 },
 
+                // Profil fotoğrafı yükleme
+                uploadProfilePhoto: function(callback) {
+                    if (!this.selectedPhotoBlob) {
+                        if (callback) callback(false);
+                        return;
+                    }
+
+                    var formData = new FormData();
+                    formData.append('photo', this.selectedPhotoBlob, 'profile.jpg');
+
+                    fetch('/api/upload-profile-photo', {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'include'
+                    })
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            console.log('✅ Fotoğraf yüklendi:', data.photoUrl);
+                            if (currentUser) {
+                                currentUser.profilePhotoUrl = data.photoUrl;
+                            }
+                            if (callback) callback(true);
+                        } else {
+                            console.error('❌ Fotoğraf yükleme hatası:', data.error);
+                            toast('Fotoğraf yüklenemedi', true);
+                            if (callback) callback(false);
+                        }
+                    })
+                    .catch(function(err) {
+                        console.error('❌ Fotoğraf yükleme hatası:', err);
+                        if (callback) callback(false);
+                    });
+                },
+
+                // Kamera aç
+                openCamera: function() {
+                    var video = document.getElementById('cameraVideo');
+                    var container = document.getElementById('cameraContainer');
+                    var buttons = document.getElementById('photoUploadButtons');
+
+                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        navigator.mediaDevices.getUserMedia({
+                            video: {
+                                facingMode: 'user',
+                                width: { ideal: 640 },
+                                height: { ideal: 640 }
+                            }
+                        })
+                        .then(function(stream) {
+                            USER.cameraStream = stream;
+                            video.srcObject = stream;
+                            container.style.display = 'block';
+                            buttons.style.display = 'none';
+                        })
+                        .catch(function(err) {
+                            console.error('Kamera erişim hatası:', err);
+                            toast('Kamera açılamadı. Lütfen izinleri kontrol edin.', true);
+                        });
+                    } else {
+                        toast('Kamera desteklenmiyor', true);
+                    }
+                },
+
+                // Kamera kapat
+                closeCamera: function() {
+                    if (this.cameraStream) {
+                        this.cameraStream.getTracks().forEach(function(track) {
+                            track.stop();
+                        });
+                        this.cameraStream = null;
+                    }
+
+                    var video = document.getElementById('cameraVideo');
+                    var container = document.getElementById('cameraContainer');
+                    var buttons = document.getElementById('photoUploadButtons');
+
+                    video.srcObject = null;
+                    container.style.display = 'none';
+                    buttons.style.display = 'grid';
+                },
+
+                // Fotoğraf çek
+                capturePhoto: function() {
+                    var video = document.getElementById('cameraVideo');
+                    var canvas = document.getElementById('photoCanvas');
+                    var ctx = canvas.getContext('2d');
+
+                    // Canvas boyutunu video ile eşitle
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+
+                    // Video frame'ini canvas'a çiz
+                    ctx.drawImage(video, 0, 0);
+
+                    // Canvas'ı blob'a çevir
+                    canvas.toBlob(function(blob) {
+                        USER.selectedPhotoBlob = blob;
+
+                        // Önizlemeyi göster
+                        var preview = document.getElementById('photoPreview');
+                        var previewImg = document.getElementById('photoPreviewImg');
+                        previewImg.src = URL.createObjectURL(blob);
+                        preview.style.display = 'block';
+
+                        // Kamerayı kapat
+                        USER.closeCamera();
+
+                        toast('Fotoğraf çekildi!');
+                    }, 'image/jpeg', 0.85);
+                },
+
+                // Galeriden dosya seç
+                handleFileSelect: function(event) {
+                    var file = event.target.files[0];
+                    if (!file) return;
+
+                    // Dosya boyutu kontrolü (5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                        toast('Dosya çok büyük! Maksimum 5MB olmalı.', true);
+                        event.target.value = '';
+                        return;
+                    }
+
+                    // Dosya tipi kontrolü
+                    if (!file.type.startsWith('image/')) {
+                        toast('Lütfen bir resim dosyası seçin!', true);
+                        event.target.value = '';
+                        return;
+                    }
+
+                    this.selectedPhotoBlob = file;
+
+                    // Önizlemeyi göster
+                    var preview = document.getElementById('photoPreview');
+                    var previewImg = document.getElementById('photoPreviewImg');
+                    previewImg.src = URL.createObjectURL(file);
+                    preview.style.display = 'block';
+
+                    toast('Fotoğraf seçildi!');
+                },
+
+                // Fotoğrafı kaldır
+                removeProfilePhoto: function() {
+                    this.selectedPhotoBlob = null;
+
+                    var preview = document.getElementById('photoPreview');
+                    var previewImg = document.getElementById('photoPreviewImg');
+                    var fileInput = document.getElementById('photoFileInput');
+
+                    preview.style.display = 'none';
+                    previewImg.src = '';
+                    fileInput.value = '';
+
+                    // Kamera açıksa kapat
+                    if (this.cameraStream) {
+                        this.closeCamera();
+                    }
+
+                    toast('Fotoğraf kaldırıldı');
+                },
+
                 logout: function() {
                     if (confirm('Çıkış yapmak istediğinize emin misiniz?')) {
                         // Cleanup: Tüm timeout'ları temizle
                         clearAllTimeouts();
+
+                        // Fotoğraf verilerini temizle
+                        this.selectedPhotoBlob = null;
+                        if (this.cameraStream) {
+                            this.closeCamera();
+                        }
 
                         // GÜVENLİK: Session'ı temizle
                         currentUser = null;
@@ -3644,11 +3911,16 @@
                         var teamColor = msg.team_color || '#3b82f6';
                         var teamBadge = `<span style="background: ${teamColor}; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">${htmlEscape(msg.team_name)}</span>`;
 
+                        // Profil fotoğrafı avatar
+                        var avatar = msg.profile_photo_url ?
+                            `<img src="${msg.profile_photo_url}" alt="${htmlEscape(msg.nickname)}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid ${isOwnMessage ? '#4dd4d4' : '#ffa500'};">` :
+                            `<div style="width: 32px; height: 32px; border-radius: 50%; background: ${isOwnMessage ? '#0a4040' : '#333'}; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid ${isOwnMessage ? '#4dd4d4' : '#ffa500'};">👤</div>`;
+
                         // WhatsApp tarzı görünüm
                         if (isOwnMessage) {
                             // Kendi mesajım - SAĞDA
                             html += `
-                            <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: flex-end; margin-bottom: 12px; align-items: flex-end; gap: 8px;">
                                 <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-end;">
                                     <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; justify-content: flex-end;">
                                         <span style="color: #444; font-size: 10px;">${time}</span>
@@ -3660,11 +3932,13 @@
                                         ${htmlEscape(msg.message)}
                                     </div>
                                 </div>
+                                ${avatar}
                             </div>`;
                         } else {
                             // Diğer kişinin mesajı - SOLDA
                             html += `
-                            <div style="display: flex; justify-content: flex-start; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: flex-start; margin-bottom: 12px; align-items: flex-end; gap: 8px;">
+                                ${avatar}
                                 <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-start;">
                                     <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
                                         <span style="color: #ffa500; font-weight: 700; font-size: 13px;">${htmlEscape(msg.nickname)}</span>
@@ -3759,20 +4033,49 @@
                             targetLabel = `<span style="color: #4dd4d4; font-size: 10px; background: rgba(77,212,212,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(77,212,212,0.3);">📢 Tüm Takımlar</span>`;
                         }
 
-                        var html = `
-                        <div style="margin-bottom: 15px; ${isOwnMessage ? 'text-align: right;' : ''}">
-                            <div style="display: inline-block; max-width: 80%; text-align: left;">
-                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
-                                    <span style="color: ${isOwnMessage ? '#4dd4d4' : '#ffa500'}; font-weight: 700; font-size: 13px;">${htmlEscape(message.nickname)}</span>
-                                    <span style="color: #666; font-size: 11px; font-weight: 600;">${htmlEscape(message.team_name)}</span>
-                                    ${targetLabel}
-                                    <span style="color: #444; font-size: 10px;">${time}</span>
+                        // Takım badge
+                        var teamColor = message.team_color || '#3b82f6';
+                        var teamBadge = `<span style="background: ${teamColor}; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">${htmlEscape(message.team_name)}</span>`;
+
+                        // Profil fotoğrafı avatar
+                        var avatar = message.profile_photo_url ?
+                            `<img src="${message.profile_photo_url}" alt="${htmlEscape(message.nickname)}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid ${isOwnMessage ? '#4dd4d4' : '#ffa500'};">` :
+                            `<div style="width: 32px; height: 32px; border-radius: 50%; background: ${isOwnMessage ? '#0a4040' : '#333'}; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid ${isOwnMessage ? '#4dd4d4' : '#ffa500'};">👤</div>`;
+
+                        var html = '';
+                        if (isOwnMessage) {
+                            html = `
+                            <div style="display: flex; justify-content: flex-end; margin-bottom: 12px; align-items: flex-end; gap: 8px;">
+                                <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-end;">
+                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; justify-content: flex-end;">
+                                        <span style="color: #444; font-size: 10px;">${time}</span>
+                                        ${targetLabel}
+                                        ${teamBadge}
+                                        <span style="color: #4dd4d4; font-weight: 700; font-size: 13px;">${htmlEscape(message.nickname)}</span>
+                                    </div>
+                                    <div style="background: linear-gradient(135deg, #0d5858, #0a4040); border: 1px solid #1a7070; border-radius: 12px 12px 2px 12px; padding: 10px 14px; color: #fff; font-size: 14px; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                                        ${htmlEscape(message.message)}
+                                    </div>
                                 </div>
-                                <div style="background: ${isOwnMessage ? 'linear-gradient(135deg, #1a4d4d, #0d3333)' : '#1a1a1a'}; border: 1px solid ${isOwnMessage ? '#4dd4d4' : '#333'}; border-radius: 8px; padding: 10px 14px; color: #fff; font-size: 14px; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
-                                    ${htmlEscape(message.message)}
+                                ${avatar}
+                            </div>`;
+                        } else {
+                            html = `
+                            <div style="display: flex; justify-content: flex-start; margin-bottom: 12px; align-items: flex-end; gap: 8px;">
+                                ${avatar}
+                                <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-start;">
+                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
+                                        <span style="color: #ffa500; font-weight: 700; font-size: 13px;">${htmlEscape(message.nickname)}</span>
+                                        ${teamBadge}
+                                        ${targetLabel}
+                                        <span style="color: #444; font-size: 10px;">${time}</span>
+                                    </div>
+                                    <div style="background: #1a1a1a; border: 1px solid #333; border-radius: 12px 12px 12px 2px; padding: 10px 14px; color: #fff; font-size: 14px; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                                        ${htmlEscape(message.message)}
+                                    </div>
                                 </div>
-                            </div>
-                        </div>`;
+                            </div>`;
+                        }
 
                         container.insertAdjacentHTML('beforeend', html);
                         container.scrollTop = container.scrollHeight;
@@ -3894,6 +4197,7 @@
                     else if (section === 'stats') buttons[8].classList.add('btn-primary');
                     else if (section === 'credits') buttons[9].classList.add('btn-primary');
                     else if (section === 'iplogs') buttons[10].classList.add('btn-primary');
+                    else if (section === 'profilephotos') buttons[11].classList.add('btn-primary');
 
                     this.currentSection = section;
 
@@ -3947,6 +4251,11 @@
                     // IP Logları bölümü açıldıysa varsayılan tab'ı göster
                     if (section === 'iplogs') {
                         IP_SECTION.showTab('logs');
+                    }
+
+                    // Profil Fotoğrafları bölümü açıldıysa kullanıcıları yükle
+                    if (section === 'profilephotos') {
+                        PHOTO_ADMIN.loadUsers();
                     }
 
                     // İstatistikler bölümü açıldıysa verileri yükle
@@ -5228,6 +5537,178 @@
                         } else {
                             toast(res.error, true);
                         }
+                    });
+                }
+            };
+
+            // PHOTO_ADMIN - Profil fotoğrafları yönetimi
+            window.PHOTO_ADMIN = {
+                users: [],
+                currentUserId: null,
+
+                loadUsers: function() {
+                    fetch('/api/admin/users-with-photos', {
+                        method: 'GET',
+                        credentials: 'include'
+                    })
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            PHOTO_ADMIN.users = data.users;
+                            PHOTO_ADMIN.render();
+                            toast('Kullanıcılar yüklendi: ' + data.users.length + ' kayıt');
+                        } else {
+                            toast(data.error, true);
+                        }
+                    })
+                    .catch(function(err) {
+                        console.error('Kullanıcı yükleme hatası:', err);
+                        toast('Kullanıcılar yüklenemedi', true);
+                    });
+                },
+
+                render: function() {
+                    var container = document.getElementById('photoUsersList');
+                    var countEl = document.getElementById('photoUsersCount');
+
+                    if (!container) return;
+
+                    countEl.textContent = this.users.length + ' kullanıcı';
+
+                    if (this.users.length === 0) {
+                        container.innerHTML = '<div style="color:#666; text-align:center; padding:30px; grid-column: 1/-1;">Henüz kayıtlı kullanıcı yok</div>';
+                        return;
+                    }
+
+                    var html = '';
+                    this.users.forEach(function(user) {
+                        var onlineStatus = user.online ? '🟢 Online' : '⚫ Offline';
+                        var onlineColor = user.online ? '#10b981' : '#666';
+
+                        var teamInfo = user.team_name ?
+                            `<span style="display:inline-block; padding:4px 8px; background:${user.team_color || '#333'}; border-radius:4px; font-size:11px; color:#fff;">👥 ${htmlEscape(user.team_name)}</span>` :
+                            '<span style="color:#666; font-size:11px;">Takımsız</span>';
+
+                        var photoDisplay = user.profile_photo_url ?
+                            `<img src="${user.profile_photo_url}" alt="Profil" style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:3px solid var(--gold);">` :
+                            '<div style="width:100px; height:100px; border-radius:50%; background:#333; display:flex; align-items:center; justify-content:center; font-size:40px; color:#666; border:3px solid #444;">👤</div>';
+
+                        var safeNickname = user.nickname.replace(/'/g, "\\'").replace(/"/g, '\\"');
+
+                        html += `
+                        <div style="background:#1a1a1a; border:1px solid #333; border-radius:12px; padding:20px; text-align:center;">
+                            <div style="margin-bottom:15px;">
+                                ${photoDisplay}
+                            </div>
+                            <div style="color:#fff; font-weight:600; font-size:16px; margin-bottom:8px;">
+                                ${htmlEscape(user.nickname)}
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:15px; align-items:center;">
+                                <span style="color:${onlineColor}; font-size:12px;">${onlineStatus}</span>
+                                ${teamInfo}
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                                <button class="btn" style="margin:0; padding:10px; font-size:12px; background:linear-gradient(135deg, #4a5568, #2d3748);"
+                                    onclick="PHOTO_ADMIN.changePhoto('${user.id}', '${safeNickname}')">
+                                    📷 Değiştir
+                                </button>
+                                <button class="btn" style="margin:0; padding:10px; font-size:12px; background:#dc2626; border-color:#dc2626;"
+                                    onclick="PHOTO_ADMIN.deletePhoto('${user.id}', '${safeNickname}')"
+                                    ${user.profile_photo_url ? '' : 'disabled style="opacity:0.5; cursor:not-allowed;"'}>
+                                    🗑️ Sil
+                                </button>
+                            </div>
+                        </div>
+                        `;
+                    });
+
+                    container.innerHTML = html;
+                },
+
+                changePhoto: function(userId, nickname) {
+                    this.currentUserId = userId;
+                    document.getElementById('adminPhotoInput').click();
+                },
+
+                handlePhotoSelect: function(event) {
+                    var file = event.target.files[0];
+                    if (!file) return;
+
+                    if (file.size > 5 * 1024 * 1024) {
+                        toast('Dosya çok büyük! Maksimum 5MB olmalı.', true);
+                        event.target.value = '';
+                        return;
+                    }
+
+                    if (!file.type.startsWith('image/')) {
+                        toast('Lütfen bir resim dosyası seçin!', true);
+                        event.target.value = '';
+                        return;
+                    }
+
+                    if (!this.currentUserId) {
+                        toast('Kullanıcı seçilmedi', true);
+                        return;
+                    }
+
+                    var formData = new FormData();
+                    formData.append('photo', file);
+                    formData.append('userId', this.currentUserId);
+
+                    toast('Fotoğraf yükleniyor...');
+
+                    fetch('/api/admin/update-user-photo', {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'include'
+                    })
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            toast('Fotoğraf güncellendi!');
+                            PHOTO_ADMIN.loadUsers();
+                        } else {
+                            toast(data.error, true);
+                        }
+                    })
+                    .catch(function(err) {
+                        console.error('Fotoğraf yükleme hatası:', err);
+                        toast('Fotoğraf yüklenemedi', true);
+                    })
+                    .finally(function() {
+                        event.target.value = '';
+                        PHOTO_ADMIN.currentUserId = null;
+                    });
+                },
+
+                deletePhoto: function(userId, nickname) {
+                    if (!confirm(`"${nickname}" kullanıcısının profil fotoğrafını silmek istediğinize emin misiniz?`)) {
+                        return;
+                    }
+
+                    toast('Fotoğraf siliniyor...');
+
+                    var formData = new FormData();
+                    formData.append('userId', userId);
+                    formData.append('action', 'delete');
+
+                    fetch('/api/admin/update-user-photo', {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'include'
+                    })
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            toast('Fotoğraf silindi!');
+                            PHOTO_ADMIN.loadUsers();
+                        } else {
+                            toast(data.error, true);
+                        }
+                    })
+                    .catch(function(err) {
+                        console.error('Fotoğraf silme hatası:', err);
+                        toast('Fotoğraf silinemedi', true);
                     });
                 }
             };

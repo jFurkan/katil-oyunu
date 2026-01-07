@@ -14,3 +14,13 @@ nul
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+# User uploaded files
+public/uploads/
+
+# Test and performance files
+load.js
+loadtest*.js
+simple-loadtest.js
+socket-test.js
+lighthouse-report.html

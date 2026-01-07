@@ -10,6 +10,9 @@ const validator = require('validator'); // Input validation için
 const escapeHtml = require('escape-html'); // XSS koruması için
 const cookieParser = require('cookie-parser'); // Cookie yönetimi için
 const session = require('express-session'); // Session yönetimi için
+const multer = require('multer'); // File upload için
+const sharp = require('sharp'); // Image processing için
+const fs = require('fs').promises; // File system işlemleri için
 const { pool, initDatabase } = require('./database');
 
 // ========================================
@@ -195,6 +198,24 @@ app.use(express.static(path.join(__dirname, 'public'), {
     immutable: process.env.NODE_ENV === 'production'  // Cache immutable (değişmez)
 }));
 
+// ========================================
+// PROFILE PHOTO UPLOAD CONFIGURATION
+// ========================================
+const upload = multer({
+    storage: multer.memoryStorage(), // Bellekte tut (sharp ile işleyeceğiz)
+    limits: {
+        fileSize: 5 * 1024 * 1024 // Max 5MB
+    },
+    fileFilter: (req, file, cb) => {
+        // Sadece resim dosyalarını kabul et
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Sadece resim dosyaları yüklenebilir!'));
+        }
+    }
+});
+
 // Root endpoint - Railway health check
 app.get('/', (req, res) => {
     // KRİTİK FIX: saveUninitialized: false olduğu için session'ı "kirlet" ve kaydet
@@ -257,6 +278,228 @@ app.post('/api/cleanup-users', async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Internal server error'
+        });
+    }
+});
+
+// ========================================
+// PROFILE PHOTO UPLOAD ENDPOINT
+// ========================================
+
+// Profil fotoğrafı yükleme endpoint'i
+app.post('/api/upload-profile-photo', upload.single('photo'), async (req, res) => {
+    try {
+        // Kullanıcı giriş kontrolü
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({
+                success: false,
+                error: 'Giriş yapmalısınız!'
+            });
+        }
+
+        // Dosya kontrolü
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                error: 'Fotoğraf seçilmedi!'
+            });
+        }
+
+        const userId = req.session.userId;
+        const filename = `${userId}_${Date.now()}.jpg`;
+        const uploadsDir = path.join(__dirname, 'public', 'uploads', 'profiles');
+        const outputPath = path.join(uploadsDir, filename);
+
+        // Klasör yoksa oluştur
+        await fs.mkdir(uploadsDir, { recursive: true });
+
+        // Resmi işle ve kaydet (200x200, optimize)
+        await sharp(req.file.buffer)
+            .resize(200, 200, {
+                fit: 'cover',
+                position: 'center'
+            })
+            .jpeg({
+                quality: 85,
+                mozjpeg: true
+            })
+            .toFile(outputPath);
+
+        // Veritabanını güncelle
+        const photoUrl = `/uploads/profiles/${filename}`;
+        await pool.query(
+            'UPDATE users SET profile_photo_url = $1 WHERE id = $2',
+            [photoUrl, userId]
+        );
+
+        console.log(`✓ Profil fotoğrafı yüklendi: ${userId} -> ${filename}`);
+
+        res.json({
+            success: true,
+            photoUrl: photoUrl
+        });
+
+    } catch (err) {
+        console.error('❌ Profil fotoğrafı yükleme hatası:', err);
+        res.status(500).json({
+            success: false,
+            error: 'Fotoğraf yüklenemedi. Lütfen tekrar deneyin.'
+        });
+    }
+});
+
+// Admin: Kullanıcı fotoğrafını güncelle/sil
+app.post('/api/admin/update-user-photo', upload.single('photo'), async (req, res) => {
+    try {
+        // Admin kontrolü
+        if (!req.session || !req.session.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                error: 'Yetkisiz erişim - Admin girişi gerekli'
+            });
+        }
+
+        const { userId, action } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Kullanıcı ID gerekli!'
+            });
+        }
+
+        // Sil action'ı
+        if (action === 'delete') {
+            // Eski fotoğrafı bul
+            const userResult = await pool.query(
+                'SELECT profile_photo_url FROM users WHERE id = $1',
+                [userId]
+            );
+
+            if (userResult.rows.length > 0 && userResult.rows[0].profile_photo_url) {
+                const oldPhotoPath = path.join(__dirname, 'public', userResult.rows[0].profile_photo_url);
+
+                // Dosyayı sil (hata olursa devam et)
+                try {
+                    await fs.unlink(oldPhotoPath);
+                } catch (unlinkErr) {
+                    console.warn('Eski fotoğraf silinemedi:', unlinkErr.message);
+                }
+            }
+
+            // Veritabanında NULL yap
+            await pool.query(
+                'UPDATE users SET profile_photo_url = NULL WHERE id = $1',
+                [userId]
+            );
+
+            return res.json({
+                success: true,
+                message: 'Fotoğraf silindi'
+            });
+        }
+
+        // Yeni fotoğraf yükle
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                error: 'Fotoğraf seçilmedi!'
+            });
+        }
+
+        const filename = `${userId}_${Date.now()}.jpg`;
+        const uploadsDir = path.join(__dirname, 'public', 'uploads', 'profiles');
+        const outputPath = path.join(uploadsDir, filename);
+
+        // Klasör yoksa oluştur
+        await fs.mkdir(uploadsDir, { recursive: true });
+
+        // Eski fotoğrafı sil
+        const userResult = await pool.query(
+            'SELECT profile_photo_url FROM users WHERE id = $1',
+            [userId]
+        );
+
+        if (userResult.rows.length > 0 && userResult.rows[0].profile_photo_url) {
+            const oldPhotoPath = path.join(__dirname, 'public', userResult.rows[0].profile_photo_url);
+
+            try {
+                await fs.unlink(oldPhotoPath);
+            } catch (unlinkErr) {
+                console.warn('Eski fotoğraf silinemedi:', unlinkErr.message);
+            }
+        }
+
+        // Yeni resmi işle ve kaydet
+        await sharp(req.file.buffer)
+            .resize(200, 200, {
+                fit: 'cover',
+                position: 'center'
+            })
+            .jpeg({
+                quality: 85,
+                mozjpeg: true
+            })
+            .toFile(outputPath);
+
+        // Veritabanını güncelle
+        const photoUrl = `/uploads/profiles/${filename}`;
+        await pool.query(
+            'UPDATE users SET profile_photo_url = $1 WHERE id = $2',
+            [photoUrl, userId]
+        );
+
+        console.log(`✓ Admin tarafından fotoğraf güncellendi: ${userId} -> ${filename}`);
+
+        res.json({
+            success: true,
+            photoUrl: photoUrl
+        });
+
+    } catch (err) {
+        console.error('❌ Admin fotoğraf güncelleme hatası:', err);
+        res.status(500).json({
+            success: false,
+            error: 'Fotoğraf güncellenemedi.'
+        });
+    }
+});
+
+// Admin: Tüm kullanıcıları fotoğraflarıyla listele
+app.get('/api/admin/users-with-photos', async (req, res) => {
+    try {
+        // Admin kontrolü
+        if (!req.session || !req.session.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                error: 'Yetkisiz erişim - Admin girişi gerekli'
+            });
+        }
+
+        const result = await pool.query(`
+            SELECT
+                u.id,
+                u.nickname,
+                u.profile_photo_url,
+                u.online,
+                t.name as team_name,
+                t.color as team_color,
+                u.created_at
+            FROM users u
+            LEFT JOIN teams t ON u.team_id = t.id
+            ORDER BY u.created_at DESC
+        `);
+
+        res.json({
+            success: true,
+            users: result.rows
+        });
+
+    } catch (err) {
+        console.error('❌ Kullanıcı listesi hatası:', err);
+        res.status(500).json({
+            success: false,
+            error: 'Kullanıcı listesi alınamadı.'
         });
     }
 });
@@ -465,7 +708,9 @@ async function getTeamMessages(teamId, limit = 50, offset = 0, excludeAdminMessa
     // 3. Kendi takımının gönderdiği özel mesajlar (team_id = teamId AND target_team_id IS NOT NULL)
 
     let query = `
-        SELECT * FROM team_messages
+        SELECT tm.*, u.profile_photo_url
+        FROM team_messages tm
+        LEFT JOIN users u ON tm.user_id = u.id
         WHERE (target_team_id IS NULL
            OR target_team_id = $1
            OR (team_id = $1 AND target_team_id IS NOT NULL))
@@ -476,7 +721,7 @@ async function getTeamMessages(teamId, limit = 50, offset = 0, excludeAdminMessa
         query += ` AND target_team_id != 'admin'`;
     }
 
-    query += ` ORDER BY created_at DESC LIMIT $2 OFFSET $3`;
+    query += ` ORDER BY tm.created_at DESC LIMIT $2 OFFSET $3`;
 
     const result = await pool.query(query, [teamId, limit, offset]);
     return result.rows.reverse(); // Eskiden yeniye sıralı döndür
@@ -1133,15 +1378,19 @@ io.on('connection', async (socket) => {
                     nickname: trimmedNick
                 });
 
-                socket.request.session.save((saveErr) => {
+                socket.request.session.save(async (saveErr) => {
                     if (saveErr) {
                         console.error('❌ Session save error:', saveErr);
                     } else {
                         console.log('✅ Session kaydedildi:', socket.request.sessionID);
                     }
 
+                    // Profil fotoğrafını al
+                    const photoResult = await pool.query('SELECT profile_photo_url FROM users WHERE id = $1', [userId]);
+                    const profilePhotoUrl = photoResult.rows[0]?.profile_photo_url || null;
+
                     // GÜVENLİK FIX: Callback'i session save SONRASINDA çağır
-                    callback({ success: true, userId: userId, nickname: trimmedNick });
+                    callback({ success: true, userId: userId, nickname: trimmedNick, profilePhotoUrl: profilePhotoUrl });
 
                     // Tüm kullanıcılara güncel listeyi gönder
                     getUsersByTeam().then(users => {
@@ -1156,8 +1405,12 @@ io.on('connection', async (socket) => {
                     }
                 });
             } else {
+                // Profil fotoğrafını al
+                const photoResult = await pool.query('SELECT profile_photo_url FROM users WHERE id = $1', [userId]);
+                const profilePhotoUrl = photoResult.rows[0]?.profile_photo_url || null;
+
                 // Session yoksa direkt callback
-                callback({ success: true, userId: userId, nickname: trimmedNick });
+                callback({ success: true, userId: userId, nickname: trimmedNick, profilePhotoUrl: profilePhotoUrl });
 
                 // Tüm kullanıcılara güncel listeyi gönder
                 getUsersByTeam().then(users => {
@@ -2730,7 +2983,7 @@ io.on('connection', async (socket) => {
         try {
             // Kullanıcı bilgilerini al
             const userResult = await pool.query(
-                'SELECT u.id, u.nickname, u.team_id, t.name as team_name FROM users u LEFT JOIN teams t ON u.team_id = t.id WHERE u.id = $1',
+                'SELECT u.id, u.nickname, u.team_id, u.profile_photo_url, t.name as team_name FROM users u LEFT JOIN teams t ON u.team_id = t.id WHERE u.id = $1',
                 [socket.data.userId]
             );
 
@@ -2774,6 +3027,8 @@ io.on('connection', async (socket) => {
             );
 
             const newMessage = insertResult.rows[0];
+            // Profil fotoğrafını ekle
+            newMessage.profile_photo_url = user.profile_photo_url;
 
             // Tüm kullanıcılara mesajı gönder
             io.emit('new-team-message', newMessage);
