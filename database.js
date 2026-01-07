@@ -271,6 +271,44 @@ async function initDatabase() {
             )
         `);
 
+        // Game Sessions tablosu (Oyun oturumları)
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS game_sessions (
+                id TEXT PRIMARY KEY,
+                started_at TIMESTAMP DEFAULT NOW(),
+                ended_at TIMESTAMP,
+                winner_team_id TEXT REFERENCES teams(id) ON DELETE SET NULL,
+                total_teams INTEGER DEFAULT 0,
+                total_players INTEGER DEFAULT 0,
+                total_clues INTEGER DEFAULT 0,
+                total_messages INTEGER DEFAULT 0,
+                duration_minutes INTEGER,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        `);
+
+        // Game Events tablosu (Timeline için olaylar)
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS game_events (
+                id SERIAL PRIMARY KEY,
+                session_id TEXT REFERENCES game_sessions(id) ON DELETE CASCADE,
+                event_type TEXT NOT NULL,
+                team_id TEXT REFERENCES teams(id) ON DELETE SET NULL,
+                team_name TEXT,
+                user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+                user_nickname TEXT,
+                description TEXT NOT NULL,
+                metadata JSONB,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        `);
+
+        // Game events index (session ve zaman bazlı sorgular için)
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_game_events_session_time
+            ON game_events(session_id, created_at DESC)
+        `);
+
         console.log('✓ Database initialized');
     } catch (err) {
         console.error('Database init error:', err);
