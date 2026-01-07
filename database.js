@@ -15,6 +15,17 @@ const pool = new Pool({
     connectionTimeoutMillis: 5000  // 5 saniye bağlantı timeout
 });
 
+// GÜVENLİK: Pool error handler - Yakalanmamış bağlantı hatalarını logla
+pool.on('error', (err, client) => {
+    console.error('❌ Unexpected database pool error:', err.message);
+    console.error('   Client details:', {
+        host: client?.host || 'unknown',
+        database: client?.database || 'unknown',
+        port: client?.port || 'unknown'
+    });
+    // Pool kendi kendini recover eder, process.exit YAPMA
+});
+
 async function initDatabase() {
     try {
         // Teams tablosu
