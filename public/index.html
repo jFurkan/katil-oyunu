@@ -2319,7 +2319,8 @@
     <div class="modal" id="passModal">
         <div class="modal-box">
             <h3 style="margin-bottom:10px; color:white;">Yönetici Girişi</h3>
-            <input type="password" id="inpPass" maxlength="6" placeholder="******" style="text-align:center; letter-spacing:5px; font-size:20px;">
+            <p style="margin:0 0 15px 0; color:#999; font-size:13px; text-align:center;">Minimum 12 karakter gerekli</p>
+            <input type="password" id="inpPass" maxlength="50" placeholder="Admin şifrenizi girin..." style="text-align:center; font-size:16px; padding:12px;">
             <div style="display:flex; gap:10px;">
                 <button class="btn" onclick="GAME.hidePassModal()">İptal</button>
                 <button class="btn btn-primary" onclick="GAME.checkPass()">Giriş</button>
