@@ -851,14 +851,14 @@ async function getTeamMessages(teamId, limit = 50, offset = 0, excludeAdminMessa
         SELECT tm.*, u.profile_photo_url
         FROM team_messages tm
         LEFT JOIN users u ON tm.user_id = u.id
-        WHERE (target_team_id IS NULL
-           OR target_team_id = $1
-           OR (team_id = $1 AND target_team_id IS NOT NULL))
+        WHERE (tm.target_team_id IS NULL
+           OR tm.target_team_id = $1
+           OR (tm.team_id = $1 AND tm.target_team_id IS NOT NULL))
     `;
 
     // Admin mesajlarını hariç tut (Chat İzleme için)
     if (excludeAdminMessages) {
-        query += ` AND target_team_id != 'admin'`;
+        query += ` AND tm.target_team_id != 'admin'`;
     }
 
     query += ` ORDER BY tm.created_at DESC LIMIT $2 OFFSET $3`;
