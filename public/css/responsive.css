@@ -1,0 +1,627 @@
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Tablet - Orta Ekranlar (768px - 1024px) */
+@media (max-width: 1024px) {
+    .container {
+        max-width: 100%;
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 36px;
+    }
+
+    .admin-list {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 15px;
+    }
+
+    .form-box {
+        max-width: 100%;
+        padding: 20px;
+    }
+}
+
+/* Mobile - Küçük Ekranlar (<768px) */
+@media (max-width: 768px) {
+    /* Genel Yapı */
+    body {
+        font-size: 14px;
+    }
+
+    .container {
+        padding: 10px;
+    }
+
+    /* Header */
+    header {
+        padding: 20px 0;
+    }
+
+    h1 {
+        font-size: 28px;
+        letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+        font-size: 13px;
+    }
+
+    /* Butonlar - Daha büyük dokunma alanı */
+    .btn {
+        padding: 14px;
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+
+    /* Form Alanları */
+    .form-box {
+        padding: 18px;
+        margin-top: 15px;
+    }
+
+    input {
+        padding: 12px;
+        font-size: 16px; /* iOS zoom'u önlemek için minimum 16px */
+        margin-bottom: 12px;
+    }
+
+    /* Admin Grid - Tek sütun */
+    .admin-list {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-bottom: 30px;
+    }
+
+    /* Admin Kartı */
+    .admin-card {
+        padding: 15px;
+    }
+
+    .card-head h3 {
+        font-size: 16px;
+    }
+
+    .card-meta {
+        font-size: 11px;
+    }
+
+    .team-score {
+        font-size: 22px;
+    }
+
+    .clues-list {
+        gap: 8px;
+    }
+
+    .clue-item {
+        padding: 10px;
+        font-size: 13px;
+    }
+
+    /* Admin Header */
+    .admin-head {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .back-btn {
+        width: 100%;
+        padding: 12px;
+    }
+
+    /* Liderlik Tablosu */
+    .leaderboard-item {
+        padding: 15px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .leaderboard-left {
+        width: 100%;
+    }
+
+    .leaderboard-rank {
+        font-size: 20px;
+        width: 35px;
+        height: 35px;
+    }
+
+    .leaderboard-name {
+        font-size: 15px;
+    }
+
+    .leaderboard-stats {
+        font-size: 11px;
+    }
+
+    .leaderboard-score {
+        font-size: 24px;
+        align-self: flex-end;
+        width: 100%;
+        text-align: right;
+    }
+
+    /* Müzik Ayarları Butonu - Mobil için optimize */
+    .music-settings-btn {
+        bottom: 75px;
+        right: 15px;
+        width: 45px;
+        height: 45px;
+        font-size: 20px;
+    }
+
+    /* Tema Seçici - Mobil için optimize */
+    .theme-switcher {
+        bottom: 15px;
+        right: 15px;
+    }
+
+    .theme-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 22px;
+    }
+
+    .theme-menu {
+        bottom: 60px;
+        right: 0;
+        min-width: 200px;
+    }
+
+    .theme-option {
+        padding: 10px 15px;
+        font-size: 13px;
+    }
+
+    .theme-preview {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* Modal & Popups */
+    .error-modal,
+    .success-modal {
+        max-width: 90%;
+        padding: 20px;
+    }
+
+    /* Admin Mesajları - Dropdown genişliği */
+    #adminMessagesTeamSelector,
+    #adminChatTeamSelector {
+        max-width: 100% !important;
+    }
+
+    /* Chat İzleme - Padding düzeltmesi */
+    #adminChatViewerContainer > div {
+        padding: 15px !important;
+    }
+
+    /* Takım Chatbox - Padding ve boyut düzeltmeleri */
+    #teamChatMessages {
+        max-height: 300px !important;
+        min-height: 200px !important;
+    }
+
+    /* Mesaj input alanları - Mobil optimizasyon */
+    #adminReplyMessage,
+    #inpClue {
+        font-size: 16px !important; /* iOS zoom önleme */
+    }
+
+    /* Dropdown menüler */
+    #teamDropdown {
+        min-width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Takım seçici button */
+    #btnTeamSelector {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    /* Müzik kontrol butonu - Mobil */
+    #musicToggle {
+        width: 50px !important;
+        height: 50px !important;
+        font-size: 20px !important;
+        bottom: 70px !important;
+        right: 15px !important;
+    }
+
+    /* Bildirimler - Mobil */
+    .notification-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+
+    .notification {
+        padding: 14px;
+    }
+
+    .notification-title {
+        font-size: 13px;
+    }
+
+    .notification-body {
+        font-size: 12px;
+    }
+
+    /* Notification Center - Mobil */
+    .notification-center-btn {
+        top: 15px;
+        right: 15px;
+        width: 45px;
+        height: 45px;
+        font-size: 20px;
+    }
+
+    .notification-center-dropdown {
+        top: 70px;
+        right: 10px;
+        left: 10px;
+        width: auto;
+    }
+
+    /* Live Leaderboard - Mobil */
+    .live-leaderboard {
+        top: auto;
+        bottom: 20px;
+        left: 10px;
+        right: auto;
+        width: auto;
+        max-width: calc(100vw - 20px);
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    /* Collapsed state - küçük buton gibi */
+    .live-leaderboard.collapsed {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    }
+
+    .live-leaderboard.collapsed .live-leaderboard-header {
+        padding: 0;
+        border: none;
+        width: 50px;
+        height: 50px;
+        justify-content: center;
+    }
+
+    .live-leaderboard.collapsed .live-leaderboard-header h3 {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .live-leaderboard.collapsed .live-leaderboard-header h3 i {
+        width: 24px;
+        height: 24px;
+    }
+
+    .live-leaderboard.collapsed .live-leaderboard-header h3 span {
+        display: none;
+    }
+
+    .live-leaderboard.collapsed .live-leaderboard-toggle {
+        display: none;
+    }
+
+    .live-leaderboard.collapsed .live-leaderboard-list {
+        display: none;
+    }
+
+    /* Expanded state - normal görünüm */
+    .live-leaderboard:not(.collapsed) {
+        width: calc(100vw - 20px);
+        max-width: 320px;
+        border-radius: 16px;
+    }
+
+    .live-leaderboard-header {
+        cursor: pointer;
+    }
+
+    .live-leaderboard-header h3 {
+        font-size: 14px;
+    }
+
+    .live-leaderboard-list {
+        max-height: 300px;
+    }
+
+    .live-leaderboard-item {
+        padding: 8px;
+    }
+
+    .live-leaderboard-name {
+        font-size: 12px;
+    }
+
+    .live-leaderboard-score {
+        font-size: 14px;
+    }
+
+    .live-leaderboard-rank {
+        width: 26px;
+        height: 26px;
+        font-size: 12px;
+    }
+
+    /* Notification Center'ı yukarı taşı */
+    .notification-center-btn {
+        top: 10px;
+        right: 10px;
+        width: 45px;
+        height: 45px;
+    }
+
+    .notification-center-dropdown {
+        top: 65px;
+        right: 10px;
+        left: 10px;
+        width: auto;
+        max-width: none;
+    }
+}
+
+/* Çok Küçük Mobil Cihazlar (<480px) */
+@media (max-width: 480px) {
+    h1 {
+        font-size: 24px;
+    }
+
+    .btn {
+        padding: 12px;
+        font-size: 13px;
+    }
+
+    .admin-card {
+        padding: 12px;
+    }
+
+    .card-head h3 {
+        font-size: 15px;
+    }
+
+    .team-score {
+        font-size: 20px;
+    }
+
+    .leaderboard-rank {
+        font-size: 18px;
+        width: 32px;
+        height: 32px;
+    }
+
+    .leaderboard-name {
+        font-size: 14px;
+    }
+
+    .leaderboard-score {
+        font-size: 22px;
+    }
+
+    .theme-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 20px;
+    }
+
+    .theme-menu {
+        min-width: 180px;
+    }
+
+    /* Chatbox mesaj alanları - Daha küçük */
+    #teamChatMessages {
+        max-height: 250px !important;
+        min-height: 180px !important;
+        padding: 12px !important;
+    }
+
+    #adminMessagesContainer {
+        padding: 12px !important;
+    }
+
+    /* Mesaj gönderme alanı - Flex düzeni */
+    #adminMessagesViewerContainer div[style*="display: flex; gap: 10px"] {
+        flex-direction: column !important;
+    }
+
+    #adminMessagesViewerContainer div[style*="display: flex; gap: 10px"] button {
+        width: 100% !important;
+        margin-top: 8px !important;
+    }
+}
+
+/* Yatay Mod (Landscape) için optimizasyonlar */
+@media (max-height: 600px) and (orientation: landscape) {
+    header {
+        padding: 15px 0;
+    }
+
+    h1 {
+        font-size: 24px;
+        margin-bottom: 5px;
+    }
+
+    .form-box {
+        margin-top: 10px;
+        padding: 15px;
+    }
+
+    input {
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+
+    .btn {
+        padding: 10px;
+        margin-bottom: 8px;
+    }
+}
+
+/* Mobil Yatay (Landscape) Mod - Kapsamlı Optimizasyonlar */
+@media (max-height: 700px) and (orientation: landscape) {
+    /* Murder Board Canvas - yatayda daha kısa yap */
+    #murderBoardCanvas {
+        min-height: 350px !important;
+    }
+
+    /* Murder Board Wrapper - yatayda daha kısa */
+    #murderBoardWrapper {
+        max-height: 400px !important;
+    }
+
+    /* Modal'lar - yatayda ekrana sığsın */
+    #characterSelectorModal > div,
+    #editNoteModal > div {
+        max-height: 70vh !important;
+        padding: 15px !important;
+    }
+
+    #characterSelectorModal h3,
+    #editNoteModal h3 {
+        font-size: 16px !important;
+        margin-bottom: 10px !important;
+    }
+
+    #characterNote,
+    #editNoteTextarea {
+        min-height: 60px !important;
+    }
+
+    /* Header - daha kompakt */
+    header {
+        padding: 10px 0 !important;
+    }
+
+    h1 {
+        font-size: 20px !important;
+        margin-bottom: 5px !important;
+    }
+
+    h2 {
+        font-size: 18px !important;
+    }
+
+    h3 {
+        font-size: 16px !important;
+    }
+
+    /* Form box - daha kompakt */
+    .form-box {
+        margin-top: 10px !important;
+        padding: 12px !important;
+    }
+
+    /* Buttons - daha küçük padding */
+    .btn {
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+        margin-bottom: 6px !important;
+    }
+
+    /* Input fields - daha küçük */
+    input,
+    textarea,
+    select {
+        padding: 8px !important;
+        margin-bottom: 8px !important;
+        font-size: 13px !important;
+    }
+
+    /* Team sayfası - daha kompakt */
+    .team-info {
+        padding: 12px !important;
+    }
+
+    .team-info h2 {
+        font-size: 18px !important;
+    }
+
+    /* Takım menü butonları - yatayda daha küçük */
+    .team-menu .btn {
+        padding: 8px !important;
+        font-size: 12px !important;
+    }
+
+    /* Admin panel - daha kompakt */
+    .admin-head {
+        padding: 12px !important;
+    }
+
+    .admin-section {
+        padding: 12px !important;
+        margin-bottom: 12px !important;
+    }
+
+    /* Lider tablosu - daha kompakt */
+    .leaderboard-item {
+        padding: 8px !important;
+    }
+
+    /* Chat container - yatayda daha kısa */
+    #teamChatMessages,
+    #interTeamChatMessages {
+        max-height: 200px !important;
+    }
+
+    /* Zoom controls - daha küçük */
+    #zoomLevel {
+        font-size: 11px !important;
+    }
+
+    /* Murder board toolbar - yatayda daha kompakt */
+    #pgMurderBoard .btn {
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+    }
+
+    /* Board items - karakterler daha küçük */
+    .board-item {
+        transform: scale(0.9) !important;
+    }
+
+    /* Empty state - daha küçük */
+    #boardEmptyState div:first-child {
+        font-size: 48px !important;
+    }
+
+    #boardEmptyState div:nth-child(2) {
+        font-size: 14px !important;
+    }
+
+    #boardEmptyState div:nth-child(3) {
+        font-size: 11px !important;
+    }
+}
+
+/* Dokunmatik ekranlar için hover devre dışı */
+@media (hover: none) and (pointer: coarse) {
+    .btn:hover,
+    .admin-card:hover,
+    .theme-option:hover,
+    .leaderboard-item:hover {
+        transform: none;
+    }
+
+    /* Dokunma için aktif efekt */
+    .btn:active {
+        transform: scale(0.98);
+        opacity: 0.8;
+    }
+
+    .admin-card:active {
+        transform: scale(0.99);
+    }
+}

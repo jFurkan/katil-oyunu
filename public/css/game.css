@@ -1,0 +1,958 @@
+/* ===== GAME-SPECIFIC COMPONENTS ===== */
+
+/* Oyun Kontrol Paneli */
+.game-control {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.countdown-display {
+    font-size: 48px;
+    font-weight: 700;
+    text-align: center;
+    color: var(--gold);
+    margin: 20px 0;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 3px;
+}
+
+.countdown-display.warning {
+    color: #ff6666;
+    animation: pulse-red 1s infinite;
+}
+
+.time-controls {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.time-btn {
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.time-btn.add {
+    background: rgba(45, 90, 39, 0.3);
+    border-color: #2d5a27;
+    color: #6fb566;
+}
+
+.time-btn.add:hover {
+    background: #2d5a27;
+}
+
+.time-btn.end {
+    background: rgba(139, 0, 0, 0.3);
+    border-color: var(--accent);
+    color: #ff6666;
+}
+
+.time-btn.end:hover {
+    background: var(--accent);
+    color: white;
+}
+
+/* Takım Countdown */
+.team-countdown {
+    background: linear-gradient(135deg, #1a1a1a, #0a0a0a);
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.team-countdown-phase {
+    font-size: 18px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.team-countdown-label {
+    font-size: 12px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+}
+
+.team-countdown-time {
+    font-size: 56px;
+    font-weight: 700;
+    color: var(--gold);
+    font-family: 'Courier New', monospace;
+    letter-spacing: 5px;
+}
+
+.team-countdown-time.warning {
+    color: #ff6666;
+}
+
+.game-not-started {
+    color: #666;
+    font-size: 14px;
+    padding: 30px;
+    text-align: center;
+    font-style: italic;
+}
+
+.admin-phase-title {
+    text-align: center;
+    color: var(--gold);
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+/* Liderlik Tablosu */
+.leaderboard-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideIn 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.leaderboard-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--border-color);
+    transition: all 0.3s;
+}
+
+.leaderboard-item:hover {
+    transform: translateX(8px);
+    border-color: #444;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.leaderboard-item:hover::before {
+    background: var(--gold);
+}
+
+.leaderboard-item.rank-1 {
+    border-color: var(--gold);
+    background: linear-gradient(135deg, #1a1410, #111);
+}
+
+.leaderboard-item.rank-1::before {
+    background: var(--gold);
+    width: 6px;
+}
+
+.leaderboard-item.rank-2 {
+    border-color: #C0C0C0;
+}
+
+.leaderboard-item.rank-2::before {
+    background: #C0C0C0;
+}
+
+.leaderboard-item.rank-3 {
+    border-color: #cd7f32;
+}
+
+.leaderboard-item.rank-3::before {
+    background: #cd7f32;
+}
+
+.leaderboard-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.leaderboard-rank {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #1a1a1a;
+    border: 2px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+    color: #666;
+    transition: all 0.3s;
+}
+
+.leaderboard-item.rank-1 .leaderboard-rank {
+    background: var(--gold);
+    color: #000;
+    border-color: var(--gold);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+    animation: pulse-gold 2s infinite;
+}
+
+.leaderboard-item.rank-2 .leaderboard-rank {
+    background: #C0C0C0;
+    color: #000;
+    border-color: #C0C0C0;
+}
+
+.leaderboard-item.rank-3 .leaderboard-rank {
+    background: #cd7f32;
+    color: #000;
+    border-color: #cd7f32;
+}
+
+.leaderboard-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.leaderboard-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.leaderboard-item.rank-1 .leaderboard-name {
+    color: var(--gold);
+}
+
+.leaderboard-stats {
+    font-size: 12px;
+    color: #888;
+}
+
+.leaderboard-score {
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    transition: all 0.3s;
+}
+
+.leaderboard-item.rank-1 .leaderboard-score {
+    color: var(--gold);
+}
+
+/* Notification System - Popup */
+.notification-popup {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    border-radius: 12px;
+    padding: 20px;
+    min-width: 320px;
+    max-width: 400px;
+    z-index: 10000;
+    transform: translateX(500px);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.notification-popup.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.notification-popup.announcement {
+    background: linear-gradient(135deg, #1a0a0a, #0f0505);
+    border: 2px solid var(--accent);
+    box-shadow: 0 10px 40px rgba(139, 0, 0, 0.5);
+}
+
+.notification-popup.announcement .notif-header {
+    border-bottom: 1px solid #300;
+}
+
+.notification-popup.announcement .notif-title {
+    color: #ff6666;
+}
+
+.notification-popup.announcement .notif-body {
+    color: #ffcccc;
+}
+
+.notification-popup.clue {
+    background: linear-gradient(135deg, #0a1a0a, #050f05);
+    border: 2px solid var(--gold);
+    box-shadow: 0 10px 40px rgba(212, 175, 55, 0.5);
+}
+
+.notification-popup.clue .notif-header {
+    border-bottom: 1px solid #2a4a2a;
+}
+
+.notification-popup.clue .notif-title {
+    color: var(--gold);
+}
+
+.notification-popup.clue .notif-body {
+    color: #d4e6cc;
+}
+
+.notification-popup.score {
+    background: linear-gradient(135deg, #0a0a1a, #05050f);
+    border: 2px solid #4a90e2;
+    box-shadow: 0 10px 40px rgba(74, 144, 226, 0.4);
+}
+
+.notification-popup.score .notif-header {
+    border-bottom: 1px solid #1a2a4a;
+}
+
+.notification-popup.score .notif-title {
+    color: #6ab0ff;
+}
+
+.notification-popup.score .notif-body {
+    color: #cce0ff;
+}
+
+.notif-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+}
+
+.notif-title {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.notif-close {
+    background: transparent;
+    border: none;
+    color: #666;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+}
+
+.notif-close:hover {
+    color: #fff;
+}
+
+.notif-body {
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.notif-time {
+    font-size: 11px;
+    color: #555;
+    margin-top: 10px;
+    text-align: right;
+}
+
+.notif-badge {
+    position: fixed;
+    top: 20px;
+    right: 30px;
+    background: var(--accent);
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 9998;
+    animation: pulse 2s infinite;
+}
+
+/* Bildirimler Sayfası */
+.notif-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.notif-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--gold);
+    border-radius: 8px;
+    padding: 15px;
+    transition: 0.2s;
+}
+
+.notif-item:hover {
+    border-color: var(--gold);
+    background: #161616;
+}
+
+.notif-item.unread {
+    background: rgba(212, 175, 55, 0.05);
+}
+
+.notif-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.notif-item-title {
+    font-weight: 600;
+    color: var(--gold);
+    font-size: 13px;
+}
+
+.notif-item-time {
+    font-size: 11px;
+    color: #666;
+}
+
+.notif-item-body {
+    color: #aaa;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* Duyuru Formu */
+.announcement-form {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.announcement-form textarea {
+    width: 100%;
+    min-height: 80px;
+    background: #000;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: white;
+    padding: 12px;
+    font-family: inherit;
+    resize: vertical;
+    margin-bottom: 10px;
+}
+
+.announcement-form textarea:focus {
+    outline: none;
+    border-color: var(--gold);
+}
+
+/* Admin Bildirim Listesi */
+.admin-notif-item {
+    background: #0a0a0a;
+    border: 1px solid #222;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    transition: 0.2s;
+}
+
+.admin-notif-item:hover {
+    border-color: #333;
+    background: #111;
+}
+
+.admin-notif-content {
+    flex: 1;
+}
+
+.admin-notif-type {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.admin-notif-type.announcement {
+    background: rgba(212, 175, 55, 0.2);
+    color: var(--gold);
+}
+
+.admin-notif-type.score {
+    background: rgba(139, 0, 0, 0.2);
+    color: #ff6666;
+}
+
+.admin-notif-message {
+    color: #ccc;
+    font-size: 13px;
+    line-height: 1.4;
+    margin-bottom: 4px;
+}
+
+.admin-notif-time {
+    color: #555;
+    font-size: 11px;
+}
+
+.admin-notif-delete {
+    background: transparent;
+    border: 1px solid #333;
+    color: #666;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: 0.2s;
+    white-space: nowrap;
+}
+
+.admin-notif-delete:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(139, 0, 0, 0.1);
+}
+
+/* Bildirim Container (Toast/Popup) */
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 400px;
+    pointer-events: none;
+}
+
+.notification {
+    background: linear-gradient(135deg, #1a1a1a, #111);
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(139, 0, 0, 0.4);
+    animation: slideInNotification 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    pointer-events: all;
+    position: relative;
+    overflow: hidden;
+}
+
+.notification::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--accent);
+    animation: notificationGlow 2s ease-in-out infinite;
+}
+
+.notification.closing {
+    animation: slideOutNotification 0.3s ease forwards;
+}
+
+.notification-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.notification-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 14px;
+}
+
+.notification-close {
+    background: transparent;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.notification-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.notification-body {
+    color: var(--text-main);
+    font-size: 13px;
+    line-height: 1.5;
+    padding-left: 8px;
+}
+
+.notification-time {
+    color: #666;
+    font-size: 11px;
+    margin-top: 6px;
+    padding-left: 8px;
+}
+
+/* Notification Center */
+.notification-center-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: var(--z-notification-btn);
+    background: linear-gradient(135deg, var(--card-bg), #000);
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    color: var(--text-main);
+}
+
+.notification-center-btn:hover {
+    transform: scale(1.1);
+    border-color: var(--gold);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+.notification-center-btn .badge-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--accent);
+    color: white;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: bold;
+    border: 2px solid var(--bg-color);
+    animation: pulse 2s infinite;
+}
+
+.notification-center-dropdown {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    width: 350px;
+    max-height: 500px;
+    background: rgba(17, 17, 17, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6),
+                0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+                0 20px 60px rgba(0, 0, 0, 0.4);
+    display: none;
+    flex-direction: column;
+    z-index: var(--z-notification-dropdown);
+    animation: slideDown 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.notification-center-dropdown.active {
+    display: flex;
+}
+
+.notification-center-header {
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notification-center-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--gold);
+}
+
+.notification-center-clear {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.notification-center-clear:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+}
+
+.notification-center-list {
+    overflow-y: auto;
+    max-height: 400px;
+    padding: 10px;
+}
+
+.notification-center-item {
+    background: #0a0a0a;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.notification-center-item:hover {
+    border-color: var(--gold);
+    background: rgba(212, 175, 55, 0.05);
+    transform: translateX(-3px);
+}
+
+.notification-center-item.unread {
+    border-left: 4px solid var(--accent);
+    background: rgba(139, 0, 0, 0.1);
+}
+
+.notification-center-item.unread::before {
+    content: '';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+.notification-center-item-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 4px;
+}
+
+.notification-center-item-message {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    line-height: 1.4;
+}
+
+.notification-center-item-time {
+    font-size: 10px;
+    color: #666;
+}
+
+.notification-center-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+}
+
+.notification-center-empty-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+    opacity: 0.3;
+}
+
+/* Canlı Lider Tablosu */
+.live-leaderboard {
+    position: fixed;
+    top: 80px;
+    left: 20px;
+    width: 250px;
+    background: rgba(17, 17, 17, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6),
+                0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+                0 20px 60px rgba(0, 0, 0, 0.4);
+    z-index: var(--z-leaderboard);
+    animation: slideInLeft 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.live-leaderboard.hidden {
+    display: none;
+}
+
+.live-leaderboard-header {
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.live-leaderboard-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.live-leaderboard-toggle {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px;
+    transition: all 0.2s;
+}
+
+.live-leaderboard-toggle:hover {
+    color: var(--text-main);
+    transform: rotate(90deg);
+}
+
+.live-leaderboard-list {
+    padding: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.live-leaderboard-item {
+    background: #0a0a0a;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.live-leaderboard-item.rank-1 {
+    border-color: var(--gold);
+    background: rgba(212, 175, 55, 0.05);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+}
+
+.live-leaderboard-item.rank-2 {
+    border-color: #C0C0C0;
+    background: rgba(192, 192, 192, 0.05);
+}
+
+.live-leaderboard-item.rank-3 {
+    border-color: #cd7f32;
+    background: rgba(205, 127, 50, 0.05);
+}
+
+.live-leaderboard-rank {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    background: var(--border-color);
+    color: #666;
+    flex-shrink: 0;
+}
+
+.live-leaderboard-item.rank-1 .live-leaderboard-rank {
+    background: var(--gold);
+    color: #000;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+}
+
+.live-leaderboard-item.rank-2 .live-leaderboard-rank {
+    background: #C0C0C0;
+    color: #000;
+}
+
+.live-leaderboard-item.rank-3 .live-leaderboard-rank {
+    background: #cd7f32;
+    color: #000;
+}
+
+.live-leaderboard-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.live-leaderboard-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.live-leaderboard-score {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--gold);
+    font-family: 'Courier New', monospace;
+}
+
+.live-leaderboard-change {
+    font-size: 12px;
+    margin-left: 5px;
+}
+
+.live-leaderboard-change.up {
+    color: #4ade80;
+}
+
+.live-leaderboard-change.down {
+    color: #f87171;
+}
+
+.live-leaderboard-change.same {
+    color: #666;
+}

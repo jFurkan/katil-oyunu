@@ -1,0 +1,118 @@
+/* ===== BASE STYLES ===== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-color);
+    color: var(--text-main);
+    min-height: 100vh;
+    font-size: 14px;
+}
+
+/* Genel Yapı */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header & Başlıklar */
+header {
+    text-align: center;
+    padding: 40px 0;
+    position: relative;
+}
+
+h1 {
+    font-size: 42px;
+    letter-spacing: -1px;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, #fff, #ccc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: titleGlow 3s ease-in-out infinite;
+}
+
+h1 span {
+    background: linear-gradient(135deg, var(--accent), #c00000);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: accentGlow 3s ease-in-out infinite;
+}
+
+.subtitle {
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 14px;
+}
+
+/* Sayfa Geçişleri */
+.page {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.page.active {
+    display: block;
+}
+
+/* Emeği Geçenler Bölümü */
+.credits {
+    margin-top: 60px;
+    padding: 30px 20px;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.credits h3 {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--gold);
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.credits-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.credit-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text-main);
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.credit-item:hover {
+    border-color: var(--gold);
+    transform: translateY(-2px);
+    background: #1a1a1a;
+}
+
+.credit-item:active {
+    transform: translateY(0);
+}
+
+.credits-note {
+    margin-top: 20px;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-style: italic;
+}

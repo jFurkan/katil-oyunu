@@ -1,0 +1,50 @@
+/* ===== CSS VARIABLES & THEMES ===== */
+
+/* Tema 1: Classic Dark (Default) */
+:root {
+    --bg-color: #050505;
+    --card-bg: #111111;
+    --border-color: #222;
+    --accent: #8B0000; /* Kan Kırmızısı */
+    --gold: #D4AF37;
+    --text-main: #e0e0e0;
+    --text-muted: #888;
+    --success: #2d5a27;
+
+    /* Z-Index System */
+    --z-base: 1;
+    --z-sticky: 100;
+    --z-modal-backdrop: 1000;
+    --z-modal: 1001;
+    --z-dropdown: 5000;
+    --z-leaderboard: 9997;
+    --z-notification-badge: 9998;
+    --z-notification-dropdown: 9998;
+    --z-notification-btn: 9999;
+    --z-notification-popup: 10000;
+    --z-highest: 10001;
+}
+
+/* Tema 2: Midnight Detective */
+[data-theme="midnight"] {
+    --bg-color: #0a0e1a;
+    --card-bg: #141b2d;
+    --border-color: #1e2a45;
+    --accent: #5b7c99;
+    --gold: #ffd700;
+    --text-main: #e8eef7;
+    --text-muted: #7a8ba3;
+    --success: #2d5a27;
+}
+
+/* Tema 3: Blood Moon */
+[data-theme="blood"] {
+    --bg-color: #0d0404;
+    --card-bg: #1a0a0a;
+    --border-color: #2d0f0f;
+    --accent: #b91c1c;
+    --gold: #ff6b6b;
+    --text-main: #f5e6e6;
+    --text-muted: #9a6b6b;
+    --success: #2d5a27;
+}
