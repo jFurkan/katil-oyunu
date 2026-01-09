@@ -13,6 +13,7 @@ const session = require('express-session'); // Session yönetimi için
 const multer = require('multer'); // File upload için
 const sharp = require('sharp'); // Image processing için
 const fs = require('fs').promises; // File system işlemleri için
+const compression = require('compression'); // Response compression için
 const { pool, initDatabase } = require('./database');
 
 // ========================================
@@ -93,6 +94,10 @@ const server = http.createServer(app);
 // Railway/Reverse proxy için trust proxy ayarı
 app.set('trust proxy', 1); // Railway, Heroku gibi platformlar için gerekli
 
+// View Engine Setup (EJS)
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
 // CORS ayarları - Railway için sabit domain
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ||
     (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` :
@@ -120,7 +125,7 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.socket.io"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.socket.io", "https://unpkg.com"],
             scriptSrcAttr: ["'unsafe-inline'"], // inline event handler'lar için (onclick, onkeypress)
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
@@ -168,6 +173,19 @@ const authLimiter = rateLimit({
 
 // GÜVENLİK: Sadece API route'larını limitle (HTML/statik dosyalar serbest)
 app.use('/api/', limiter);
+
+// Compression middleware - Response sıkıştırma (performance)
+app.use(compression({
+    filter: (req, res) => {
+        // Socket.IO için compression yapma
+        if (req.headers['x-no-compression']) {
+            return false;
+        }
+        // Varsayılan compression kontrolü
+        return compression.filter(req, res);
+    },
+    level: 6  // Compression seviyesi (0-9, varsayılan 6)
+}));
 
 // 3. Body size limits - Büyük payload saldırılarını önle
 app.use(express.json({ limit: '100kb' }));
@@ -236,7 +254,17 @@ const upload = multer({
     }
 });
 
-// Root endpoint - Railway health check
+// Health Check Endpoint (Railway, monitoring tools için)
+app.get('/health', (_req, res) => {
+    res.status(200).json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development'
+    });
+});
+
+// Root endpoint - Main Application
 app.get('/', (req, res) => {
     // KRİTİK FIX: saveUninitialized: false olduğu için session'ı "kirlet" ve kaydet
     // Aksi halde Set-Cookie header gönderilmez!
@@ -246,6 +274,12 @@ app.get('/', (req, res) => {
         if (err) {
             console.error('❌ Session save error:', err);
         }
+
+        // Cache Control Headers (HTML için kısa cache)
+        res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 saat cache
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('X-Frame-Options', 'DENY');
+
         res.sendFile(path.join(__dirname, 'public', 'index.html'));
     });
 });

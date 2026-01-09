@@ -1,0 +1,20 @@
+<!-- Tema Seçici -->
+<div class="theme-switcher">
+    <button class="theme-btn" onclick="THEME.toggleMenu()" title="Tema Seç">
+        🎨
+    </button>
+    <div class="theme-menu" id="themeMenu">
+        <div class="theme-option" data-theme="classic" onclick="THEME.setTheme('classic')">
+            <div class="theme-preview" style="background: linear-gradient(135deg, #8B0000, #D4AF37);"></div>
+            <span class="theme-name">Classic Dark</span>
+        </div>
+        <div class="theme-option" data-theme="midnight" onclick="THEME.setTheme('midnight')">
+            <div class="theme-preview" style="background: linear-gradient(135deg, #5b7c99, #ffd700);"></div>
+            <span class="theme-name">Midnight</span>
+        </div>
+        <div class="theme-option" data-theme="blood" onclick="THEME.setTheme('blood')">
+            <div class="theme-preview" style="background: linear-gradient(135deg, #b91c1c, #ff6b6b);"></div>
+            <span class="theme-name">Blood Moon</span>
+        </div>
+    </div>
+</div>

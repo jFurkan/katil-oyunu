@@ -1,0 +1,22 @@
+<!-- Notification Center -->
+<div class="notification-center-btn" id="notificationCenterBtn" onclick="NOTIFICATIONS.toggle()" style="display: none;">
+    <i data-feather="bell" class="icon-md"></i>
+    <span class="badge-count" id="notificationBadge" style="display: none;">0</span>
+</div>
+
+<div class="notification-center-dropdown" id="notificationCenterDropdown">
+    <div class="notification-center-header">
+        <h3><i data-feather="inbox" class="icon-sm"></i> Bildirimler</h3>
+        <button class="notification-center-clear" onclick="NOTIFICATIONS.clearAll()">
+            <i data-feather="trash-2" class="icon-xs"></i> Tümünü Temizle
+        </button>
+    </div>
+    <div class="notification-center-list" id="notificationCenterList">
+        <div class="notification-center-empty">
+            <div class="notification-center-empty-icon">
+                <i data-feather="bell-off" class="icon-xl" style="opacity: 0.3;"></i>
+            </div>
+            <div>Henüz bildirim yok</div>
+        </div>
+    </div>
+</div>

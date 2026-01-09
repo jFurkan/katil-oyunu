@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title || 'Katil Kim? - Dedektif Oyunu' %></title>
+
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://unpkg.com">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons" defer></script>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/css/themes.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/responsive.css">
+
+    <!-- Socket.IO -->
+    <script src="/socket.io/socket.io.js"></script>
+
+    <!-- Router -->
+    <script src="/js/router.js"></script>
+</head>
+<body>
+    <!-- Background Music -->
+    <audio id="bgMusic" loop>
+        <source src="/audio/background.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Global Components -->
+    <%- include('../partials/notifications') %>
+    <%- include('../partials/notification-center') %>
+    <%- include('../partials/leaderboard') %>
+    <%- include('../partials/theme-switcher') %>
+    <%- include('../partials/music-settings') %>
+
+    <!-- Main Content -->
+    <div class="container">
+        <%- body %>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast"></div>
+
+    <!-- Core JavaScript Modules -->
+    <script src="/js/modules/utils.js"></script>
+    <script src="/js/modules/socket-handler.js"></script>
+    <script src="/js/modules/notifications.js"></script>
+    <script src="/js/modules/leaderboard.js"></script>
+    <script src="/js/modules/theme.js"></script>
+    <script src="/js/modules/chat.js"></script>
+    <script src="/js/modules/game.js"></script>
+    <script src="/js/modules/murderboard.js"></script>
+    <script src="/js/modules/admin.js"></script>
+    <script src="/js/modules/music.js"></script>
+
+    <!-- Initialize -->
+    <script src="/js/app.js"></script>
+</body>
+</html>
