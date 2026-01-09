@@ -1324,6 +1324,195 @@
             box-shadow: 0 0 20px currentColor;
         }
 
+        /* ===== NOTIFICATION CENTER ===== */
+        .notification-center-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            background: linear-gradient(135deg, var(--card-bg), #000);
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            color: var(--text-main);
+        }
+
+        .notification-center-btn:hover {
+            transform: scale(1.1);
+            border-color: var(--gold);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        }
+
+        .notification-center-btn .badge-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            border: 2px solid var(--bg-color);
+            animation: pulse 2s infinite;
+        }
+
+        .notification-center-dropdown {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            width: 350px;
+            max-height: 500px;
+            background: linear-gradient(135deg, var(--card-bg), #0a0a0a);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.8);
+            display: none;
+            flex-direction: column;
+            z-index: 9998;
+            animation: slideDown 0.3s ease;
+        }
+
+        .notification-center-dropdown.active {
+            display: flex;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .notification-center-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notification-center-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: var(--gold);
+        }
+
+        .notification-center-clear {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .notification-center-clear:hover {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-main);
+        }
+
+        .notification-center-list {
+            overflow-y: auto;
+            max-height: 400px;
+            padding: 10px;
+        }
+
+        .notification-center-item {
+            background: #0a0a0a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .notification-center-item:hover {
+            border-color: var(--gold);
+            background: rgba(212,175,55,0.05);
+            transform: translateX(-3px);
+        }
+
+        .notification-center-item.unread {
+            border-left: 4px solid var(--accent);
+            background: rgba(139,0,0,0.1);
+        }
+
+        .notification-center-item.unread::before {
+            content: '';
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .notification-center-item-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        .notification-center-item-message {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+
+        .notification-center-item-time {
+            font-size: 10px;
+            color: #666;
+        }
+
+        .notification-center-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        .notification-center-empty-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+            opacity: 0.3;
+        }
+
+        /* Mobile optimizasyon */
+        @media (max-width: 768px) {
+            .notification-center-btn {
+                top: 15px;
+                right: 15px;
+                width: 45px;
+                height: 45px;
+                font-size: 20px;
+            }
+
+            .notification-center-dropdown {
+                top: 70px;
+                right: 10px;
+                left: 10px;
+                width: auto;
+            }
+        }
+
         /* Rozet CSS */
         .badge {
             display: inline-flex;
@@ -1335,6 +1524,185 @@
             font-weight: 600;
             border: 1px solid;
             margin: 2px;
+        }
+
+        /* ===== CANLI LİDER TABLOSU ===== */
+        .live-leaderboard {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            width: 250px;
+            background: linear-gradient(135deg, var(--card-bg), #0a0a0a);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.8);
+            z-index: 9997;
+            animation: slideInLeft 0.5s ease;
+        }
+
+        .live-leaderboard.hidden {
+            display: none;
+        }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .live-leaderboard-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .live-leaderboard-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .live-leaderboard-toggle {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px;
+            transition: all 0.2s;
+        }
+
+        .live-leaderboard-toggle:hover {
+            color: var(--text-main);
+            transform: rotate(90deg);
+        }
+
+        .live-leaderboard-list {
+            padding: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .live-leaderboard-item {
+            background: #0a0a0a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .live-leaderboard-item.rank-1 {
+            border-color: var(--gold);
+            background: rgba(212,175,55,0.05);
+            box-shadow: 0 0 20px rgba(212,175,55,0.2);
+        }
+
+        .live-leaderboard-item.rank-2 {
+            border-color: #C0C0C0;
+            background: rgba(192,192,192,0.05);
+        }
+
+        .live-leaderboard-item.rank-3 {
+            border-color: #cd7f32;
+            background: rgba(205,127,50,0.05);
+        }
+
+        .live-leaderboard-rank {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            background: var(--border-color);
+            color: #666;
+            flex-shrink: 0;
+        }
+
+        .live-leaderboard-item.rank-1 .live-leaderboard-rank {
+            background: var(--gold);
+            color: #000;
+            box-shadow: 0 0 10px rgba(212,175,55,0.5);
+        }
+
+        .live-leaderboard-item.rank-2 .live-leaderboard-rank {
+            background: #C0C0C0;
+            color: #000;
+        }
+
+        .live-leaderboard-item.rank-3 .live-leaderboard-rank {
+            background: #cd7f32;
+            color: #000;
+        }
+
+        .live-leaderboard-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .live-leaderboard-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .live-leaderboard-score {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--gold);
+            font-family: 'Courier New', monospace;
+        }
+
+        .live-leaderboard-change {
+            font-size: 12px;
+            margin-left: 5px;
+        }
+
+        .live-leaderboard-change.up {
+            color: #4ade80;
+        }
+
+        .live-leaderboard-change.down {
+            color: #f87171;
+        }
+
+        .live-leaderboard-change.same {
+            color: #666;
+        }
+
+        /* Mobile optimizasyon */
+        @media (max-width: 768px) {
+            .live-leaderboard {
+                top: 70px;
+                left: 10px;
+                width: 200px;
+            }
+
+            .live-leaderboard-header h3 {
+                font-size: 14px;
+            }
+
+            .live-leaderboard-name {
+                font-size: 12px;
+            }
+
+            .live-leaderboard-score {
+                font-size: 14px;
+            }
         }
     </style>
 </head>
@@ -2439,6 +2807,36 @@
 
     <div id="toast"></div>
 
+    <!-- Notification Center -->
+    <div class="notification-center-btn" id="notificationCenterBtn" onclick="NOTIFICATIONS.toggle()" style="display: none;">
+        🔔
+        <span class="badge-count" id="notificationBadge" style="display: none;">0</span>
+    </div>
+
+    <div class="notification-center-dropdown" id="notificationCenterDropdown">
+        <div class="notification-center-header">
+            <h3>📬 Bildirimler</h3>
+            <button class="notification-center-clear" onclick="NOTIFICATIONS.clearAll()">Tümünü Temizle</button>
+        </div>
+        <div class="notification-center-list" id="notificationCenterList">
+            <div class="notification-center-empty">
+                <div class="notification-center-empty-icon">🔔</div>
+                <div>Henüz bildirim yok</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Canlı Lider Tablosu -->
+    <div class="live-leaderboard hidden" id="liveLeaderboard">
+        <div class="live-leaderboard-header">
+            <h3>🏆 Liderlik</h3>
+            <button class="live-leaderboard-toggle" onclick="LEADERBOARD.toggle()">✕</button>
+        </div>
+        <div class="live-leaderboard-list" id="liveLeaderboardList">
+            <!-- Takımlar buraya gelecek -->
+        </div>
+    </div>
+
     <!-- Müzik Ayarları Butonu -->
     <button onclick="openMusicSettings()" class="music-settings-btn" title="Müzik Ayarları">
         🎵
@@ -2545,6 +2943,231 @@
 
         // Sayfa yüklendiğinde temayı uygula
         THEME.init();
+
+        // ===== NOTIFICATION CENTER =====
+        var NOTIFICATIONS = {
+            notifications: [],
+            unreadCount: 0,
+            maxNotifications: 10,
+
+            init: function() {
+                // LocalStorage'dan bildirimleri yükle
+                const saved = localStorage.getItem('notifications');
+                if (saved) {
+                    try {
+                        this.notifications = JSON.parse(saved);
+                        this.updateUI();
+                    } catch(e) {
+                        console.error('Bildirim yükleme hatası:', e);
+                    }
+                }
+            },
+
+            add: function(title, message, type = 'info') {
+                const notification = {
+                    id: Date.now(),
+                    title: title,
+                    message: message,
+                    type: type,
+                    time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+                    timestamp: Date.now(),
+                    read: false
+                };
+
+                this.notifications.unshift(notification);
+
+                // Maksimum 10 bildirim tut
+                if (this.notifications.length > this.maxNotifications) {
+                    this.notifications = this.notifications.slice(0, this.maxNotifications);
+                }
+
+                this.save();
+                this.updateUI();
+
+                // Eğer kullanıcı takım sayfasındaysa göster
+                if (currentUser && !isAdmin) {
+                    document.getElementById('notificationCenterBtn').style.display = 'flex';
+                }
+            },
+
+            markAsRead: function(id) {
+                const notif = this.notifications.find(n => n.id === id);
+                if (notif && !notif.read) {
+                    notif.read = true;
+                    this.save();
+                    this.updateUI();
+                }
+            },
+
+            clearAll: function() {
+                if (confirm('Tüm bildirimleri temizlemek istediğinize emin misiniz?')) {
+                    this.notifications = [];
+                    this.save();
+                    this.updateUI();
+                }
+            },
+
+            toggle: function() {
+                const dropdown = document.getElementById('notificationCenterDropdown');
+                dropdown.classList.toggle('active');
+
+                // Açıldığında tüm bildirimleri okundu olarak işaretle
+                if (dropdown.classList.contains('active')) {
+                    this.notifications.forEach(n => n.read = true);
+                    this.save();
+                    this.updateUI();
+                }
+            },
+
+            save: function() {
+                try {
+                    localStorage.setItem('notifications', JSON.stringify(this.notifications));
+                } catch(e) {
+                    console.error('Bildirim kaydetme hatası:', e);
+                }
+            },
+
+            updateUI: function() {
+                this.unreadCount = this.notifications.filter(n => !n.read).length;
+
+                // Badge güncelle
+                const badge = document.getElementById('notificationBadge');
+                if (this.unreadCount > 0) {
+                    badge.textContent = this.unreadCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+
+                // Liste güncelle
+                const list = document.getElementById('notificationCenterList');
+                if (this.notifications.length === 0) {
+                    list.innerHTML = `
+                        <div class="notification-center-empty">
+                            <div class="notification-center-empty-icon">🔔</div>
+                            <div>Henüz bildirim yok</div>
+                        </div>
+                    `;
+                } else {
+                    list.innerHTML = this.notifications.map(n => `
+                        <div class="notification-center-item ${!n.read ? 'unread' : ''}" onclick="NOTIFICATIONS.markAsRead(${n.id})">
+                            <div class="notification-center-item-title">${escapeHtml(n.title)}</div>
+                            <div class="notification-center-item-message">${escapeHtml(n.message)}</div>
+                            <div class="notification-center-item-time">${n.time}</div>
+                        </div>
+                    `).join('');
+                }
+            }
+        };
+
+        // ===== CANLI LİDER TABLOSU =====
+        var LEADERBOARD = {
+            previousScores: {},
+            visible: false,
+
+            init: function() {
+                // LocalStorage'dan görünürlük durumunu yükle
+                const saved = localStorage.getItem('leaderboard_visible');
+                this.visible = saved === null ? true : saved === 'true'; // Varsayılan: görünür
+                this.updateVisibility();
+            },
+
+            toggle: function() {
+                this.visible = !this.visible;
+                localStorage.setItem('leaderboard_visible', this.visible);
+                this.updateVisibility();
+            },
+
+            updateVisibility: function() {
+                const board = document.getElementById('liveLeaderboard');
+                if (this.visible) {
+                    board.classList.remove('hidden');
+                } else {
+                    board.classList.add('hidden');
+                }
+            },
+
+            update: function(teams) {
+                if (!teams || teams.length === 0) return;
+
+                // Puana göre sırala
+                const sortedTeams = teams.sort((a, b) => b.score - a.score);
+
+                const list = document.getElementById('liveLeaderboardList');
+                list.innerHTML = sortedTeams.map((team, index) => {
+                    const rank = index + 1;
+                    const prevScore = this.previousScores[team.id] || team.score;
+                    const scoreChange = team.score - prevScore;
+
+                    let changeIcon = '';
+                    let changeClass = '';
+                    if (scoreChange > 0) {
+                        changeIcon = '⬆';
+                        changeClass = 'up';
+                    } else if (scoreChange < 0) {
+                        changeIcon = '⬇';
+                        changeClass = 'down';
+                    } else {
+                        changeIcon = '─';
+                        changeClass = 'same';
+                    }
+
+                    // Mevcut skorları kaydet (bir sonraki karşılaştırma için)
+                    this.previousScores[team.id] = team.score;
+
+                    return `
+                        <div class="live-leaderboard-item rank-${rank}">
+                            <div class="live-leaderboard-rank">${rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank}</div>
+                            <div class="live-leaderboard-info">
+                                <div class="live-leaderboard-name">${escapeHtml(team.name)}</div>
+                                <div class="live-leaderboard-score">
+                                    ${team.score}
+                                    <span class="live-leaderboard-change ${changeClass}">${changeIcon}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Eğer kullanıcı takım sayfasındaysa ve oyun başlamışsa göster
+                if (currentUser && !isAdmin && gameState.started) {
+                    document.getElementById('liveLeaderboard').classList.remove('hidden');
+                    if (!this.visible) {
+                        this.toggle(); // İlk kez gösteriliyorsa visible yap
+                    }
+                }
+            },
+
+            checkRankChange: function(teams) {
+                // Liderlik değişimi kontrolü
+                if (teams && teams.length > 0) {
+                    const sortedTeams = teams.sort((a, b) => b.score - a.score);
+                    const currentLeader = sortedTeams[0];
+
+                    if (this.previousLeader && this.previousLeader.id !== currentLeader.id) {
+                        // Lider değişti!
+                        NOTIFICATIONS.add(
+                            '👑 Liderlik Değişti!',
+                            `${currentLeader.name} şimdi 1. sırada! (${currentLeader.score} puan)`,
+                            'leaderboard'
+                        );
+
+                        // Eğer kullanıcının takımı lider olduysa özel bildirim
+                        if (currentUser && currentUser.team_id === currentLeader.id) {
+                            toast('🎉 Tebrikler! Takımınız 1. sıraya yükseldi!');
+                        }
+                    }
+
+                    this.previousLeader = currentLeader;
+                }
+            }
+        };
+
+        // Sayfa yüklendiğinde init et
+        document.addEventListener('DOMContentLoaded', function() {
+            NOTIFICATIONS.init();
+            LEADERBOARD.init();
+        });
 
         // Bildirim Sistemi
         var NOTIFICATION = {
@@ -6235,6 +6858,10 @@
                 // Chat dropdown için takım listesini güncelle
                 CHAT.updateAvailableTeams(teams);
 
+                // Canlı lider tablosunu güncelle
+                LEADERBOARD.update(newTeams);
+                LEADERBOARD.checkRankChange(newTeams);
+
                 if (document.getElementById('pgAdmin').classList.contains('active')) {
                     // Takım sayısı değiştiyse full render, değişmediyse sadece skor güncelle (titremeyi önlemek için)
                     if (oldLen !== teams.length) renderAdminList();
@@ -6248,10 +6875,10 @@
                     // Chat İzleme bölümündeyse team selector'ı güncelle
                     ADMIN.updateChatTeamSelector();
                 }
-                
+
                 if (document.getElementById('pgScoreboard').classList.contains('active')) renderScoreboard();
                 if (document.getElementById('joinForm').style.display === 'block') renderJoinList();
-                
+
                 if (currentTeamId) {
                     var myTeam = teams.find(t => t.id === currentTeamId);
                     if (myTeam) renderTeamPage(myTeam);
@@ -6296,12 +6923,16 @@
             // Bildirim Eventi
             socket.on('notification', function(data) {
                 NOTIF.add(data.title, data.message, data.type);
+                // Kalıcı bildirim olarak da ekle
+                NOTIFICATIONS.add(data.title, data.message, data.type);
             });
 
             // Puan değişikliği bildirimi
             socket.on('score-changed', function(data) {
                 var msg = data.teamName + ' takımı ' + (data.amount > 0 ? '+' : '') + data.amount + ' puan aldı. Yeni puan: ' + data.newScore;
                 NOTIF.add('Puan Değişikliği', msg, 'score');
+                // Kalıcı bildirim olarak da ekle
+                NOTIFICATIONS.add('🏆 Puan Değişikliği', msg, 'score');
             });
 
             // Yönetici ipuçları listesi güncellendi
@@ -6513,6 +7144,9 @@
                 renderTeamCountdown();
 
                 toast('Oyun başladı!');
+
+                // Kalıcı bildirim ekle
+                NOTIFICATIONS.add('🎮 Oyun Başladı', 'Dedektiflik macerası başlıyor! İyi şanslar.', 'game');
             });
 
             // Countdown güncellendi
@@ -6561,8 +7195,16 @@
                     console.log('Oyun bitti, final raporu alındı:', report);
                     toast('🏁 Oyun bitti! Rapor gösteriliyor...');
                     GAME.showFinalReport(report);
+
+                    // Kazanan takımı bildirimde göster
+                    if (report.winner) {
+                        NOTIFICATIONS.add('🏆 Oyun Bitti', report.winner.name + ' takımı kazandı! (' + report.winner.score + ' puan)', 'winner');
+                    } else {
+                        NOTIFICATIONS.add('🏁 Oyun Bitti', 'Oyun sona erdi. Raporu görüntüleyin.', 'game');
+                    }
                 } else {
                     toast('Oyun bitti!');
+                    NOTIFICATIONS.add('🏁 Oyun Bitti', 'Oyun sona erdi.', 'game');
                 }
             });
 
