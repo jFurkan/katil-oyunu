@@ -22,6 +22,19 @@
             --text-main: #e0e0e0;
             --text-muted: #888;
             --success: #2d5a27;
+
+            /* Z-Index System */
+            --z-base: 1;
+            --z-sticky: 100;
+            --z-modal-backdrop: 1000;
+            --z-modal: 1001;
+            --z-dropdown: 5000;
+            --z-leaderboard: 9997;
+            --z-notification-badge: 9998;
+            --z-notification-dropdown: 9998;
+            --z-notification-btn: 9999;
+            --z-notification-popup: 10000;
+            --z-highest: 10001;
         }
 
         /* Tema 2: Midnight Detective */
@@ -310,7 +323,7 @@
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: var(--z-modal-backdrop);
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
             animation: modalFadeIn 0.3s ease;
@@ -1637,7 +1650,7 @@
             position: fixed;
             top: 20px;
             right: 20px;
-            z-index: 9999;
+            z-index: var(--z-notification-btn);
             background: linear-gradient(135deg, var(--card-bg), #000);
             border: 2px solid var(--border-color);
             border-radius: 50%;
@@ -1693,7 +1706,7 @@
                         0 20px 60px rgba(0, 0, 0, 0.4);
             display: none;
             flex-direction: column;
-            z-index: 9998;
+            z-index: var(--z-notification-dropdown);
             animation: slideDown 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
 
@@ -1852,7 +1865,7 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6),
                         0 0 0 1px rgba(255, 255, 255, 0.05) inset,
                         0 20px 60px rgba(0, 0, 0, 0.4);
-            z-index: 9997;
+            z-index: var(--z-leaderboard);
             animation: slideInLeft 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
 
@@ -2393,7 +2406,7 @@
                                 <span id="selectedTeamText">📢 Tüm Takımlar</span>
                                 <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%);">▼</span>
                             </button>
-                            <div id="teamDropdown" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 5px; background: #0a0a0a; border: 1px solid #1a4d4d; border-radius: 6px; min-width: 200px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 1000; max-height: 300px; overflow-y: auto;">
+                            <div id="teamDropdown" style="display: none; position: fixed; background: #0a0a0a; border: 1px solid #1a4d4d; border-radius: 6px; min-width: 200px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 10001; max-height: 300px; overflow-y: auto;">
                                 <!-- Dropdown içeriği JavaScript ile doldurulacak -->
                             </div>
                         </div>
@@ -4843,8 +4856,17 @@
                 // Takım dropdown'ını aç/kapat
                 toggleTeamDropdown: function() {
                     var dropdown = document.getElementById('teamDropdown');
+                    var button = document.getElementById('btnTeamSelector');
+
                     if (dropdown.style.display === 'none') {
                         CHAT.loadAvailableTeams();
+
+                        // Position dropdown relative to button (fixed position)
+                        var rect = button.getBoundingClientRect();
+                        dropdown.style.top = (rect.bottom + 5) + 'px';
+                        dropdown.style.left = rect.left + 'px';
+                        dropdown.style.minWidth = rect.width + 'px';
+
                         dropdown.style.display = 'block';
                     } else {
                         dropdown.style.display = 'none';
@@ -8679,6 +8701,44 @@
                     svg.style.width = (maxX + 100) + 'px';
                     svg.style.height = (maxY + 100) + 'px';
 
+                    // Add defs for arrow markers and glow effects
+                    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+
+                    // Arrow marker
+                    const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+                    marker.setAttribute('id', 'arrowhead');
+                    marker.setAttribute('markerWidth', '10');
+                    marker.setAttribute('markerHeight', '10');
+                    marker.setAttribute('refX', '9');
+                    marker.setAttribute('refY', '3');
+                    marker.setAttribute('orient', 'auto');
+
+                    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                    polygon.setAttribute('points', '0 0, 10 3, 0 6');
+                    polygon.setAttribute('fill', '#d44d4d');
+                    marker.appendChild(polygon);
+                    defs.appendChild(marker);
+
+                    // Glow filter
+                    const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+                    filter.setAttribute('id', 'glow');
+                    const feGaussianBlur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
+                    feGaussianBlur.setAttribute('stdDeviation', '2.5');
+                    feGaussianBlur.setAttribute('result', 'coloredBlur');
+                    filter.appendChild(feGaussianBlur);
+
+                    const feMerge = document.createElementNS('http://www.w3.org/2000/svg', 'feMerge');
+                    const feMergeNode1 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+                    feMergeNode1.setAttribute('in', 'coloredBlur');
+                    const feMergeNode2 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+                    feMergeNode2.setAttribute('in', 'SourceGraphic');
+                    feMerge.appendChild(feMergeNode1);
+                    feMerge.appendChild(feMergeNode2);
+                    filter.appendChild(feMerge);
+                    defs.appendChild(filter);
+
+                    svg.appendChild(defs);
+
                     MURDERBOARD.connections.forEach(function(conn) {
                         const fromItem = MURDERBOARD.boardItems.find(function(i) { return i.id === conn.from_item_id; });
                         const toItem = MURDERBOARD.boardItems.find(function(i) { return i.id === conn.to_item_id; });
@@ -8690,23 +8750,95 @@
                         const toX = toItem.x + 60;
                         const toY = toItem.y + 50;
 
-                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                        line.setAttribute('x1', fromX);
-                        line.setAttribute('y1', fromY);
-                        line.setAttribute('x2', toX);
-                        line.setAttribute('y2', toY);
-                        line.setAttribute('stroke', '#d44d4d');
-                        line.setAttribute('stroke-width', '3');
-                        line.setAttribute('stroke-dasharray', '5,5');
-                        line.style.cursor = 'pointer';
+                        // Create curved path instead of straight line
+                        const midX = (fromX + toX) / 2;
+                        const midY = (fromY + toY) / 2;
 
-                        line.addEventListener('click', function() {
+                        // Calculate control point for curve (perpendicular offset)
+                        const dx = toX - fromX;
+                        const dy = toY - fromY;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        const offset = Math.min(dist * 0.2, 50); // Curve intensity
+
+                        const controlX = midX + (-dy / dist) * offset;
+                        const controlY = midY + (dx / dist) * offset;
+
+                        // Create path element for curved line
+                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        const pathData = `M ${fromX} ${fromY} Q ${controlX} ${controlY} ${toX} ${toY}`;
+                        path.setAttribute('d', pathData);
+                        path.setAttribute('stroke', '#d44d4d');
+                        path.setAttribute('stroke-width', '2.5');
+                        path.setAttribute('fill', 'none');
+                        path.setAttribute('marker-end', 'url(#arrowhead)');
+                        path.setAttribute('filter', 'url(#glow)');
+                        path.style.cursor = 'pointer';
+                        path.style.transition = 'all 0.3s ease';
+
+                        // Animated dashes
+                        const animate = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+                        animate.setAttribute('attributeName', 'stroke-dasharray');
+                        animate.setAttribute('from', '0, 10');
+                        animate.setAttribute('to', '10, 0');
+                        animate.setAttribute('dur', '0.5s');
+                        animate.setAttribute('repeatCount', 'indefinite');
+                        path.appendChild(animate);
+
+                        // Hover effects
+                        path.addEventListener('mouseenter', function() {
+                            path.setAttribute('stroke-width', '4');
+                            path.setAttribute('stroke', '#ff6b6b');
+                        });
+
+                        path.addEventListener('mouseleave', function() {
+                            path.setAttribute('stroke-width', '2.5');
+                            path.setAttribute('stroke', '#d44d4d');
+                        });
+
+                        path.addEventListener('click', function() {
                             if (confirm('Bu bağlantıyı silmek istiyor musunuz?')) {
                                 MURDERBOARD.deleteConnection(conn.id);
                             }
                         });
 
-                        svg.appendChild(line);
+                        svg.appendChild(path);
+
+                        // Add connection label if notes exist
+                        if (conn.notes && conn.notes.trim()) {
+                            const labelG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                            labelG.style.cursor = 'pointer';
+
+                            // Label background
+                            const labelBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                            const textWidth = Math.min(conn.notes.length * 7, 100);
+                            labelBg.setAttribute('x', controlX - textWidth/2);
+                            labelBg.setAttribute('y', controlY - 10);
+                            labelBg.setAttribute('width', textWidth);
+                            labelBg.setAttribute('height', '20');
+                            labelBg.setAttribute('fill', 'rgba(0, 0, 0, 0.8)');
+                            labelBg.setAttribute('rx', '4');
+                            labelBg.setAttribute('stroke', '#d44d4d');
+                            labelBg.setAttribute('stroke-width', '1');
+
+                            // Label text
+                            const labelText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                            labelText.setAttribute('x', controlX);
+                            labelText.setAttribute('y', controlY + 4);
+                            labelText.setAttribute('text-anchor', 'middle');
+                            labelText.setAttribute('fill', '#fff');
+                            labelText.setAttribute('font-size', '11');
+                            labelText.setAttribute('font-weight', '600');
+                            labelText.textContent = conn.notes.length > 12 ? conn.notes.substring(0, 12) + '...' : conn.notes;
+
+                            labelG.appendChild(labelBg);
+                            labelG.appendChild(labelText);
+
+                            labelG.addEventListener('click', function() {
+                                alert('Bağlantı Notu: ' + conn.notes);
+                            });
+
+                            svg.appendChild(labelG);
+                        }
                     });
                 },
 
