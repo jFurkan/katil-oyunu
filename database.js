@@ -288,9 +288,16 @@ async function initDatabase() {
                 total_players INTEGER DEFAULT 0,
                 total_clues INTEGER DEFAULT 0,
                 total_messages INTEGER DEFAULT 0,
+                total_score_changes INTEGER DEFAULT 0,
                 duration_minutes INTEGER,
                 created_at TIMESTAMP DEFAULT NOW()
             )
+        `);
+
+        // total_score_changes sütunu yoksa ekle (migration)
+        await pool.query(`
+            ALTER TABLE game_sessions
+            ADD COLUMN IF NOT EXISTS total_score_changes INTEGER DEFAULT 0
         `);
 
         // Game Events tablosu (Timeline için olaylar)

@@ -22,6 +22,24 @@ let currentSessionId = null; // Aktif oyun oturumu ID'si
 let currentPhaseId = null; // Aktif faz ID'si
 let phaseStartStats = null; // Faz başlangıç istatistikleri (ipucu, mesaj, vb)
 
+// Session counter'ları increment et (performans optimizasyonu)
+async function incrementSessionCounter(counterType) {
+    if (!currentSessionId) return;
+
+    const validCounters = ['total_clues', 'total_messages', 'total_score_changes'];
+    if (!validCounters.includes(counterType)) return;
+
+    try {
+        await pool.query(`
+            UPDATE game_sessions
+            SET ${counterType} = ${counterType} + 1
+            WHERE id = $1
+        `, [currentSessionId]);
+    } catch (err) {
+        console.error(`Counter increment hatası (${counterType}):`, err);
+    }
+}
+
 // Event loglama yardımcı fonksiyonu
 async function logGameEvent(eventType, description, options = {}) {
     if (!currentSessionId) return; // Aktif oyun yoksa log'lama
@@ -629,15 +647,17 @@ async function startPhaseTracking(phaseTitle, durationSeconds) {
         // Yeni faz ID'si oluştur
         currentPhaseId = crypto.randomUUID();
 
-        // Başlangıç istatistiklerini al
-        const cluesCount = await pool.query('SELECT COUNT(*) FROM clues');
-        const messagesCount = await pool.query('SELECT COUNT(*) FROM team_messages');
-        const scoreChangesCount = await pool.query('SELECT COUNT(*) FROM game_events WHERE event_type = $1', ['score_changed']);
+        // Başlangıç istatistiklerini session counter'larından al (performans optimizasyonu)
+        const sessionStats = await pool.query(`
+            SELECT total_clues, total_messages, total_score_changes
+            FROM game_sessions
+            WHERE id = $1
+        `, [currentSessionId]);
 
         phaseStartStats = {
-            clues: parseInt(cluesCount.rows[0].count),
-            messages: parseInt(messagesCount.rows[0].count),
-            scoreChanges: parseInt(scoreChangesCount.rows[0].count)
+            clues: sessionStats.rows[0]?.total_clues || 0,
+            messages: sessionStats.rows[0]?.total_messages || 0,
+            scoreChanges: sessionStats.rows[0]?.total_score_changes || 0
         };
 
         // Faz kaydını veritabanına ekle
@@ -665,15 +685,23 @@ async function endPhaseTracking() {
     }
 
     try {
-        // Bitiş istatistiklerini al
-        const cluesCount = await pool.query('SELECT COUNT(*) FROM clues');
-        const messagesCount = await pool.query('SELECT COUNT(*) FROM team_messages');
-        const scoreChangesCount = await pool.query('SELECT COUNT(*) FROM game_events WHERE event_type = $1', ['score_changed']);
+        // Bitiş istatistiklerini session counter'larından al (performans optimizasyonu)
+        const sessionStats = await pool.query(`
+            SELECT total_clues, total_messages, total_score_changes
+            FROM game_sessions
+            WHERE id = $1
+        `, [currentSessionId]);
+
+        const endStats = {
+            clues: sessionStats.rows[0]?.total_clues || 0,
+            messages: sessionStats.rows[0]?.total_messages || 0,
+            scoreChanges: sessionStats.rows[0]?.total_score_changes || 0
+        };
 
         // Fark hesapla
-        const totalClues = parseInt(cluesCount.rows[0].count) - (phaseStartStats?.clues || 0);
-        const totalMessages = parseInt(messagesCount.rows[0].count) - (phaseStartStats?.messages || 0);
-        const totalScoreChanges = parseInt(scoreChangesCount.rows[0].count) - (phaseStartStats?.scoreChanges || 0);
+        const totalClues = endStats.clues - (phaseStartStats?.clues || 0);
+        const totalMessages = endStats.messages - (phaseStartStats?.messages || 0);
+        const totalScoreChanges = endStats.scoreChanges - (phaseStartStats?.scoreChanges || 0);
 
         // Lider takımı bul
         const leadingTeamResult = await pool.query(`
@@ -2085,6 +2113,9 @@ io.on('connection', async (socket) => {
                 [data.teamId, clueValidation.value, time]
             );
 
+            // Session counter increment (performans optimizasyonu)
+            incrementSessionCounter('total_clues');
+
             // Event tracking: İpucu eklendi
             const teamData = await pool.query('SELECT name FROM teams WHERE id = $1', [data.teamId]);
             const userData = await pool.query('SELECT nickname FROM users WHERE id = $1', [socket.data.userId]);
@@ -2245,6 +2276,9 @@ io.on('connection', async (socket) => {
                 teamName: team.name,
                 metadata: { amount: data.amount, new_score: team.score }
             });
+
+            // Session counter increment (performans optimizasyonu)
+            incrementSessionCounter('total_score_changes');
 
             callback({ success: true, team: team });
 
@@ -3157,6 +3191,9 @@ io.on('connection', async (socket) => {
                 'INSERT INTO team_messages (team_id, user_id, nickname, team_name, team_color, message, target_team_id, target_team_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
                 [user.team_id, user.id, user.nickname, user.team_name, teamColor, messageValidation.value, targetTeamId, targetTeamName]
             );
+
+            // Session counter increment (performans optimizasyonu)
+            incrementSessionCounter('total_messages');
 
             const newMessage = insertResult.rows[0];
             // Profil fotoğrafını ekle
