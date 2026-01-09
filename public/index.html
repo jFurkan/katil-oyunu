@@ -2003,13 +2003,77 @@
         /* Mobile optimizasyon */
         @media (max-width: 768px) {
             .live-leaderboard {
-                top: 70px;
+                top: auto;
+                bottom: 20px;
                 left: 10px;
-                width: 200px;
+                right: auto;
+                width: auto;
+                max-width: calc(100vw - 20px);
+                transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            }
+
+            /* Collapsed state - küçük buton gibi */
+            .live-leaderboard.collapsed {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                overflow: hidden;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            }
+
+            .live-leaderboard.collapsed .live-leaderboard-header {
+                padding: 0;
+                border: none;
+                width: 50px;
+                height: 50px;
+                justify-content: center;
+            }
+
+            .live-leaderboard.collapsed .live-leaderboard-header h3 {
+                margin: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .live-leaderboard.collapsed .live-leaderboard-header h3 i {
+                width: 24px;
+                height: 24px;
+            }
+
+            .live-leaderboard.collapsed .live-leaderboard-header h3 span {
+                display: none;
+            }
+
+            .live-leaderboard.collapsed .live-leaderboard-toggle {
+                display: none;
+            }
+
+            .live-leaderboard.collapsed .live-leaderboard-list {
+                display: none;
+            }
+
+            /* Expanded state - normal görünüm */
+            .live-leaderboard:not(.collapsed) {
+                width: calc(100vw - 20px);
+                max-width: 320px;
+                border-radius: 16px;
+            }
+
+            .live-leaderboard-header {
+                cursor: pointer;
             }
 
             .live-leaderboard-header h3 {
                 font-size: 14px;
+            }
+
+            .live-leaderboard-list {
+                max-height: 300px;
+            }
+
+            .live-leaderboard-item {
+                padding: 8px;
             }
 
             .live-leaderboard-name {
@@ -2018,6 +2082,28 @@
 
             .live-leaderboard-score {
                 font-size: 14px;
+            }
+
+            .live-leaderboard-rank {
+                width: 26px;
+                height: 26px;
+                font-size: 12px;
+            }
+
+            /* Notification Center'ı yukarı taşı */
+            .notification-center-btn {
+                top: 10px;
+                right: 10px;
+                width: 45px;
+                height: 45px;
+            }
+
+            .notification-center-dropdown {
+                top: 65px;
+                right: 10px;
+                left: 10px;
+                width: auto;
+                max-width: none;
             }
         }
     </style>
@@ -3149,7 +3235,7 @@
     <!-- Canlı Lider Tablosu -->
     <div class="live-leaderboard hidden" id="liveLeaderboard">
         <div class="live-leaderboard-header">
-            <h3><i data-feather="trophy" class="icon-sm"></i> Liderlik</h3>
+            <h3><i data-feather="trophy" class="icon-sm"></i><span> Liderlik</span></h3>
             <button class="live-leaderboard-toggle" onclick="LEADERBOARD.toggle()">
                 <i data-feather="x" class="icon-sm"></i>
             </button>
@@ -3393,12 +3479,52 @@
         var LEADERBOARD = {
             previousScores: {},
             visible: false,
+            collapsed: true, // Mobilde başlangıçta collapsed
 
             init: function() {
                 // LocalStorage'dan görünürlük durumunu yükle
                 const saved = localStorage.getItem('leaderboard_visible');
                 this.visible = saved === null ? true : saved === 'true'; // Varsayılan: görünür
                 this.updateVisibility();
+
+                // Mobil için collapse/expand toggle
+                this.initMobileToggle();
+
+                // Mobilde başlangıçta collapsed olsun
+                if (window.innerWidth <= 768) {
+                    const board = document.getElementById('liveLeaderboard');
+                    board.classList.add('collapsed');
+                    this.collapsed = true;
+                }
+            },
+
+            initMobileToggle: function() {
+                const header = document.querySelector('.live-leaderboard-header');
+                if (!header) return;
+
+                header.addEventListener('click', (e) => {
+                    // Sadece mobilde çalışsın
+                    if (window.innerWidth <= 768) {
+                        // X butonuna tıklanırsa toggle() fonksiyonunu çalıştır (gizle)
+                        if (e.target.closest('.live-leaderboard-toggle')) {
+                            return; // X butonu kendi fonksiyonunu çalıştırsın
+                        }
+
+                        // Header'a tıklanırsa collapse/expand yap
+                        this.toggleCollapse();
+                    }
+                });
+            },
+
+            toggleCollapse: function() {
+                const board = document.getElementById('liveLeaderboard');
+                this.collapsed = !this.collapsed;
+
+                if (this.collapsed) {
+                    board.classList.add('collapsed');
+                } else {
+                    board.classList.remove('collapsed');
+                }
             },
 
             toggle: function() {
