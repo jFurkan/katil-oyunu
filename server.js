@@ -647,6 +647,10 @@ async function startPhaseTracking(phaseTitle, durationSeconds) {
         `, [currentPhaseId, currentSessionId, phaseTitle, durationSeconds, Math.round(durationSeconds / 60)]);
 
         console.log(`📍 Faz başladı: "${phaseTitle}" (${Math.round(durationSeconds / 60)} dakika) - ID: ${currentPhaseId}`);
+
+        // Faz listesini güncelle ve broadcast et
+        const phases = await getPhases(currentSessionId);
+        io.emit('phases-update', phases);
     } catch (err) {
         console.error('❌ Faz kaydı başlatma hatası:', err);
         currentPhaseId = null;

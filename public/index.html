@@ -5013,15 +5013,7 @@
                             toast('Oyun başlatıldı!');
                             document.getElementById('gameMinutes').value = '';
                             document.getElementById('gameTitle').value = '';
-
-                            // Oyun oturumunu da otomatik başlat
-                            socket.emit('start-game-session', function(sessionRes) {
-                                if (sessionRes.success) {
-                                    console.log('✅ Oyun oturumu otomatik başlatıldı:', sessionRes.sessionId);
-                                } else {
-                                    console.error('❌ Oyun oturumu başlatılamadı:', sessionRes.error);
-                                }
-                            });
+                            // Backend otomatik olarak session ve faz kaydını başlatır
                         } else {
                             toast(res.error, true);
                         }
@@ -5062,17 +5054,7 @@
                             isProcessing = false;
                             if (res.success) {
                                 toast('Oyun bitirildi!');
-
-                                // Oyun oturumunu da otomatik bitir ve raporu göster
-                                socket.emit('end-game-session', function(sessionRes) {
-                                    if (sessionRes.success) {
-                                        console.log('✅ Oyun oturumu otomatik bitirildi');
-                                        toast('Final raporu gösteriliyor...');
-                                        GAME.showFinalReport(sessionRes.report);
-                                    } else {
-                                        console.error('❌ Oyun oturumu bitirilemedi:', sessionRes.error);
-                                    }
-                                });
+                                // Backend otomatik olarak faz + session kapatıp 'game-ended' event ile rapor gönderir
                             } else {
                                 toast(res.error, true);
                             }
