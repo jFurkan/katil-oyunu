@@ -9,6 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
     <style>
         /* Tema 1: Classic Dark (Default) */
         :root {
@@ -298,9 +300,45 @@
         .team-opt { padding: 15px; background: #161616; border: 1px solid #333; border-radius: 8px; cursor: pointer; transition: 0.2s; }
         .team-opt:hover, .team-opt.sel { border-color: var(--accent); background: #1f1f1f; }
         
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px); }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            animation: modalFadeIn 0.3s ease;
+        }
         .modal.show { display: flex; }
-        .modal-box { background: #111; border: 1px solid #333; padding: 30px; border-radius: 16px; width: 90%; max-width: 350px; text-align: center; }
+        @keyframes modalFadeIn {
+            from { opacity: 0; backdrop-filter: blur(0px); }
+            to { opacity: 1; backdrop-filter: blur(20px) saturate(180%); }
+        }
+        .modal-box {
+            background: rgba(17, 17, 17, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 350px;
+            text-align: center;
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5),
+                        0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+                        0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalBoxSlideIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        @keyframes modalBoxSlideIn {
+            from { transform: scale(0.8) translateY(30px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
 
         #toast {
             position: fixed;
@@ -386,6 +424,272 @@
         .admin-notif-time { color: #555; font-size: 11px; }
         .admin-notif-delete { background: transparent; border: 1px solid #333; color: #666; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: 0.2s; white-space: nowrap; }
         .admin-notif-delete:hover { border-color: var(--accent); color: var(--accent); background: rgba(139,0,0,0.1); }
+
+        /* ===== LOADING & SKELETON STATES ===== */
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .loading-spinner.small {
+            width: 20px;
+            height: 20px;
+            border-width: 2px;
+        }
+
+        .loading-spinner.large {
+            width: 60px;
+            height: 60px;
+            border-width: 5px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Loading Container */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            padding: 40px;
+            min-height: 200px;
+        }
+
+        .loading-text {
+            color: var(--text-muted);
+            font-size: 14px;
+            animation: pulse-opacity 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-opacity {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Skeleton Loader */
+        .skeleton {
+            background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0.03) 0%,
+                rgba(255, 255, 255, 0.08) 50%,
+                rgba(255, 255, 255, 0.03) 100%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease-in-out infinite;
+            border-radius: 8px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* Skeleton Card - Admin Takım Kartı için */
+        .skeleton-card {
+            background: linear-gradient(135deg, var(--card-bg), #0a0a0a);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .skeleton-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .skeleton-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+        }
+
+        .skeleton-title {
+            height: 18px;
+            width: 120px;
+        }
+
+        .skeleton-score {
+            height: 24px;
+            width: 60px;
+            margin-left: auto;
+        }
+
+        .skeleton-text {
+            height: 14px;
+            width: 100%;
+        }
+
+        .skeleton-text.short {
+            width: 60%;
+        }
+
+        .skeleton-text.medium {
+            width: 80%;
+        }
+
+        .skeleton-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin-top: 8px;
+        }
+
+        .skeleton-button {
+            height: 32px;
+            border-radius: 4px;
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold), var(--accent));
+            border-radius: 2px;
+            transition: width 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.3),
+                transparent
+            );
+            animation: progress-shine 1.5s ease-in-out infinite;
+        }
+
+        @keyframes progress-shine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-bar.indeterminate .progress-bar-fill {
+            width: 30% !important;
+            animation: progress-indeterminate 1.5s ease-in-out infinite;
+        }
+
+        @keyframes progress-indeterminate {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(400%); }
+        }
+
+        /* Pulse Loading (for avatars/images) */
+        .pulse-load {
+            animation: pulse-scale 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-scale {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(0.98); }
+        }
+
+        /* ===== ICON SYSTEM ===== */
+
+        /* Feather Icons global styling */
+        .feather {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            vertical-align: middle;
+        }
+
+        /* Icon sizes */
+        .icon-xs { width: 14px; height: 14px; }
+        .icon-sm { width: 16px; height: 16px; }
+        .icon-md { width: 20px; height: 20px; }
+        .icon-lg { width: 24px; height: 24px; }
+        .icon-xl { width: 32px; height: 32px; }
+
+        /* Icon button styling */
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-main);
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--gold);
+            transform: translateY(-1px);
+        }
+
+        .icon-btn:active {
+            transform: translateY(0);
+        }
+
+        .icon-btn.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .icon-btn.primary:hover {
+            background: var(--gold);
+            border-color: var(--gold);
+        }
+
+        /* Icon with text */
+        .icon-text {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Animated icons */
+        .icon-spin {
+            animation: spin 2s linear infinite;
+        }
+
+        .icon-pulse {
+            animation: icon-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes icon-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.9); }
+        }
 
         /* Oyun Kontrol Paneli */
         .game-control { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
@@ -635,15 +939,19 @@
             position: absolute;
             bottom: 65px;
             right: 0;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
+            background: rgba(17, 17, 17, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
             padding: 10px;
             display: none;
             flex-direction: column;
             gap: 8px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
-            animation: slideUp 0.3s ease;
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6),
+                        0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+                        0 20px 60px rgba(0, 0, 0, 0.4);
+            animation: slideUp 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
         .theme-menu.active { display: flex; }
         @keyframes slideUp {
@@ -1375,14 +1683,18 @@
             right: 20px;
             width: 350px;
             max-height: 500px;
-            background: linear-gradient(135deg, var(--card-bg), #0a0a0a);
-            border: 2px solid var(--border-color);
-            border-radius: 12px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.8);
+            background: rgba(17, 17, 17, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6),
+                        0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+                        0 20px 60px rgba(0, 0, 0, 0.4);
             display: none;
             flex-direction: column;
             z-index: 9998;
-            animation: slideDown 0.3s ease;
+            animation: slideDown 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
 
         .notification-center-dropdown.active {
@@ -1532,12 +1844,16 @@
             top: 80px;
             left: 20px;
             width: 250px;
-            background: linear-gradient(135deg, var(--card-bg), #0a0a0a);
-            border: 2px solid var(--border-color);
-            border-radius: 12px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.8);
+            background: rgba(17, 17, 17, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6),
+                        0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+                        0 20px 60px rgba(0, 0, 0, 0.4);
             z-index: 9997;
-            animation: slideInLeft 0.5s ease;
+            animation: slideInLeft 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
 
         .live-leaderboard.hidden {
@@ -2809,18 +3125,22 @@
 
     <!-- Notification Center -->
     <div class="notification-center-btn" id="notificationCenterBtn" onclick="NOTIFICATIONS.toggle()" style="display: none;">
-        🔔
+        <i data-feather="bell" class="icon-md"></i>
         <span class="badge-count" id="notificationBadge" style="display: none;">0</span>
     </div>
 
     <div class="notification-center-dropdown" id="notificationCenterDropdown">
         <div class="notification-center-header">
-            <h3>📬 Bildirimler</h3>
-            <button class="notification-center-clear" onclick="NOTIFICATIONS.clearAll()">Tümünü Temizle</button>
+            <h3><i data-feather="inbox" class="icon-sm"></i> Bildirimler</h3>
+            <button class="notification-center-clear" onclick="NOTIFICATIONS.clearAll()">
+                <i data-feather="trash-2" class="icon-xs"></i> Tümünü Temizle
+            </button>
         </div>
         <div class="notification-center-list" id="notificationCenterList">
             <div class="notification-center-empty">
-                <div class="notification-center-empty-icon">🔔</div>
+                <div class="notification-center-empty-icon">
+                    <i data-feather="bell-off" class="icon-xl" style="opacity: 0.3;"></i>
+                </div>
                 <div>Henüz bildirim yok</div>
             </div>
         </div>
@@ -2829,8 +3149,10 @@
     <!-- Canlı Lider Tablosu -->
     <div class="live-leaderboard hidden" id="liveLeaderboard">
         <div class="live-leaderboard-header">
-            <h3>🏆 Liderlik</h3>
-            <button class="live-leaderboard-toggle" onclick="LEADERBOARD.toggle()">✕</button>
+            <h3><i data-feather="trophy" class="icon-sm"></i> Liderlik</h3>
+            <button class="live-leaderboard-toggle" onclick="LEADERBOARD.toggle()">
+                <i data-feather="x" class="icon-sm"></i>
+            </button>
         </div>
         <div class="live-leaderboard-list" id="liveLeaderboardList">
             <!-- Takımlar buraya gelecek -->
@@ -3044,7 +3366,9 @@
                 if (this.notifications.length === 0) {
                     list.innerHTML = `
                         <div class="notification-center-empty">
-                            <div class="notification-center-empty-icon">🔔</div>
+                            <div class="notification-center-empty-icon">
+                                <i data-feather="bell-off" class="icon-xl" style="opacity: 0.3;"></i>
+                            </div>
                             <div>Henüz bildirim yok</div>
                         </div>
                     `;
@@ -3056,6 +3380,11 @@
                             <div class="notification-center-item-time">${n.time}</div>
                         </div>
                     `).join('');
+                }
+
+                // Re-initialize Feather icons after DOM update
+                if (typeof feather !== 'undefined') {
+                    feather.replace();
                 }
             }
         };
@@ -3102,22 +3431,28 @@
                     let changeIcon = '';
                     let changeClass = '';
                     if (scoreChange > 0) {
-                        changeIcon = '⬆';
+                        changeIcon = '<i data-feather="trending-up" class="icon-xs"></i>';
                         changeClass = 'up';
                     } else if (scoreChange < 0) {
-                        changeIcon = '⬇';
+                        changeIcon = '<i data-feather="trending-down" class="icon-xs"></i>';
                         changeClass = 'down';
                     } else {
-                        changeIcon = '─';
+                        changeIcon = '<i data-feather="minus" class="icon-xs"></i>';
                         changeClass = 'same';
                     }
 
                     // Mevcut skorları kaydet (bir sonraki karşılaştırma için)
                     this.previousScores[team.id] = team.score;
 
+                    // Rank icon/emoji
+                    let rankDisplay = rank;
+                    if (rank === 1) rankDisplay = '<i data-feather="award" class="icon-md" style="color: var(--gold);"></i>';
+                    else if (rank === 2) rankDisplay = '<i data-feather="star" class="icon-md" style="color: #C0C0C0;"></i>';
+                    else if (rank === 3) rankDisplay = '<i data-feather="star" class="icon-md" style="color: #cd7f32;"></i>';
+
                     return `
                         <div class="live-leaderboard-item rank-${rank}">
-                            <div class="live-leaderboard-rank">${rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank}</div>
+                            <div class="live-leaderboard-rank">${rankDisplay}</div>
                             <div class="live-leaderboard-info">
                                 <div class="live-leaderboard-name">${escapeHtml(team.name)}</div>
                                 <div class="live-leaderboard-score">
@@ -3128,6 +3463,11 @@
                         </div>
                     `;
                 }).join('');
+
+                // Re-initialize Feather icons after DOM update
+                if (typeof feather !== 'undefined') {
+                    feather.replace();
+                }
 
                 // Eğer kullanıcı takım sayfasındaysa ve oyun başlamışsa göster
                 if (currentUser && !isAdmin && gameState.started) {
@@ -3167,6 +3507,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             NOTIFICATIONS.init();
             LEADERBOARD.init();
+
+            // Initialize Feather Icons
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            }
         });
 
         // Bildirim Sistemi
