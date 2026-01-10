@@ -6,10 +6,30 @@
     --card-bg: #111111;
     --border-color: #222;
     --accent: #8B0000; /* Kan Kırmızısı */
+    --accent-light: #a00000;
+    --accent-dark: #6d0000;
     --gold: #D4AF37;
+    --gold-light: #f4d03f;
+    --gold-dark: #b8941f;
     --text-main: #e0e0e0;
     --text-muted: #888;
+    --text-dim: #555;
     --success: #2d5a27;
+    --success-light: #3d7a37;
+    --info: #2563eb;
+    --warning: #f59e0b;
+    --danger: #dc2626;
+
+    /* Enhanced Colors */
+    --shadow-color: rgba(0, 0, 0, 0.5);
+    --overlay-bg: rgba(0, 0, 0, 0.85);
+    --glass-bg: rgba(17, 17, 17, 0.8);
+    --glass-border: rgba(255, 255, 255, 0.1);
+
+    /* Gradients */
+    --gradient-gold: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
+    --gradient-red: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 50%, var(--accent) 100%);
+    --gradient-dark: linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(17, 17, 17, 0.95) 50%, rgba(0, 0, 0, 0.9) 100%);
 
     /* Z-Index System */
     --z-base: 1;
@@ -31,10 +51,30 @@
     --card-bg: #141b2d;
     --border-color: #1e2a45;
     --accent: #5b7c99;
+    --accent-light: #7594b3;
+    --accent-dark: #455f7a;
     --gold: #ffd700;
+    --gold-light: #ffed4e;
+    --gold-dark: #ccac00;
     --text-main: #e8eef7;
     --text-muted: #7a8ba3;
+    --text-dim: #5a6a83;
     --success: #2d5a27;
+    --success-light: #3d7a37;
+    --info: #3b82f6;
+    --warning: #f59e0b;
+    --danger: #dc2626;
+
+    /* Enhanced Colors */
+    --shadow-color: rgba(10, 14, 26, 0.6);
+    --overlay-bg: rgba(10, 14, 26, 0.9);
+    --glass-bg: rgba(20, 27, 45, 0.8);
+    --glass-border: rgba(255, 255, 255, 0.12);
+
+    /* Gradients */
+    --gradient-gold: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
+    --gradient-red: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 50%, var(--accent) 100%);
+    --gradient-dark: linear-gradient(135deg, rgba(10, 14, 26, 0.95) 0%, rgba(20, 27, 45, 0.97) 50%, rgba(10, 14, 26, 0.95) 100%);
 }
 
 /* Tema 3: Blood Moon */
@@ -43,8 +83,28 @@
     --card-bg: #1a0a0a;
     --border-color: #2d0f0f;
     --accent: #b91c1c;
+    --accent-light: #dc2626;
+    --accent-dark: #991b1b;
     --gold: #ff6b6b;
+    --gold-light: #ff8787;
+    --gold-dark: #e05555;
     --text-main: #f5e6e6;
     --text-muted: #9a6b6b;
+    --text-dim: #6d4a4a;
     --success: #2d5a27;
+    --success-light: #3d7a37;
+    --info: #2563eb;
+    --warning: #f59e0b;
+    --danger: #dc2626;
+
+    /* Enhanced Colors */
+    --shadow-color: rgba(13, 4, 4, 0.7);
+    --overlay-bg: rgba(13, 4, 4, 0.9);
+    --glass-bg: rgba(26, 10, 10, 0.8);
+    --glass-border: rgba(255, 107, 107, 0.15);
+
+    /* Gradients */
+    --gradient-gold: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
+    --gradient-red: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 50%, var(--accent) 100%);
+    --gradient-dark: linear-gradient(135deg, rgba(13, 4, 4, 0.95) 0%, rgba(26, 10, 10, 0.97) 50%, rgba(13, 4, 4, 0.95) 100%);
 }
