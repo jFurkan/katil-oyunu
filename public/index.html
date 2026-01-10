@@ -1647,9 +1647,8 @@
 
         // NOTIFICATION.init(); (now handled in app.js module)
 
-        // Renk Özelleştirme Sistemi
-        // TODO: Extract to customize.js module
-        var CUSTOMIZE = {
+        // Renk Özelleştirme Sistemi (REMOVED - now in customize.js module)
+        if (false) { var CUSTOMIZE = {
             selectedColor: '#3b82f6',
 
             init: function() {
@@ -2662,8 +2661,8 @@
                 }
             };
 
-            // CHAT FONKSİYONLARI
-            window.CHAT = {
+            // CHAT FONKSİYONLARI (REMOVED - now in chat.js module)
+            if (false) { window.CHAT = {
                 currentPage: 1,
                 totalPages: 1,
                 isLoading: false,
@@ -3120,10 +3119,10 @@
                 closeFinalReport: function() {
                     document.getElementById('finalReportModal').style.display = 'none';
                 }
-            };
+            }; } // End CUSTOMIZE (now in module)
 
-            // YÖNETİCİ FONKSİYONLARI
-            window.ADMIN = {
+            // YÖNETİCİ FONKSİYONLARI (REMOVED - now in admin.js module)
+            if (false) { window.ADMIN = {
                 currentSection: 'game',
 
                 showSection: function(section) {
@@ -4309,7 +4308,7 @@
                         }
                     });
                 }
-            };
+            }; } // End ADMIN (now in module)
 
             // IP SECTION FONKSİYONLARI (Tab Yönetimi)
             window.IP_SECTION = {
@@ -5930,9 +5929,8 @@
                 }
             }; } // End CHARACTER (now in module)
 
-            // MURDER BOARD FONKSİYONLARI
-            // TODO: Extract to murderboard.js module
-            window.MURDERBOARD = {
+            // MURDER BOARD FONKSİYONLARI (REMOVED - now in murderboard.js module)
+            if (false) { window.MURDERBOARD = {
                 connectionMode: false,
                 connectionStart: null,
                 boardItems: [],
@@ -6734,7 +6732,7 @@
                         zoomDisplay.textContent = Math.round(MURDERBOARD.zoomLevel * 100) + '%';
                     }
                 }
-            };
+            }; } // End MURDERBOARD (now in module)
 
             // ADMIN MURDER BOARD İZLEME FONKSİYONLARI
             window.ADMIN_BOARD = {

@@ -10,6 +10,11 @@ import { LEADERBOARD } from './modules/leaderboard.js';
 import { NOTIFICATION } from './modules/notification-display.js';
 import { POKE } from './modules/poke.js';
 import { CHARACTER } from './modules/character.js';
+import { MURDERBOARD } from './modules/murderboard.js';
+import { CUSTOMIZE } from './modules/customize.js';
+import { ADMIN } from './modules/admin.js';
+import { CHAT } from './modules/chat.js';
+import { USER } from './modules/user.js';
 
 // Initialize all modules when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
@@ -54,5 +59,12 @@ export {
     updateCurrentUserDisplay,
     NOTIFICATIONS,
     LEADERBOARD,
-    NOTIFICATION
+    NOTIFICATION,
+    POKE,
+    CHARACTER,
+    MURDERBOARD,
+    CUSTOMIZE,
+    ADMIN,
+    CHAT,
+    USER
 };
