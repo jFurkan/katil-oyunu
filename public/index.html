@@ -1222,9 +1222,26 @@
     </div>
 
     <!-- Bildirim Sesi -->
+
+    <!-- Load Modular JavaScript -->
+    <script type="module" src="/js/app.js"></script>
+
     <script>
-        // Tema Yönetimi
-        var THEME = {
+        // Import modular components
+        // (THEME, NOTIFICATIONS, LEADERBOARD, NOTIFICATION now loaded from modules)
+
+        // The following code will be gradually modularized
+        // For now, critical modules are already extracted:
+        // - theme.js, utils.js, navigation.js
+        // - notification-center.js, leaderboard.js, notification-display.js
+
+        // Tema Yönetimi (REMOVED - now in theme.js module)
+        // NOTIFICATIONS (REMOVED - now in notification-center.js module)
+        // LEADERBOARD (REMOVED - now in leaderboard.js module)
+        // NOTIFICATION (REMOVED - now in notification-display.js module)
+
+        // Skip old THEME object definition as it's now in module
+        if (false) { var THEME = {
             // GÜVENLİK: sessionStorage kullan (localStorage yerine) - oturum sonu temizlensin
             current: sessionStorage.getItem('theme') || 'classic',
 
@@ -1263,13 +1280,13 @@
             closeMenu: function() {
                 document.getElementById('themeMenu').classList.remove('active');
             }
-        };
+        }; } // End THEME (now in module)
 
-        // Sayfa yüklendiğinde temayı uygula
-        THEME.init();
+        // Sayfa yüklendiğinde temayı uygula (now handled in app.js module)
+        // THEME.init();
 
-        // ===== NOTIFICATION CENTER =====
-        var NOTIFICATIONS = {
+        // ===== NOTIFICATION CENTER ===== (REMOVED - now in notification-center.js module)
+        if (false) { var NOTIFICATIONS = {
             notifications: [],
             unreadCount: 0,
             maxNotifications: 10,
@@ -1389,10 +1406,10 @@
                     feather.replace();
                 }
             }
-        };
+        }; } // End NOTIFICATIONS (now in module)
 
-        // ===== CANLI LİDER TABLOSU =====
-        var LEADERBOARD = {
+        // ===== CANLI LİDER TABLOSU ===== (REMOVED - now in leaderboard.js module)
+        if (false) { var LEADERBOARD = {
             previousScores: {},
             visible: false,
             collapsed: true, // Mobilde başlangıçta collapsed
@@ -1543,21 +1560,19 @@
                     this.previousLeader = currentLeader;
                 }
             }
-        };
+        }; } // End LEADERBOARD (now in module)
 
-        // Sayfa yüklendiğinde init et
-        document.addEventListener('DOMContentLoaded', function() {
-            NOTIFICATIONS.init();
-            LEADERBOARD.init();
+        // Sayfa yüklendiğinde init et (now handled in app.js module)
+        // document.addEventListener('DOMContentLoaded', function() {
+        //     NOTIFICATIONS.init();
+        //     LEADERBOARD.init();
+        //     if (typeof feather !== 'undefined') {
+        //         feather.replace();
+        //     }
+        // });
 
-            // Initialize Feather Icons
-            if (typeof feather !== 'undefined') {
-                feather.replace();
-            }
-        });
-
-        // Bildirim Sistemi
-        var NOTIFICATION = {
+        // Bildirim Sistemi (REMOVED - now in notification-display.js module)
+        if (false) { var NOTIFICATION = {
             container: null,
             nextId: 1,
 
@@ -1628,11 +1643,12 @@
                     }, 300);
                 }
             }
-        };
+        }; } // End NOTIFICATION (now in module)
 
-        NOTIFICATION.init();
+        // NOTIFICATION.init(); (now handled in app.js module)
 
         // Renk Özelleştirme Sistemi
+        // TODO: Extract to customize.js module
         var CUSTOMIZE = {
             selectedColor: '#3b82f6',
 
@@ -1933,111 +1949,10 @@
             };
 
             // Zaman formatlayıcı (saniye -> MM:SS)
-            function formatTime(seconds) {
-                var mins = Math.floor(seconds / 60);
-                var secs = seconds % 60;
-                return (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
-            }
-
-            // HTML Escape - XSS koruması
-            function htmlEscape(text) {
-                if (!text) return '';
-                var div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
-            }
-
-            // UI Yardımcıları
-            function toast(msg, err) {
-                var t = document.getElementById('toast');
-                if (!t) {
-                    console.error('Toast element bulunamadı!');
-                    return;
-                }
-                t.textContent = msg;
-                t.className = err ? 'show err' : 'show';
-                setTimeout(function() { t.className = ''; }, 2500);
-            }
-
-            // Global scope'a ekle (GAME_RESET gibi diğer objelerden erişim için)
-            window.toast = toast;
-
-            function showPage(id, addToHistory = true) {
-                // Mevcut aktif sayfayı bul
-                var currentPage = document.querySelector('.page.active');
-                var currentPageId = currentPage ? currentPage.id : null;
-
-                // Eğer aynı sayfaya geçiş yapılıyorsa, history'ye ekleme
-                if (currentPageId === id) {
-                    return;
-                }
-
-                // History'ye ekle (geri butonları için)
-                if (addToHistory && currentPageId) {
-                    pageHistory.push(currentPageId);
-                    // Max 10 sayfa tutulur (memory overflow önleme)
-                    if (pageHistory.length > 10) {
-                        pageHistory.shift();
-                    }
-                }
-
-                // Sayfaları değiştir
-                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-                document.getElementById(id).classList.add('active');
-            }
-
-            // Geri git fonksiyonu
-            function goBack() {
-                if (pageHistory.length > 0) {
-                    var previousPage = pageHistory.pop();
-                    showPage(previousPage, false); // History'ye ekleme
-                } else {
-                    // History yoksa lobby'ye git
-                    if (currentUser) {
-                        showPage('pgLobby', false);
-                    } else {
-                        showPage('pgNickname', false);
-                    }
-                }
-            }
-
-            function updateCurrentUserDisplay() {
-                var userInfo = document.getElementById('currentUserInfo');
-                var userNick = document.getElementById('currentUserNick');
-
-                if (currentUser && currentUser.nickname) {
-                    userNick.textContent = currentUser.nickname;
-                    userInfo.style.display = 'block';
-                } else {
-                    userInfo.style.display = 'none';
-                }
-            }
-
-            // Global Fonksiyonlar (HTML onclick için)
-            // HTML Escape fonksiyonu (XSS koruması)
-            function escapeHtml(text) {
-                if (!text) return '';
-                var map = {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#039;'
-                };
-                return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
-            }
-
-            // Tarih formatlama fonksiyonu
-            function formatDate(date) {
-                if (!date) return '---';
-                return new Date(date).toLocaleString('tr-TR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            }
+            // Utility functions (REMOVED - now in utils.js and navigation.js modules)
+            // formatTime, htmlEscape, toast, showPage, goBack, updateCurrentUserDisplay
+            // escapeHtml, formatDate
+            // All utility functions are now loaded from modules and available globally
 
             window.adminScore = function(teamId, amount, teamName) {
                 if (isProcessing) return;
@@ -5737,7 +5652,8 @@
             });
 
             // POKE (Dürtme) Yönetimi
-            var POKE = {
+            // POKE Module (REMOVED - now in poke.js module)
+            if (false) { var POKE = {
                 // Rate limiting cache (client-side, son dürtme zamanları)
                 lastPokeTime: {}, // { targetTeamId: timestamp }
 
@@ -5827,10 +5743,10 @@
                         }
                     });
                 }
-            };
+            }; } // End POKE (now in module)
 
-            // KARAKTER YÖNETİMİ FONKSİYONLARI
-            window.CHARACTER = {
+            // KARAKTER YÖNETİMİ FONKSİYONLARI (REMOVED - now in character.js module)
+            if (false) { window.CHARACTER = {
                 addCharacter: function() {
                     const name = document.getElementById('charName').value.trim();
                     const photoUrl = document.getElementById('charPhotoUrl').value.trim();
@@ -6012,9 +5928,10 @@
                     // Modal'ı kapat
                     CHARACTER.closePhotoSelector();
                 }
-            };
+            }; } // End CHARACTER (now in module)
 
             // MURDER BOARD FONKSİYONLARI
+            // TODO: Extract to murderboard.js module
             window.MURDERBOARD = {
                 connectionMode: false,
                 connectionStart: null,
