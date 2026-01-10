@@ -222,7 +222,7 @@ export const MURDERBOARD = {
                     } else {
                         const placeholder = document.createElement('div');
                         placeholder.style.cssText = 'width: 100%; height: 100px; background: #ddd; border-radius: 6px 6px 0 0; display: flex; align-items: center; justify-content: center; font-size: 48px;';
-                        placeholder.textContent = 'ğŸ‘¤';
+                        placeholder.textContent = '👤';
                         div.appendChild(placeholder);
                     }
 
@@ -242,7 +242,7 @@ export const MURDERBOARD = {
 
                     // Sil butonu
                     const deleteBtn = document.createElement('button');
-                    deleteBtn.textContent = 'ğŸ—‘ï¸';
+                    deleteBtn.textContent = '🗑️';
                     deleteBtn.style.cssText = 'position: absolute; top: 4px; right: 4px; background: rgba(255,255,255,0.9); border: 1px solid #d44d4d; border-radius: 4px; padding: 2px 6px; font-size: 12px; cursor: pointer; z-index: 2;';
                     deleteBtn.onclick = function(e) {
                         e.stopPropagation();
@@ -532,7 +532,7 @@ export const MURDERBOARD = {
                         btn.style.background = 'linear-gradient(135deg, #1a4d1a, #0d3310)';
                         btn.style.borderColor = '#4dd44d';
                         btn.style.color = '#4dd44d';
-                        toast('ğŸ”— Bağlantı modu aktif - İki karakter seçin');
+                        toast('🔗 Bağlantı modu aktif - İki karakter seçin');
                     } else {
                         btn.style.background = 'linear-gradient(135deg, #4d4d1a, #333310)';
                         btn.style.borderColor = '#d4d44d';
@@ -737,7 +737,7 @@ export const MURDERBOARD = {
 
                     socket.emit('delete-board-item', itemId, function(response) {
                         if (response.success) {
-                            toast('ğŸ—‘ï¸ Karakter kaldırıldı');
+                            toast('🗑️ Karakter kaldırıldı');
                             MURDERBOARD.loadBoard();
                         } else {
                             toast(response.error || 'Karakter kaldırılamadı!', true);
@@ -748,7 +748,7 @@ export const MURDERBOARD = {
                 deleteConnection: function(connectionId) {
                     socket.emit('delete-board-connection', connectionId, function(response) {
                         if (response.success) {
-                            toast('ğŸ—‘ï¸ Bağlantı silindi');
+                            toast('🗑️ Bağlantı silindi');
                             MURDERBOARD.loadBoard();
                         } else {
                             toast(response.error || 'Bağlantı silinemedi!', true);
@@ -761,7 +761,7 @@ export const MURDERBOARD = {
 
                     socket.emit('clear-board', function(response) {
                         if (response.success) {
-                            toast('ğŸ—‘ï¸ Murder board temizlendi');
+                            toast('🗑️ Murder board temizlendi');
                             MURDERBOARD.loadBoard();
                         } else {
                             toast(response.error || 'Temizlenemedi!', true);
