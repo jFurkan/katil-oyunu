@@ -12,25 +12,25 @@ export const MURDERBOARD = {
                 editingItemId: null,
                 allCharacters: [],
                 zoomLevel: 1,
-                renderScheduled: false, // requestAnimationFrame iÃ§in flag
+                renderScheduled: false, // requestAnimationFrame için flag
 
                 loadAvailableCharacters: function() {
-                    // Karakter listesini yÃ¼kle
+                    // Karakter listesini yükle
                     socket.emit('get-characters-for-board', function(characters) {
-                        console.log('Karakterler yÃ¼klendi (Murder Board):', characters);
+                        console.log('Karakterler yüklendi (Murder Board):', characters);
                         MURDERBOARD.allCharacters = characters;
                         MURDERBOARD.updateCharacterDropdown();
                     });
                 },
 
                 openMurderBoard: function() {
-                    // Karakter listesini yÃ¼kle
+                    // Karakter listesini yükle
                     MURDERBOARD.loadAvailableCharacters();
 
-                    // Board verilerini yÃ¼kle
+                    // Board verilerini yükle
                     MURDERBOARD.loadBoard();
 
-                    // TakÄ±m adÄ±nÄ± gÃ¶ster (UUID deÄŸil, takÄ±m adÄ±)
+                    // Takım adını göster (UUID değil, takım adı)
                     if (currentUser && currentUser.teamId) {
                         socket.emit('get-team', currentUser.teamId, function(team) {
                             if (team) {
@@ -38,14 +38,14 @@ export const MURDERBOARD = {
                             }
                         });
                     } else {
-                        document.getElementById('mbTeamName').textContent = 'TakÄ±m';
+                        document.getElementById('mbTeamName').textContent = 'Takım';
                     }
 
-                    // Zoom sÄ±fÄ±rla
+                    // Zoom sıfırla
                     MURDERBOARD.zoomLevel = 1;
                     MURDERBOARD.updateZoom();
 
-                    // SayfayÄ± gÃ¶ster
+                    // Sayfayı göster
                     showPage('pgMurderBoard', true);
                 },
 
@@ -65,14 +65,14 @@ export const MURDERBOARD = {
 
                 updateCharacterDropdown: function() {
                     const dropdown = document.getElementById('characterDropdown');
-                    dropdown.innerHTML = '<option value="">Karakter seÃ§in...</option>';
+                    dropdown.innerHTML = '<option value="">Karakter seçin...</option>';
 
-                    // Zaten board'a eklenmiÅŸ karakter ID'lerini bul
+                    // Zaten board'a eklenmiş karakter ID'lerini bul
                     const addedCharacterIds = MURDERBOARD.boardItems.map(function(item) {
                         return item.character_id;
                     });
 
-                    // EklenmemiÅŸ karakterleri dropdown'a ekle
+                    // Eklenmemiş karakterleri dropdown'a ekle
                     MURDERBOARD.allCharacters.forEach(function(char) {
                         if (addedCharacterIds.indexOf(char.id) === -1) {
                             const option = document.createElement('option');
@@ -111,11 +111,11 @@ export const MURDERBOARD = {
                         note: newNote
                     }, function(response) {
                         if (response.success) {
-                            toast('âœ… Not gÃ¼ncellendi');
+                            toast('âœ… Not güncellendi');
                             MURDERBOARD.hideEditNoteModal();
                             MURDERBOARD.loadBoard();
                         } else {
-                            toast(response.error || 'Not gÃ¼ncellenemedi!', true);
+                            toast(response.error || 'Not güncellenemedi!', true);
                         }
                     });
                 },
@@ -125,7 +125,7 @@ export const MURDERBOARD = {
                     const note = document.getElementById('characterNote').value.trim();
 
                     if (!dropdown.value) {
-                        toast('LÃ¼tfen bir karakter seÃ§in!', true);
+                        toast('Lütfen bir karakter seçin!', true);
                         return;
                     }
 
@@ -175,24 +175,24 @@ export const MURDERBOARD = {
                     const emptyState = document.getElementById('boardEmptyState');
                     const itemCount = document.getElementById('mbItemCount');
 
-                    // Ã–ÄŸe sayÄ±sÄ±nÄ± gÃ¼ncelle
+                    // Öğe sayısını güncelle
                     itemCount.textContent = MURDERBOARD.boardItems.length;
 
-                    // Empty state kontrolÃ¼
+                    // Empty state kontrolü
                     if (MURDERBOARD.boardItems.length === 0) {
                         emptyState.style.display = 'block';
                     } else {
                         emptyState.style.display = 'none';
                     }
 
-                    // Mevcut Ã¶ÄŸeleri temizle (SVG hariÃ§)
+                    // Mevcut öğeleri temizle (SVG hariç)
                     Array.from(canvas.children).forEach(function(child) {
                         if (child.id !== 'connectionsLayer' && child.id !== 'boardEmptyState') {
                             canvas.removeChild(child);
                         }
                     });
 
-                    // BaÄŸlantÄ±larÄ± Ã§iz
+                    // Bağlantıları çiz
                     MURDERBOARD.renderConnections();
 
                     // Karakterleri ekle
@@ -213,7 +213,7 @@ export const MURDERBOARD = {
                     pin.style.cssText = 'position: absolute; top: -8px; left: 50%; transform: translateX(-50%); width: 16px; height: 16px; background: radial-gradient(circle, #d44d4d, #8b0000); border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 1;';
                     div.appendChild(pin);
 
-                    // FotoÄŸraf veya placeholder
+                    // Fotoğraf veya placeholder
                     if (item.photo_url) {
                         const img = document.createElement('img');
                         img.src = item.photo_url;
@@ -226,7 +226,7 @@ export const MURDERBOARD = {
                         div.appendChild(placeholder);
                     }
 
-                    // Ä°sim
+                    // İsim
                     const name = document.createElement('div');
                     name.style.cssText = 'padding: 8px; font-size: 12px; font-weight: 600; color: #000; text-align: center; border-bottom: 1px solid #ddd;';
                     name.textContent = item.character_name;
@@ -250,13 +250,13 @@ export const MURDERBOARD = {
                     };
                     div.appendChild(deleteBtn);
 
-                    // Ã‡ift tÄ±klama ile not dÃ¼zenleme
+                    // Çift tıklama ile not düzenleme
                     div.addEventListener('dblclick', function(e) {
                         e.stopPropagation();
                         MURDERBOARD.showEditNoteModal(item.id);
                     });
 
-                    // Modern pointer-based drag (hem mouse hem touch iÃ§in)
+                    // Modern pointer-based drag (hem mouse hem touch için)
                     var isDragging = false;
                     var startPointerX = 0;
                     var startPointerY = 0;
@@ -266,7 +266,7 @@ export const MURDERBOARD = {
                     var hasMoved = false;
                     var offsetX = 0;
                     var offsetY = 0;
-                    var lastPointerEventTime = 0; // Pointer event tekrarÄ±nÄ± Ã¶nle
+                    var lastPointerEventTime = 0; // Pointer event tekrarını önle
 
                     var getPointerCoords = function(e) {
                         // Touch event'ten koordinat al
@@ -278,7 +278,7 @@ export const MURDERBOARD = {
                     };
 
                     var onPointerDown = function(e) {
-                        // Pointer event varsa touch'Ä± 100ms ignore et (Ã§ift tetiklenmeyi Ã¶nle)
+                        // Pointer event varsa touch'ı 100ms ignore et (çift tetiklenmeyi önle)
                         if (e.type === 'pointerdown') {
                             lastPointerEventTime = Date.now();
                         } else if (e.type.includes('touch') && Date.now() - lastPointerEventTime < 100) {
@@ -286,7 +286,7 @@ export const MURDERBOARD = {
                         }
 
                         if (MURDERBOARD.connectionMode) {
-                            // Connection mode'da drag baÅŸlatma, sadece click handle et
+                            // Connection mode'da drag başlatma, sadece click handle et
                             e.preventDefault();
                             e.stopPropagation();
                             MURDERBOARD.handleConnectionClick(item.id);
@@ -302,7 +302,7 @@ export const MURDERBOARD = {
                         var canvasRect = canvas.getBoundingClientRect();
                         var zoom = MURDERBOARD.zoomLevel;
 
-                        // Mouse/touch'Ä±n karakter iÃ§indeki offsetini hesapla (senkronizasyon iÃ§in)
+                        // Mouse/touch'ın karakter içindeki offsetini hesapla (senkronizasyon için)
                         var canvasX = (coords.x - canvasRect.left) / zoom;
                         var canvasY = (coords.y - canvasRect.top) / zoom;
                         offsetX = canvasX - item.x;
@@ -329,21 +329,21 @@ export const MURDERBOARD = {
                         var canvasRect = canvas.getBoundingClientRect();
                         var zoom = MURDERBOARD.zoomLevel;
 
-                        // Mouse/touch pozisyonunu canvas koordinatÄ±na Ã§evir ve offset'i Ã§Ä±kar
+                        // Mouse/touch pozisyonunu canvas koordinatına çevir ve offset'i çıkar
                         var canvasX = (coords.x - canvasRect.left) / zoom;
                         var canvasY = (coords.y - canvasRect.top) / zoom;
 
                         var newX = canvasX - offsetX;
                         var newY = canvasY - offsetY;
 
-                        // Negatif deÄŸerleri engelle
+                        // Negatif değerleri engelle
                         newX = Math.max(0, newX);
                         newY = Math.max(0, newY);
 
                         div.style.left = newX + 'px';
                         div.style.top = newY + 'px';
 
-                        // Board items'Ä± gÃ¼ncelle (baÄŸlantÄ±lar iÃ§in)
+                        // Board items'ı güncelle (bağlantılar için)
                         item.x = newX;
                         item.y = newY;
 
@@ -362,7 +362,7 @@ export const MURDERBOARD = {
 
                         var dragDuration = Date.now() - dragStartTime;
 
-                        // Ã‡ok kÄ±sa dokunma ve hareket yoksa (tÄ±klama gibi) - sadece mobilde
+                        // Çok kısa dokunma ve hareket yoksa (tıklama gibi) - sadece mobilde
                         if (!hasMoved && dragDuration < 200 && e.type.includes('touch')) {
                             MURDERBOARD.showEditNoteModal(item.id);
                         } else if (hasMoved) {
@@ -374,7 +374,7 @@ export const MURDERBOARD = {
                             });
                         }
 
-                        // TÃ¼m document listener'larÄ± temizle
+                        // Tüm document listener'ları temizle
                         document.removeEventListener('pointermove', onPointerMove);
                         document.removeEventListener('pointerup', onPointerUp);
                         document.removeEventListener('pointercancel', onPointerUp);
@@ -388,10 +388,10 @@ export const MURDERBOARD = {
                     };
 
                     var onPointerDownHandler = function(e) {
-                        // Pointer iÃ§in Ã¶zel handler (document listener'larÄ± ekle)
+                        // Pointer için özel handler (document listener'ları ekle)
                         onPointerDown(e);
                         if (isDragging && e.type.includes('pointer')) {
-                            // Pointer event iÃ§in document listener'larÄ± ekle
+                            // Pointer event için document listener'ları ekle
                             document.addEventListener('pointermove', onPointerMove, { passive: false });
                             document.addEventListener('pointerup', onPointerUp);
                             document.addEventListener('pointercancel', onPointerUp);
@@ -399,7 +399,7 @@ export const MURDERBOARD = {
                     };
 
                     var onMouseDown = function(e) {
-                        // Mouse iÃ§in Ã¶zel handler (document listener'larÄ± ekle)
+                        // Mouse için özel handler (document listener'ları ekle)
                         onPointerDown(e);
                         if (isDragging) {
                             document.addEventListener('mousemove', onPointerMove, { passive: false });
@@ -408,7 +408,7 @@ export const MURDERBOARD = {
                     };
 
                     var onTouchStart = function(e) {
-                        // Touch iÃ§in Ã¶zel handler (document listener'larÄ± ekle)
+                        // Touch için özel handler (document listener'ları ekle)
                         onPointerDown(e);
                         if (isDragging) {
                             document.addEventListener('touchmove', onPointerMove, { passive: false });
@@ -417,13 +417,13 @@ export const MURDERBOARD = {
                         }
                     };
 
-                    // Pointer events (modern, tÃ¼m cihazlarÄ± destekler)
+                    // Pointer events (modern, tüm cihazları destekler)
                     div.addEventListener('pointerdown', onPointerDownHandler, { passive: false });
 
-                    // Fallback: Touch events (eski mobil tarayÄ±cÄ±lar iÃ§in)
+                    // Fallback: Touch events (eski mobil tarayıcılar için)
                     div.addEventListener('touchstart', onTouchStart, { passive: false });
 
-                    // Fallback: Mouse events (eski tarayÄ±cÄ±lar iÃ§in)
+                    // Fallback: Mouse events (eski tarayıcılar için)
                     div.addEventListener('mousedown', onMouseDown, { passive: false });
 
                     return div;
@@ -475,11 +475,11 @@ export const MURDERBOARD = {
                     itemEl.style.left = x + 'px';
                     itemEl.style.top = y + 'px';
 
-                    // Drag sÄ±rasÄ±nda boardItems'daki pozisyonu da gÃ¼ncelle (baÄŸlantÄ±lar iÃ§in)
+                    // Drag sırasında boardItems'daki pozisyonu da güncelle (bağlantılar için)
                     MURDERBOARD.draggedItem.x = x;
                     MURDERBOARD.draggedItem.y = y;
 
-                    // requestAnimationFrame ile optimize render (performans iÃ§in)
+                    // requestAnimationFrame ile optimize render (performans için)
                     MURDERBOARD.scheduleConnectionRender();
                 },
 
@@ -532,7 +532,7 @@ export const MURDERBOARD = {
                         btn.style.background = 'linear-gradient(135deg, #1a4d1a, #0d3310)';
                         btn.style.borderColor = '#4dd44d';
                         btn.style.color = '#4dd44d';
-                        toast('ğŸ”— BaÄŸlantÄ± modu aktif - Ä°ki karakter seÃ§in');
+                        toast('ğŸ”— Bağlantı modu aktif - İki karakter seçin');
                     } else {
                         btn.style.background = 'linear-gradient(135deg, #4d4d1a, #333310)';
                         btn.style.borderColor = '#d4d44d';
@@ -543,10 +543,10 @@ export const MURDERBOARD = {
                 handleConnectionClick: function(itemId) {
                     if (!MURDERBOARD.connectionStart) {
                         MURDERBOARD.connectionStart = itemId;
-                        toast('Ä°kinci karakteri seÃ§in');
+                        toast('İkinci karakteri seçin');
                     } else {
                         if (MURDERBOARD.connectionStart === itemId) {
-                            toast('AynÄ± karaktere baÄŸlantÄ± eklenemez!', true);
+                            toast('Aynı karaktere bağlantı eklenemez!', true);
                             MURDERBOARD.connectionStart = null;
                             return;
                         }
@@ -556,12 +556,12 @@ export const MURDERBOARD = {
                             toItemId: itemId
                         }, function(response) {
                             if (response.success) {
-                                toast('âœ… BaÄŸlantÄ± eklendi - BaÅŸka bir karakter seÃ§erek devam edebilirsiniz');
+                                toast('âœ… Bağlantı eklendi - Başka bir karakter seçerek devam edebilirsiniz');
                                 MURDERBOARD.loadBoard();
-                                // BaÄŸlantÄ± modunu kapatma - devam edebilsin
-                                MURDERBOARD.connectionStart = null; // Sadece baÅŸlangÄ±Ã§ noktasÄ±nÄ± sÄ±fÄ±rla
+                                // Bağlantı modunu kapatma - devam edebilsin
+                                MURDERBOARD.connectionStart = null; // Sadece başlangıç noktasını sıfırla
                             } else {
-                                toast(response.error || 'BaÄŸlantÄ± eklenemedi!', true);
+                                toast(response.error || 'Bağlantı eklenemedi!', true);
                             }
                         });
                     }
@@ -572,22 +572,22 @@ export const MURDERBOARD = {
                     const canvas = document.getElementById('murderBoardCanvas');
                     svg.innerHTML = '';
 
-                    // TÃ¼m karakterlerin pozisyonlarÄ±nÄ± kontrol ederek gerekli canvas boyutunu hesapla
-                    let maxX = 800; // Minimum geniÅŸlik
-                    let maxY = 600; // Minimum yÃ¼kseklik
+                    // Tüm karakterlerin pozisyonlarını kontrol ederek gerekli canvas boyutunu hesapla
+                    let maxX = 800; // Minimum genişlik
+                    let maxY = 600; // Minimum yükseklik
 
                     MURDERBOARD.boardItems.forEach(function(item) {
-                        const itemRight = item.x + 120; // Karakter geniÅŸliÄŸi
-                        const itemBottom = item.y + 100; // Karakter yÃ¼ksekliÄŸi
+                        const itemRight = item.x + 120; // Karakter genişliği
+                        const itemBottom = item.y + 100; // Karakter yüksekliği
                         if (itemRight > maxX) maxX = itemRight;
                         if (itemBottom > maxY) maxY = itemBottom;
                     });
 
-                    // Canvas boyutunu gÃ¼ncelle (padding ekle)
+                    // Canvas boyutunu güncelle (padding ekle)
                     canvas.style.minWidth = (maxX + 100) + 'px';
                     canvas.style.minHeight = (maxY + 100) + 'px';
 
-                    // SVG boyutunu canvas boyutuna eÅŸitle
+                    // SVG boyutunu canvas boyutuna eşitle
                     svg.style.width = (maxX + 100) + 'px';
                     svg.style.height = (maxY + 100) + 'px';
 
@@ -686,7 +686,7 @@ export const MURDERBOARD = {
                         });
 
                         path.addEventListener('click', function() {
-                            if (confirm('Bu baÄŸlantÄ±yÄ± silmek istiyor musunuz?')) {
+                            if (confirm('Bu bağlantıyı silmek istiyor musunuz?')) {
                                 MURDERBOARD.deleteConnection(conn.id);
                             }
                         });
@@ -724,7 +724,7 @@ export const MURDERBOARD = {
                             labelG.appendChild(labelText);
 
                             labelG.addEventListener('click', function() {
-                                alert('BaÄŸlantÄ± Notu: ' + conn.notes);
+                                alert('Bağlantı Notu: ' + conn.notes);
                             });
 
                             svg.appendChild(labelG);
@@ -733,14 +733,14 @@ export const MURDERBOARD = {
                 },
 
                 deleteItem: function(itemId) {
-                    if (!confirm('Bu karakteri kaldÄ±rmak istiyor musunuz?')) return;
+                    if (!confirm('Bu karakteri kaldırmak istiyor musunuz?')) return;
 
                     socket.emit('delete-board-item', itemId, function(response) {
                         if (response.success) {
-                            toast('ğŸ—‘ï¸ Karakter kaldÄ±rÄ±ldÄ±');
+                            toast('ğŸ—‘ï¸ Karakter kaldırıldı');
                             MURDERBOARD.loadBoard();
                         } else {
-                            toast(response.error || 'Karakter kaldÄ±rÄ±lamadÄ±!', true);
+                            toast(response.error || 'Karakter kaldırılamadı!', true);
                         }
                     });
                 },
@@ -748,16 +748,16 @@ export const MURDERBOARD = {
                 deleteConnection: function(connectionId) {
                     socket.emit('delete-board-connection', connectionId, function(response) {
                         if (response.success) {
-                            toast('ğŸ—‘ï¸ BaÄŸlantÄ± silindi');
+                            toast('ğŸ—‘ï¸ Bağlantı silindi');
                             MURDERBOARD.loadBoard();
                         } else {
-                            toast(response.error || 'BaÄŸlantÄ± silinemedi!', true);
+                            toast(response.error || 'Bağlantı silinemedi!', true);
                         }
                     });
                 },
 
                 clearBoard: function() {
-                    if (!confirm('TÃ¼m murder board\'u temizlemek istediÄŸinizden emin misiniz?')) return;
+                    if (!confirm('Tüm murder board\'u temizlemek istediğinizden emin misiniz?')) return;
 
                     socket.emit('clear-board', function(response) {
                         if (response.success) {
@@ -769,7 +769,7 @@ export const MURDERBOARD = {
                     });
                 },
 
-                // Zoom fonksiyonlarÄ±
+                // Zoom fonksiyonları
                 zoomIn: function() {
                     MURDERBOARD.zoomLevel = Math.min(MURDERBOARD.zoomLevel + 0.1, 2);
                     MURDERBOARD.updateZoom();
@@ -791,14 +791,14 @@ export const MURDERBOARD = {
                         // Transform uygula
                         canvas.style.transform = 'scale(' + MURDERBOARD.zoomLevel + ')';
 
-                        // Canvas boyutunu zoom seviyesine gÃ¶re ayarla (scrollbar iÃ§in)
+                        // Canvas boyutunu zoom seviyesine göre ayarla (scrollbar için)
                         const baseWidth = 800;
                         const baseHeight = 600;
                         canvas.style.minWidth = baseWidth + 'px';
                         canvas.style.minHeight = baseHeight + 'px';
                     }
 
-                    // Zoom yÃ¼zdesini gÃ¼ncelle
+                    // Zoom yüzdesini güncelle
                     const zoomDisplay = document.getElementById('zoomLevel');
                     if (zoomDisplay) {
                         zoomDisplay.textContent = Math.round(MURDERBOARD.zoomLevel * 100) + '%';

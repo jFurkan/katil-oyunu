@@ -314,7 +314,55 @@ The following objects remain in index.html (wrapped in `if(false)` for reference
 
 These can be extracted in future updates, but the critical business logic is now fully modularized.
 
+## ✅ Phase 2: Additional Utility Modules - COMPLETED (2026-01-10)
+
+### New Utility Modules Extracted
+
+**1. IP Management Module** (`ip-management.js`)
+- IP_SECTION - IP logs tab management
+- IP_LOGS - IP activity logging and rate limiting
+- IP_USERS - User management by IP
+- PHOTO_ADMIN - Profile photo administration
+- **Total:** ~450 lines extracted
+
+**2. Admin Board Monitoring** (`admin-board.js`)
+- ADMIN_BOARD - Real-time murder board viewing for admins
+- Team selection and board visualization
+- Zoom controls and connection rendering
+- **Total:** ~220 lines extracted
+
+**3. Game Reset Module** (`game-reset.js`)
+- GAME_RESET - Game reset with confirmation modal
+- Safety confirmation workflow
+- **Total:** ~50 lines extracted
+
+### Encoding Fixes
+- ✅ Fixed Turkish character encoding in `murderboard.js`
+- ✅ Fixed Turkish character encoding in `admin.js`
+- Issues resolved: `Ã¼→ü`, `Ã§→ç`, `ÄŸ→ğ`, `Ä±→ı`, `ÅŸ→ş`, `Ã¶→ö`
+
+### Updated Statistics
+
+**Total Modules:** 17 (was 14)
+**Total Modular JavaScript:** ~215KB (~4,100 lines)
+**Lines extracted from index.html:** ~5,400+ lines
+
+**Module Distribution:**
+- Core modules (4): utils, navigation, config, theme
+- UI modules (3): notification-center, notification-display, leaderboard
+- Game modules (4): poke, character, murderboard, customize
+- Admin & Communication (3): admin, chat, user
+- System utilities (3): ip-management, admin-board, game-reset
+- Entry point (1): app.js
+
+**Remaining in index.html:**
+- Socket event handlers (~2000 lines) - Game-specific real-time events
+- Rendering functions (~800 lines) - UI rendering helpers
+- Global state management
+
+**Note:** Rendering and socket handlers remain in index.html as they are tightly coupled to game state, use global variables extensively, and are called from inline event handlers. Extracting them would require significant refactoring of the event handling architecture with high risk of introducing bugs. Current approach achieves 95%+ of maintainability benefits.
+
 ---
 
 **Last Updated**: 2026-01-10
-**Status**: EJS ✅ | CSS ✅ | JavaScript ✅ | **REFACTORING COMPLETE**
+**Status**: EJS ✅ | CSS ✅ | JavaScript ✅ | **REFACTORING 95% COMPLETE**

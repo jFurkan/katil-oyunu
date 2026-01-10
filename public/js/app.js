@@ -15,6 +15,9 @@ import { CUSTOMIZE } from './modules/customize.js';
 import { ADMIN } from './modules/admin.js';
 import { CHAT } from './modules/chat.js';
 import { USER } from './modules/user.js';
+import { IP_SECTION, IP_LOGS, IP_USERS, PHOTO_ADMIN } from './modules/ip-management.js';
+import { ADMIN_BOARD } from './modules/admin-board.js';
+import { GAME_RESET } from './modules/game-reset.js';
 
 // Initialize all modules when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
@@ -66,5 +69,11 @@ export {
     CUSTOMIZE,
     ADMIN,
     CHAT,
-    USER
+    USER,
+    IP_SECTION,
+    IP_LOGS,
+    IP_USERS,
+    PHOTO_ADMIN,
+    ADMIN_BOARD,
+    GAME_RESET
 };

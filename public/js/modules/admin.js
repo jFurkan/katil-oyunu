@@ -6,22 +6,22 @@ export const ADMIN = {
                 currentSection: 'game',
 
                 showSection: function(section) {
-                    // TÃ¼m bÃ¶lÃ¼mleri gizle
+                    // Tüm bölümleri gizle
                     document.querySelectorAll('.admin-section').forEach(function(el) {
                         el.style.display = 'none';
                     });
 
-                    // SeÃ§ili bÃ¶lÃ¼mÃ¼ gÃ¶ster
+                    // Seçili bölümü göster
                     document.getElementById('adminSection' + section.charAt(0).toUpperCase() + section.slice(1)).style.display = 'block';
 
-                    // MenÃ¼ butonlarÄ±nÄ± gÃ¼ncelle
+                    // Menü butonlarını güncelle
                     var buttons = document.querySelectorAll('#pgAdmin > div:nth-child(2) button');
                     buttons.forEach(function(btn) {
                         btn.classList.remove('btn-primary');
                         btn.classList.add('btn');
                     });
 
-                    // SeÃ§ili butonu vurgula
+                    // Seçili butonu vurgula
                     if (section === 'game') buttons[0].classList.add('btn-primary');
                     else if (section === 'characters') buttons[1].classList.add('btn-primary');
                     else if (section === 'users') buttons[2].classList.add('btn-primary');
@@ -38,34 +38,34 @@ export const ADMIN = {
 
                     this.currentSection = section;
 
-                    // Oyun kontrolÃ¼ bÃ¶lÃ¼mÃ¼ aÃ§Ä±ldÄ±ysa karakterleri ve fazlarÄ± yÃ¼kle
+                    // Oyun kontrolü bölümü açıldıysa karakterleri ve fazları yükle
                     if (section === 'game') {
                         ADMIN.loadGameCharacters();
                         ADMIN.loadPhases();
                     }
 
-                    // Karakterler bÃ¶lÃ¼mÃ¼ aÃ§Ä±ldÄ±ysa karakterleri yÃ¼kle
+                    // Karakterler bölümü açıldıysa karakterleri yükle
                     if (section === 'characters') {
                         CHARACTER.loadCharacters();
                     }
 
-                    // Admin MesajlarÄ± bÃ¶lÃ¼mÃ¼ aÃ§Ä±ldÄ±ysa mesajlarÄ± yÃ¼kle
+                    // Admin Mesajları bölümü açıldıysa mesajları yükle
                     if (section === 'adminmessages') {
                         ADMIN.loadAdminMessages();
                     }
 
-                    // Murder Board Ä°zleme bÃ¶lÃ¼mÃ¼ aÃ§Ä±ldÄ±ysa takÄ±mlarÄ± ve board'u yÃ¼kle
+                    // Murder Board İzleme bölümü açıldıysa takımları ve board'u yükle
                     if (section === 'murderboard') {
                         if (socketConnected) {
                             ADMIN_BOARD.init();
                         } else {
-                            console.log('Socket baÄŸlantÄ±sÄ± bekliyor...');
+                            console.log('Socket bağlantısı bekliyor...');
                         }
                     }
 
-                    // KullanÄ±cÄ±lar bÃ¶lÃ¼mÃ¼ aÃ§Ä±ldÄ±ysa listeyi render et
+                    // Kullanıcılar bölümü açıldıysa listeyi render et
                     if (section === 'users') {
-                        // Manuel olarak kullanÄ±cÄ±larÄ± server'dan Ã§ek
+                        // Manuel olarak kullanıcıları server'dan çek
                         if (socketConnected) {
                             socket.emit('get-users-by-team', function(fetchedUsers) {
                                 users = fetchedUsers;
@@ -76,51 +76,51 @@ export const ADMIN = {
                         }
                     }
 
-                    // Chat Ä°zleme bÃ¶lÃ¼mÃ¼ aÃ§Ä±ldÄ±ysa dropdown'Ä± doldur
+                    // Chat İzleme bölümü açıldıysa dropdown'ı doldur
                     if (section === 'chat') {
                         ADMIN.updateChatTeamSelector();
                     }
 
-                    // EmeÄŸi geÃ§enler bÃ¶lÃ¼mÃ¼ aÃ§Ä±ldÄ±ysa listeyi render et
+                    // Emeği geçenler bölümü açıldıysa listeyi render et
                     if (section === 'credits') {
                         renderCreditsList();
                     }
 
-                    // IP LoglarÄ± bÃ¶lÃ¼mÃ¼ aÃ§Ä±ldÄ±ysa varsayÄ±lan tab'Ä± gÃ¶ster
+                    // IP Logları bölümü açıldıysa varsayılan tab'ı göster
                     if (section === 'iplogs') {
                         IP_SECTION.showTab('logs');
                     }
 
-                    // Profil FotoÄŸraflarÄ± bÃ¶lÃ¼mÃ¼ aÃ§Ä±ldÄ±ysa kullanÄ±cÄ±larÄ± yÃ¼kle
+                    // Profil Fotoğrafları bölümü açıldıysa kullanıcıları yükle
                     if (section === 'profilephotos') {
                         PHOTO_ADMIN.loadUsers();
                     }
 
-                    // Ä°statistikler bÃ¶lÃ¼mÃ¼ aÃ§Ä±ldÄ±ysa verileri yÃ¼kle
+                    // İstatistikler bölümü açıldıysa verileri yükle
                     if (section === 'stats') {
                         ADMIN.loadStatistics();
                     }
                 },
 
                 loadGameCharacters: function() {
-                    console.log('loadGameCharacters Ã§aÄŸrÄ±ldÄ±');
+                    console.log('loadGameCharacters çağrıldı');
                     if (!socketConnected) {
-                        console.error('Socket baÄŸlantÄ±sÄ± yok, karakterler yÃ¼klenemiyor!');
+                        console.error('Socket bağlantısı yok, karakterler yüklenemiyor!');
                         return;
                     }
 
                     socket.emit('get-characters', function(characters) {
-                        console.log('Karakterler yÃ¼klendi:', characters);
+                        console.log('Karakterler yüklendi:', characters);
                         ADMIN.renderGameCharacters(characters);
                     });
                 },
 
                 renderGameCharacters: function(characters) {
-                    console.log('renderGameCharacters Ã§aÄŸrÄ±ldÄ±, karakter sayÄ±sÄ±:', characters.length);
+                    console.log('renderGameCharacters çağrıldı, karakter sayısı:', characters.length);
                     const container = document.getElementById('gameCharactersList');
 
                     if (!container) {
-                        console.error('gameCharactersList container bulunamadÄ±!');
+                        console.error('gameCharactersList container bulunamadı!');
                         return;
                     }
 
@@ -128,7 +128,7 @@ export const ADMIN = {
                         container.innerHTML = `
                             <div style="text-align: center; padding: 40px 20px; color: #555;">
                                 <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.3;">ğŸ‘¤</div>
-                                <div style="font-size: 14px;">HenÃ¼z karakter eklenmemiÅŸ</div>
+                                <div style="font-size: 14px;">Henüz karakter eklenmemiş</div>
                             </div>
                         `;
                         return;
@@ -148,7 +148,7 @@ export const ADMIN = {
                                 <div style="flex: 1; min-width: 0;">
                                     <div style="color: #4dd4d4; font-weight: 600; font-size: 14px;">${escapeHtml(char.name)}</div>
                                     <div style="color: #666; font-size: 11px; margin-top: 2px;">
-                                        ${char.age ? char.age + ' yaÅŸ' : ''} ${char.occupation ? ' â€¢ ' + escapeHtml(char.occupation) : ''}
+                                        ${char.age ? char.age + ' yaş' : ''} ${char.occupation ? ' â€¢ ' + escapeHtml(char.occupation) : ''}
                                     </div>
                                 </div>
 
@@ -165,15 +165,15 @@ export const ADMIN = {
                 },
 
                 toggleGameCharacterVisibility: function(characterId, visible, checkboxElement) {
-                    console.log('toggleGameCharacterVisibility Ã§aÄŸrÄ±ldÄ±:', characterId, visible);
+                    console.log('toggleGameCharacterVisibility çağrıldı:', characterId, visible);
 
                     if (!socketConnected) {
-                        toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
-                        console.error('Socket baÄŸlantÄ±sÄ± yok!');
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        console.error('Socket bağlantısı yok!');
                         return;
                     }
 
-                    // Toggle gÃ¶rselini gÃ¼ncelle
+                    // Toggle görselini güncelle
                     const label = checkboxElement.parentElement;
                     const toggleBg = label.querySelector('.toggle-bg');
                     const toggleBtn = label.querySelector('.toggle-btn');
@@ -196,9 +196,9 @@ export const ADMIN = {
                     }, function(response) {
                         console.log('Toggle response:', response);
                         if (response.success) {
-                            toast(visible ? 'ğŸ‘ï¸ Karakter aÃ§Ä±ldÄ± - TakÄ±mlar gÃ¶rebilir' : 'ğŸ”’ Karakter kapatÄ±ldÄ±');
+                            toast(visible ? 'ğŸ‘ï¸ Karakter açıldı - Takımlar görebilir' : 'ğŸ”’ Karakter kapatıldı');
                         } else {
-                            // Hata varsa toggle'Ä± geri al
+                            // Hata varsa toggle'ı geri al
                             checkboxElement.checked = !visible;
                             if (toggleBg && toggleBtn) {
                                 if (!visible) {
@@ -211,36 +211,36 @@ export const ADMIN = {
                                     toggleBtn.style.left = '4px';
                                 }
                             }
-                            toast(response.error || 'Ä°ÅŸlem baÅŸarÄ±sÄ±z!', true);
+                            toast(response.error || 'İşlem başarısız!', true);
                             ADMIN.loadGameCharacters(); // Hata varsa listeyi yenile
                         }
                     });
                 },
 
-                // FAZ YÃ–NETÄ°MÄ°
+                // FAZ YÖNETİMİ
                 loadPhases: function() {
-                    console.log('loadPhases Ã§aÄŸrÄ±ldÄ±');
+                    console.log('loadPhases çağrıldı');
                     if (!socketConnected) {
-                        console.error('Socket baÄŸlantÄ±sÄ± yok, fazlar yÃ¼klenemiyor!');
+                        console.error('Socket bağlantısı yok, fazlar yüklenemiyor!');
                         return;
                     }
 
                     socket.emit('get-phases', function(response) {
                         if (response.success) {
-                            console.log('Fazlar yÃ¼klendi:', response.phases);
+                            console.log('Fazlar yüklendi:', response.phases);
                             ADMIN.renderPhases(response.phases);
                         } else {
-                            console.error('Faz yÃ¼kleme hatasÄ±:', response.error);
+                            console.error('Faz yükleme hatası:', response.error);
                         }
                     });
                 },
 
                 renderPhases: function(phases) {
-                    console.log('renderPhases Ã§aÄŸrÄ±ldÄ±, faz sayÄ±sÄ±:', phases.length);
+                    console.log('renderPhases çağrıldı, faz sayısı:', phases.length);
                     const container = document.getElementById('phasesList');
 
                     if (!container) {
-                        console.error('phasesList container bulunamadÄ±!');
+                        console.error('phasesList container bulunamadı!');
                         return;
                     }
 
@@ -248,7 +248,7 @@ export const ADMIN = {
                         container.innerHTML = `
                             <div style="text-align: center; padding: 40px 20px; color: #555;">
                                 <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.3;">â±ï¸</div>
-                                <div style="font-size: 14px;">HenÃ¼z faz baÅŸlatÄ±lmamÄ±ÅŸ</div>
+                                <div style="font-size: 14px;">Henüz faz başlatılmamış</div>
                             </div>
                         `;
                         return;
@@ -273,11 +273,11 @@ export const ADMIN = {
 
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 11px; color: #888; margin-bottom: 10px;">
                                     <div>
-                                        <div style="color: #666;">BaÅŸlangÄ±Ã§:</div>
+                                        <div style="color: #666;">Başlangıç:</div>
                                         <div style="color: #aaa;">${formatDate(startDate)}</div>
                                     </div>
                                     <div>
-                                        <div style="color: #666;">BitiÅŸ:</div>
+                                        <div style="color: #666;">Bitiş:</div>
                                         <div style="color: #aaa;">${endDate ? formatDate(endDate) : '---'}</div>
                                     </div>
                                 </div>
@@ -285,7 +285,7 @@ export const ADMIN = {
                                 ${!isActive ? `
                                     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding-top: 10px; border-top: 1px solid #222;">
                                         <div style="text-align: center;">
-                                            <div style="color: #666; font-size: 10px;">Ä°puÃ§larÄ±</div>
+                                            <div style="color: #666; font-size: 10px;">İpuçları</div>
                                             <div style="color: #4dd4d4; font-weight: 600; font-size: 13px;">${phase.totalClues}</div>
                                         </div>
                                         <div style="text-align: center;">
@@ -293,14 +293,14 @@ export const ADMIN = {
                                             <div style="color: #4dd4d4; font-weight: 600; font-size: 13px;">${phase.totalMessages}</div>
                                         </div>
                                         <div style="text-align: center;">
-                                            <div style="color: #666; font-size: 10px;">Puan DeÄŸiÅŸimi</div>
+                                            <div style="color: #666; font-size: 10px;">Puan Değişimi</div>
                                             <div style="color: #4dd4d4; font-weight: 600; font-size: 13px;">${phase.totalScoreChanges}</div>
                                         </div>
                                     </div>
 
                                     ${phase.leadingTeamName ? `
                                         <div style="margin-top: 10px; padding: 8px; background: #0d0d0d; border-radius: 6px; text-align: center; font-size: 11px;">
-                                            <span style="color: #666;">Lider TakÄ±m:</span>
+                                            <span style="color: #666;">Lider Takım:</span>
                                             <span style="color: #d4af37; font-weight: 600;">${escapeHtml(phase.leadingTeamName)}</span>
                                             <span style="color: #888;">(${phase.leadingTeamScore} puan)</span>
                                         </div>
@@ -319,16 +319,16 @@ export const ADMIN = {
 
                 sendGeneralClue: function() {
                     if (!socketConnected) {
-                        toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
                     var text = document.getElementById('generalClueText').value.trim();
                     if (!text) {
-                        toast('Ä°pucu metni giriniz', true);
+                        toast('İpucu metni giriniz', true);
                         return;
                     }
-                    if (confirm('Bu ipucu tÃ¼m takÄ±mlara gÃ¶nderilecek. Emin misiniz?')) {
+                    if (confirm('Bu ipucu tüm takımlara gönderilecek. Emin misiniz?')) {
                         if (isProcessing) return;
                         isProcessing = true;
 
@@ -336,7 +336,7 @@ export const ADMIN = {
                             isProcessing = false;
                             if (res.success) {
                                 document.getElementById('generalClueText').value = '';
-                                toast('Ä°pucu gÃ¶nderildi');
+                                toast('İpucu gönderildi');
                             } else {
                                 toast(res.error, true);
                             }
@@ -346,7 +346,7 @@ export const ADMIN = {
 
                 sendAnnouncement: function() {
                     if (!socketConnected) {
-                        toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
@@ -355,7 +355,7 @@ export const ADMIN = {
                         toast('Duyuru metni giriniz', true);
                         return;
                     }
-                    if (confirm('Bu duyuru tÃ¼m takÄ±mlara gÃ¶nderilecek. Emin misiniz?')) {
+                    if (confirm('Bu duyuru tüm takımlara gönderilecek. Emin misiniz?')) {
                         if (isProcessing) return;
                         isProcessing = true;
 
@@ -363,8 +363,8 @@ export const ADMIN = {
                             isProcessing = false;
                             if (res.success) {
                                 document.getElementById('announcementText').value = '';
-                                toast('Duyuru gÃ¶nderildi');
-                                // Bildirim listesini gÃ¼ncelle
+                                toast('Duyuru gönderildi');
+                                // Bildirim listesini güncelle
                                 setTimeout(function() {
                                     NOTIF.renderAdminList();
                                 }, 500);
@@ -376,37 +376,37 @@ export const ADMIN = {
                 },
 
                 clearAllNotifications: function() {
-                    if (confirm('TÃœM bildirimleri silmek istediÄŸinize emin misiniz? Bu iÅŸlem geri alÄ±namaz.')) {
+                    if (confirm('TÜM bildirimleri silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
                         NOTIF.clearAll();
-                        toast('TÃ¼m bildirimler silindi');
+                        toast('Tüm bildirimler silindi');
                     }
                 },
 
                 deleteNotification: function(notifId) {
-                    if (confirm('Bu bildirimi silmek istediÄŸinize emin misiniz?')) {
+                    if (confirm('Bu bildirimi silmek istediğinize emin misiniz?')) {
                         NOTIF.deleteById(notifId);
                         toast('Bildirim silindi');
                     }
                 },
 
-                // Admin mesajlarÄ± global state
+                // Admin mesajları global state
                 adminMessagesData: [],
                 selectedAdminTeamId: null,
 
-                // Admin mesajlarÄ±nÄ± yÃ¼kle
+                // Admin mesajlarını yükle
                 loadAdminMessages: function() {
                     if (!socketConnected) {
-                        toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
-                    // TÃ¼m takÄ±mlarÄ± yÃ¼kle ve dropdown'Ä± doldur
+                    // Tüm takımları yükle ve dropdown'ı doldur
                     socket.emit('admin-get-teams', function(res) {
                         if (res.success) {
                             var selector = document.getElementById('adminMessagesTeamSelector');
                             if (!selector) return;
 
-                            selector.innerHTML = '<option value="">TakÄ±m seÃ§in...</option>';
+                            selector.innerHTML = '<option value="">Takım seçin...</option>';
                             res.teams.forEach(function(team) {
                                 selector.innerHTML += `<option value="${team.id}">${htmlEscape(team.name)}</option>`;
                             });
@@ -416,10 +416,10 @@ export const ADMIN = {
                     });
                 },
 
-                // Dropdown'dan takÄ±m seÃ§
+                // Dropdown'dan takım seç
                 selectTeamForAdminMessages: function(teamId) {
                     if (!teamId) {
-                        // BoÅŸ seÃ§im
+                        // Boş seçim
                         ADMIN.selectedAdminTeamId = null;
                         document.getElementById('adminMessagesViewerContainer').style.display = 'none';
                         document.getElementById('adminMessagesEmptyState').style.display = 'block';
@@ -429,11 +429,11 @@ export const ADMIN = {
                     ADMIN.selectedAdminTeamId = teamId;
 
                     if (!socketConnected) {
-                        toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
-                    // TakÄ±m bilgisini al
+                    // Takım bilgisini al
                     socket.emit('admin-get-teams', function(res) {
                         if (res.success) {
                             var team = res.teams.find(function(t) { return t.id === teamId; });
@@ -443,18 +443,18 @@ export const ADMIN = {
                         }
                     });
 
-                    // Admin mesajlarÄ±nÄ± yÃ¼kle (bu takÄ±mla olan mesajlar)
+                    // Admin mesajlarını yükle (bu takımla olan mesajlar)
                     socket.emit('load-admin-messages', function(res) {
                         if (res.success) {
-                            // SeÃ§ili takÄ±mÄ±n mesajlarÄ±nÄ± filtrele
+                            // Seçili takımın mesajlarını filtrele
                             var teamMessages = res.messages.filter(function(msg) {
                                 return msg.team_id === teamId || msg.target_team_id === teamId;
                             });
 
-                            // MesajlarÄ± render et
+                            // Mesajları render et
                             ADMIN.renderAdminTeamMessages(teamMessages);
 
-                            // GÃ¶rÃ¼nÃ¼mleri deÄŸiÅŸtir
+                            // Görünümleri değiştir
                             document.getElementById('adminMessagesViewerContainer').style.display = 'block';
                             document.getElementById('adminMessagesEmptyState').style.display = 'none';
                         } else {
@@ -463,14 +463,14 @@ export const ADMIN = {
                     });
                 },
 
-                // SeÃ§ili takÄ±mÄ±n mesajlarÄ±nÄ± render et
+                // Seçili takımın mesajlarını render et
                 renderAdminTeamMessages: function(teamMessages) {
                     var container = document.getElementById('adminMessagesContainer');
                     var countEl = document.getElementById('adminSelectedTeamMessageCount');
 
                     if (!container) return;
 
-                    // SayacÄ± gÃ¼ncelle
+                    // Sayacı güncelle
                     if (countEl) {
                         countEl.textContent = teamMessages.length + ' mesaj';
                     }
@@ -479,27 +479,27 @@ export const ADMIN = {
                         container.innerHTML = `
                             <div style="text-align: center; padding: 80px 20px; color: #555;">
                                 <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">ğŸ“­</div>
-                                <div style="font-size: 14px;">Bu takÄ±mdan mesaj yok</div>
+                                <div style="font-size: 14px;">Bu takımdan mesaj yok</div>
                             </div>`;
                         return;
                     }
 
-                    // MesajlarÄ± WhatsApp sÄ±ralamasÄ±na gÃ¶re dÃ¼zenle (eski â†’ yeni)
+                    // Mesajları WhatsApp sıralamasına göre düzenle (eski â†’ yeni)
                     var sortedMessages = teamMessages.slice().reverse();
 
                     var html = '';
                     sortedMessages.forEach(function(msg) {
                         var time = new Date(msg.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
                         var date = new Date(msg.created_at).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
-                        var isAdminMessage = msg.team_id === null; // Admin mesajlarÄ± team_id NULL
+                        var isAdminMessage = msg.team_id === null; // Admin mesajları team_id NULL
 
-                        // TakÄ±m rengi badge
+                        // Takım rengi badge
                         var teamColor = msg.team_color || '#3b82f6';
                         var teamBadge = `<span style="background: ${teamColor}; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">${htmlEscape(msg.team_name)}</span>`;
 
-                        // WhatsApp tarzÄ± gÃ¶rÃ¼nÃ¼m
+                        // WhatsApp tarzı görünüm
                         if (isAdminMessage) {
-                            // Admin'in mesajÄ± - SAÄDA
+                            // Admin'in mesajı - SAÄDA
                             html += `
                             <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
                                 <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-end;">
@@ -513,7 +513,7 @@ export const ADMIN = {
                                 </div>
                             </div>`;
                         } else {
-                            // TakÄ±mÄ±n mesajÄ± - SOLDA
+                            // Takımın mesajı - SOLDA
                             html += `
                             <div style="display: flex; justify-content: flex-start; margin-bottom: 12px;">
                                 <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-start;">
@@ -531,18 +531,18 @@ export const ADMIN = {
                     });
 
                     container.innerHTML = html;
-                    container.scrollTop = container.scrollHeight; // En alta kaydÄ±r
+                    container.scrollTop = container.scrollHeight; // En alta kaydır
                 },
 
-                // Admin'den takÄ±ma mesaj gÃ¶nder
+                // Admin'den takıma mesaj gönder
                 sendReplyMessage: function() {
                     if (!socketConnected) {
-                        toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
                     if (!ADMIN.selectedAdminTeamId) {
-                        toast('LÃ¼tfen dropdown\'dan bir takÄ±m seÃ§in!', true);
+                        toast('Lütfen dropdown\'dan bir takım seçin!', true);
                         return;
                     }
 
@@ -550,7 +550,7 @@ export const ADMIN = {
                     var message = messageInput ? messageInput.value.trim() : '';
 
                     if (!message) {
-                        toast('Mesaj boÅŸ olamaz!', true);
+                        toast('Mesaj boş olamaz!', true);
                         return;
                     }
 
@@ -560,9 +560,9 @@ export const ADMIN = {
                     }, function(res) {
                         if (res.success) {
                             if (messageInput) messageInput.value = '';
-                            toast('Mesaj gÃ¶nderildi!');
+                            toast('Mesaj gönderildi!');
 
-                            // MesajlarÄ± yeniden yÃ¼kle (gÃ¶nderilen mesaj gÃ¶rÃ¼nsÃ¼n)
+                            // Mesajları yeniden yükle (gönderilen mesaj görünsün)
                             ADMIN.selectTeamForAdminMessages(ADMIN.selectedAdminTeamId);
                         } else {
                             toast(res.error, true);
@@ -572,14 +572,14 @@ export const ADMIN = {
 
                 clearAllClues: function() {
                     if (!socketConnected) {
-                        toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
-                    if (confirm('TÃœM ipuÃ§larÄ±nÄ± silmek istediÄŸinize emin misiniz? Bu iÅŸlem geri alÄ±namaz.')) {
+                    if (confirm('TÜM ipuçlarını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
                         socket.emit('clear-all-clues', function(res) {
                             if (res.success) {
-                                toast('TÃ¼m ipuÃ§larÄ± silindi');
+                                toast('Tüm ipuçları silindi');
                             } else {
                                 toast(res.error, true);
                             }
@@ -589,14 +589,14 @@ export const ADMIN = {
 
                 deleteClue: function(clueId) {
                     if (!socketConnected) {
-                        toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
-                    if (confirm('Bu ipucunu silmek istediÄŸinize emin misiniz?')) {
+                    if (confirm('Bu ipucunu silmek istediğinize emin misiniz?')) {
                         socket.emit('delete-general-clue', clueId, function(res) {
                             if (res.success) {
-                                toast('Ä°pucu silindi');
+                                toast('İpucu silindi');
                             } else {
                                 toast(res.error, true);
                             }
@@ -613,7 +613,7 @@ export const ADMIN = {
                     countEl.textContent = generalClues.length + ' ipucu';
 
                     if (generalClues.length === 0) {
-                        container.innerHTML = '<div style="text-align:center; padding:40px; color:#555; font-size:13px;">HenÃ¼z ipucu yok</div>';
+                        container.innerHTML = '<div style="text-align:center; padding:40px; color:#555; font-size:13px;">Henüz ipucu yok</div>';
                         return;
                     }
 
@@ -622,7 +622,7 @@ export const ADMIN = {
                         html += `
                         <div class="admin-notif-item">
                             <div class="admin-notif-content">
-                                <span class="admin-notif-type clue">Ä°pucu</span>
+                                <span class="admin-notif-type clue">İpucu</span>
                                 <div class="admin-notif-message">${htmlEscape(clue.text)}</div>
                                 <div class="admin-notif-time">${clue.created_at ? new Date(clue.created_at).toLocaleString('tr-TR') : ''}</div>
                             </div>
@@ -632,10 +632,10 @@ export const ADMIN = {
                     container.innerHTML = html;
                 },
 
-                // Chat Ä°zleme - TakÄ±m seÃ§ici dropdown'Ä± gÃ¼ncelle
+                // Chat İzleme - Takım seçici dropdown'ı güncelle
                 updateChatTeamSelector: function() {
                     if (!socketConnected) {
-                        toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
@@ -644,10 +644,10 @@ export const ADMIN = {
 
                     var selectedValue = selector.value;
 
-                    // TakÄ±mlarÄ± server'dan Ã§ek
+                    // Takımları server'dan çek
                     socket.emit('admin-get-teams', function(res) {
                         if (res.success) {
-                            var html = '<option value="">TakÄ±m seÃ§in...</option>';
+                            var html = '<option value="">Takım seçin...</option>';
                             res.teams.forEach(function(team) {
                                 html += `<option value="${team.id}" ${selectedValue === team.id ? 'selected' : ''}>${htmlEscape(team.name)}</option>`;
                             });
@@ -658,13 +658,13 @@ export const ADMIN = {
                     });
                 },
 
-                // Chat Ä°zleme - TakÄ±m seÃ§
+                // Chat İzleme - Takım seç
                 selectedChatTeamId: null,
                 selectedChatTeamName: null,
 
                 selectTeamForChat: function(teamId) {
                     if (!teamId) {
-                        // BoÅŸ seÃ§im
+                        // Boş seçim
                         ADMIN.selectedChatTeamId = null;
                         ADMIN.selectedChatTeamName = null;
                         document.getElementById('adminChatViewerContainer').style.display = 'none';
@@ -675,21 +675,21 @@ export const ADMIN = {
                     ADMIN.selectedChatTeamId = teamId;
 
                     if (!socketConnected) {
-                        toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
-                    // TakÄ±m chat'ini yÃ¼kle
+                    // Takım chat'ini yükle
                     socket.emit('admin-load-team-chat', teamId, function(res) {
                         if (res.success) {
                             ADMIN.selectedChatTeamName = res.teamName;
                             document.getElementById('adminChatTeamName').textContent = res.teamName;
                             document.getElementById('adminChatMessageCount').textContent = res.totalCount + ' mesaj';
 
-                            // MesajlarÄ± render et
+                            // Mesajları render et
                             ADMIN.renderTeamChat(res.messages);
 
-                            // GÃ¶rÃ¼nÃ¼mleri deÄŸiÅŸtir
+                            // Görünümleri değiştir
                             document.getElementById('adminChatViewerContainer').style.display = 'block';
                             document.getElementById('adminChatEmptyState').style.display = 'none';
                         } else {
@@ -698,20 +698,20 @@ export const ADMIN = {
                     });
                 },
 
-                // Chat Ä°zleme - MesajlarÄ± render et
+                // Chat İzleme - Mesajları render et
                 renderTeamChat: function(messages) {
                     var container = document.getElementById('adminChatMessages');
                     if (!container) return;
 
-                    // SeÃ§ili takÄ±mla ilgili mesajlarÄ± filtrele (takÄ±ma gÃ¶nderilen veya takÄ±mÄ±n gÃ¶nderdiÄŸi + admin mesajlarÄ±)
+                    // Seçili takımla ilgili mesajları filtrele (takıma gönderilen veya takımın gönderdiği + admin mesajları)
                     var filteredMessages = messages.filter(function(msg) {
-                        // Admin mesajlarÄ±nÄ± hariÃ§ tut (sadece takÄ±mlara Ã¶zel deÄŸil, herkese olanlarÄ±)
+                        // Admin mesajlarını hariç tut (sadece takımlara özel değil, herkese olanları)
                         if (msg.target_team_id === 'admin') return false;
 
-                        // Admin'in bu takÄ±ma gÃ¶nderdiÄŸi mesajlarÄ± dahil et
+                        // Admin'in bu takıma gönderdiği mesajları dahil et
                         if (msg.team_id === null && msg.target_team_id === ADMIN.selectedChatTeamId) return true;
 
-                        // DiÄŸer mesajlarÄ± olduÄŸu gibi bÄ±rak
+                        // Diğer mesajları olduğu gibi bırak
                         return true;
                     });
 
@@ -719,35 +719,35 @@ export const ADMIN = {
                         container.innerHTML = `
                             <div style="text-align: center; padding: 60px 20px; color: #555;">
                                 <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">ğŸ’¬</div>
-                                <div style="font-size: 14px;">HenÃ¼z mesaj yok</div>
+                                <div style="font-size: 14px;">Henüz mesaj yok</div>
                             </div>`;
                         return;
                     }
 
-                    // MesajlarÄ± WhatsApp sÄ±ralamasÄ±na gÃ¶re dÃ¼zenle (eski â†’ yeni)
+                    // Mesajları WhatsApp sıralamasına göre düzenle (eski â†’ yeni)
                     var sortedMessages = filteredMessages.slice().reverse();
 
                     var html = '';
                     sortedMessages.forEach(function(msg) {
                         var time = new Date(msg.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
                         var isFromSelectedTeam = msg.team_id === ADMIN.selectedChatTeamId;
-                        var isFromAdmin = msg.team_id === null; // Admin mesajÄ±
+                        var isFromAdmin = msg.team_id === null; // Admin mesajı
 
-                        // TakÄ±m rengi badge
+                        // Takım rengi badge
                         var teamColor = msg.team_color || '#3b82f6';
                         var teamBadge = `<span style="background: ${teamColor}; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">${htmlEscape(msg.team_name)}</span>`;
 
-                        // Hedef takÄ±m etiketi
+                        // Hedef takım etiketi
                         var targetLabel = '';
                         if (msg.target_team_name) {
                             targetLabel = `<span style="color: #d4af37; font-size: 10px; background: rgba(212,175,55,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(212,175,55,0.3);">ğŸ”’ â†’ ${htmlEscape(msg.target_team_name)}</span>`;
                         } else {
-                            targetLabel = `<span style="color: #4dd4d4; font-size: 10px; background: rgba(77,212,212,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(77,212,212,0.3);">ğŸ“¢ TÃ¼m TakÄ±mlar</span>`;
+                            targetLabel = `<span style="color: #4dd4d4; font-size: 10px; background: rgba(77,212,212,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(77,212,212,0.3);">ğŸ“¢ Tüm Takımlar</span>`;
                         }
 
-                        // WhatsApp tarzÄ± gÃ¶rÃ¼nÃ¼m
+                        // WhatsApp tarzı görünüm
                         if (isFromAdmin) {
-                            // Admin mesajÄ± - SAÄDA (Ã¶zel altÄ±n rengi)
+                            // Admin mesajı - SAÄDA (özel altın rengi)
                             html += `
                             <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
                                 <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-end;">
@@ -763,7 +763,7 @@ export const ADMIN = {
                                 </div>
                             </div>`;
                         } else if (isFromSelectedTeam) {
-                            // SeÃ§ili takÄ±mÄ±n mesajÄ± - SOLDA
+                            // Seçili takımın mesajı - SOLDA
                             html += `
                             <div style="display: flex; justify-content: flex-start; margin-bottom: 12px;">
                                 <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-start;">
@@ -779,7 +779,7 @@ export const ADMIN = {
                                 </div>
                             </div>`;
                         } else {
-                            // DiÄŸer takÄ±mÄ±n mesajÄ± - SOLDA
+                            // Diğer takımın mesajı - SOLDA
                             html += `
                             <div style="display: flex; justify-content: flex-start; margin-bottom: 12px;">
                                 <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-start;">
@@ -805,7 +805,7 @@ export const ADMIN = {
 
                 startGame: function() {
                     if (!socketConnected) {
-                        toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
@@ -813,7 +813,7 @@ export const ADMIN = {
                     var title = document.getElementById('gameTitle').value.trim();
 
                     if (!minutes || minutes <= 0) {
-                        toast('GeÃ§erli bir sÃ¼re giriniz!', true);
+                        toast('Geçerli bir süre giriniz!', true);
                         return;
                     }
 
@@ -823,10 +823,10 @@ export const ADMIN = {
                     socket.emit('start-game', { minutes: minutes, title: title }, function(res) {
                         isProcessing = false;
                         if (res.success) {
-                            toast('Oyun baÅŸlatÄ±ldÄ±!');
+                            toast('Oyun başlatıldı!');
                             document.getElementById('gameMinutes').value = '';
                             document.getElementById('gameTitle').value = '';
-                            // Backend otomatik olarak session ve faz kaydÄ±nÄ± baÅŸlatÄ±r
+                            // Backend otomatik olarak session ve faz kaydını başlatır
                         } else {
                             toast(res.error, true);
                         }
@@ -835,7 +835,7 @@ export const ADMIN = {
 
                 addTime: function(seconds) {
                     if (!socketConnected) {
-                        toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
@@ -855,11 +855,11 @@ export const ADMIN = {
 
                 endGame: function() {
                     if (!socketConnected) {
-                        toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
-                    if (confirm('Oyunu bitirmek istediÄŸinize emin misiniz?')) {
+                    if (confirm('Oyunu bitirmek istediğinize emin misiniz?')) {
                         if (isProcessing) return;
                         isProcessing = true;
 
@@ -867,7 +867,7 @@ export const ADMIN = {
                             isProcessing = false;
                             if (res.success) {
                                 toast('Oyun bitirildi!');
-                                // Backend otomatik olarak faz + session kapatÄ±p 'game-ended' event ile rapor gÃ¶nderir
+                                // Backend otomatik olarak faz + session kapatıp 'game-ended' event ile rapor gönderir
                             } else {
                                 toast(res.error, true);
                             }
@@ -897,14 +897,14 @@ export const ADMIN = {
                     var name = input.value.trim();
 
                     if (!name) {
-                        toast('Ä°sim giriniz', true);
+                        toast('İsim giriniz', true);
                         return;
                     }
 
                     socket.emit('add-credit', name, function(res) {
                         if (res.success) {
                             input.value = '';
-                            toast('Ä°sim eklendi');
+                            toast('İsim eklendi');
                         } else {
                             toast(res.error, true);
                         }
@@ -912,10 +912,10 @@ export const ADMIN = {
                 },
 
                 removeCredit: function(creditId, name) {
-                    if (confirm('"' + name + '" isimli kiÅŸiyi listeden silmek istediÄŸinize emin misiniz?')) {
+                    if (confirm('"' + name + '" isimli kişiyi listeden silmek istediğinize emin misiniz?')) {
                         socket.emit('remove-credit', creditId, function(res) {
                             if (res.success) {
-                                toast('Ä°sim silindi');
+                                toast('İsim silindi');
                             } else {
                                 toast(res.error, true);
                             }
@@ -934,17 +934,17 @@ export const ADMIN = {
                         content: content
                     }, function(res) {
                         if (res.success) {
-                            toast('Ä°Ã§erik gÃ¼ncellendi');
+                            toast('İçerik güncellendi');
                         } else {
                             toast(res.error, true);
                         }
                     });
                 },
 
-                // Ä°STATÄ°STÄ°KLER FONKSÄ°YONLARI
+                // İSTATİSTİKLER FONKSİYONLARI
                 loadStatistics: function() {
                     if (!socketConnected) {
-                        toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
@@ -956,12 +956,12 @@ export const ADMIN = {
                             ADMIN.renderStatsUsers(res.stats.users);
                             ADMIN.renderStatsScoring(res.stats.scoring);
 
-                            // Export iÃ§in veriyi sakla
+                            // Export için veriyi sakla
                             window.statsData = res.stats;
 
-                            toast('Ä°statistikler yÃ¼klendi');
+                            toast('İstatistikler yüklendi');
                         } else {
-                            toast(res.error || 'Ä°statistikler yÃ¼klenemedi!', true);
+                            toast(res.error || 'İstatistikler yüklenemedi!', true);
                         }
                     });
                 },
@@ -978,7 +978,7 @@ export const ADMIN = {
                     if (!container) return;
 
                     if (messaging.byTeam.length === 0) {
-                        container.innerHTML = '<div style="color:#666; text-align:center; padding:20px;">HenÃ¼z mesaj yok</div>';
+                        container.innerHTML = '<div style="color:#666; text-align:center; padding:20px;">Henüz mesaj yok</div>';
                         return;
                     }
 
@@ -993,7 +993,7 @@ export const ADMIN = {
 
                     html += `
                     <div style="margin-top:15px; padding-top:15px; border-top:1px solid #333; text-align:center;">
-                        <span style="color:#888; font-size:12px;">TakÄ±m baÅŸÄ±na ortalama: </span>
+                        <span style="color:#888; font-size:12px;">Takım başına ortalama: </span>
                         <span style="color:var(--gold); font-weight:700; font-size:16px;">${messaging.avgPerTeam}</span>
                         <span style="color:#888; font-size:12px;"> mesaj</span>
                     </div>`;
@@ -1006,7 +1006,7 @@ export const ADMIN = {
                     if (!container) return;
 
                     if (clues.byTeam.length === 0) {
-                        container.innerHTML = '<div style="color:#666; text-align:center; padding:20px;">HenÃ¼z ipucu yok</div>';
+                        container.innerHTML = '<div style="color:#666; text-align:center; padding:20px;">Henüz ipucu yok</div>';
                         return;
                     }
 
@@ -1021,7 +1021,7 @@ export const ADMIN = {
 
                     html += `
                     <div style="margin-top:15px; padding-top:15px; border-top:1px solid #333; text-align:center;">
-                        <span style="color:#888; font-size:12px;">TakÄ±m baÅŸÄ±na ortalama: </span>
+                        <span style="color:#888; font-size:12px;">Takım başına ortalama: </span>
                         <span style="color:var(--gold); font-weight:700; font-size:16px;">${clues.avgPerTeam}</span>
                         <span style="color:#888; font-size:12px;"> ipucu</span>
                     </div>`;
@@ -1034,7 +1034,7 @@ export const ADMIN = {
                     if (!container) return;
 
                     if (users.mostActive.length === 0) {
-                        container.innerHTML = '<div style="color:#666; text-align:center; padding:20px;">HenÃ¼z aktif kullanÄ±cÄ± yok</div>';
+                        container.innerHTML = '<div style="color:#666; text-align:center; padding:20px;">Henüz aktif kullanıcı yok</div>';
                         return;
                     }
 
@@ -1049,7 +1049,7 @@ export const ADMIN = {
                         <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 15px; background:#0a0a0a; border-radius:8px; margin-bottom:8px;">
                             <div style="flex:1;">
                                 <span style="color:#fff; font-weight:600;">${medal} ${htmlEscape(user.nickname)}</span>
-                                <span style="color:#666; font-size:11px; margin-left:10px;">${htmlEscape(user.team_name || 'TakÄ±msÄ±z')}</span>
+                                <span style="color:#666; font-size:11px; margin-left:10px;">${htmlEscape(user.team_name || 'Takımsız')}</span>
                             </div>
                             <span style="color:var(--gold); font-size:18px; font-weight:700;">${user.message_count}</span>
                         </div>`;
@@ -1063,7 +1063,7 @@ export const ADMIN = {
                     if (!container) return;
 
                     if (scoring.length === 0) {
-                        container.innerHTML = '<div style="color:#666; text-align:center; padding:20px;">HenÃ¼z takÄ±m yok</div>';
+                        container.innerHTML = '<div style="color:#666; text-align:center; padding:20px;">Henüz takım yok</div>';
                         return;
                     }
 
@@ -1097,7 +1097,7 @@ export const ADMIN = {
 
                 exportStats: function(format) {
                     if (!window.statsData) {
-                        toast('Ã–nce istatistikleri yÃ¼kleyin', true);
+                        toast('Önce istatistikleri yükleyin', true);
                         return;
                     }
 
@@ -1110,40 +1110,40 @@ export const ADMIN = {
                         link.download = 'istatistikler_' + new Date().getTime() + '.json';
                         link.click();
                         URL.revokeObjectURL(url);
-                        toast('JSON dosyasÄ± indirildi');
+                        toast('JSON dosyası indirildi');
                     } else if (format === 'csv') {
-                        var csv = 'Kategori,Veri,DeÄŸer\n';
+                        var csv = 'Kategori,Veri,Değer\n';
 
-                        // Genel Ã–zet
-                        csv += 'Genel Ã–zet,Toplam TakÄ±m,' + window.statsData.overview.totalTeams + '\n';
-                        csv += 'Genel Ã–zet,Toplam KullanÄ±cÄ±,' + window.statsData.overview.totalUsers + '\n';
-                        csv += 'Genel Ã–zet,Toplam Mesaj,' + window.statsData.overview.totalMessages + '\n';
-                        csv += 'Genel Ã–zet,Toplam Ä°pucu,' + window.statsData.overview.totalClues + '\n';
+                        // Genel Özet
+                        csv += 'Genel Özet,Toplam Takım,' + window.statsData.overview.totalTeams + '\n';
+                        csv += 'Genel Özet,Toplam Kullanıcı,' + window.statsData.overview.totalUsers + '\n';
+                        csv += 'Genel Özet,Toplam Mesaj,' + window.statsData.overview.totalMessages + '\n';
+                        csv += 'Genel Özet,Toplam İpucu,' + window.statsData.overview.totalClues + '\n';
                         csv += '\n';
 
-                        // MesajlaÅŸma
-                        csv += 'MesajlaÅŸma,TakÄ±m BaÅŸÄ±na Ortalama,' + window.statsData.messaging.avgPerTeam + '\n';
+                        // Mesajlaşma
+                        csv += 'Mesajlaşma,Takım Başına Ortalama,' + window.statsData.messaging.avgPerTeam + '\n';
                         window.statsData.messaging.byTeam.forEach(function(team) {
-                            csv += 'MesajlaÅŸma,"' + team.name.replace(/"/g, '""') + '",' + team.message_count + '\n';
+                            csv += 'Mesajlaşma,"' + team.name.replace(/"/g, '""') + '",' + team.message_count + '\n';
                         });
                         csv += '\n';
 
-                        // Ä°puÃ§larÄ±
-                        csv += 'Ä°puÃ§larÄ±,TakÄ±m BaÅŸÄ±na Ortalama,' + window.statsData.clues.avgPerTeam + '\n';
+                        // İpuçları
+                        csv += 'İpuçları,Takım Başına Ortalama,' + window.statsData.clues.avgPerTeam + '\n';
                         window.statsData.clues.byTeam.forEach(function(team) {
-                            csv += 'Ä°puÃ§larÄ±,"' + team.name.replace(/"/g, '""') + '",' + team.clue_count + '\n';
+                            csv += 'İpuçları,"' + team.name.replace(/"/g, '""') + '",' + team.clue_count + '\n';
                         });
                         csv += '\n';
 
-                        // En Aktif KullanÄ±cÄ±lar
+                        // En Aktif Kullanıcılar
                         window.statsData.users.mostActive.forEach(function(user, index) {
-                            csv += 'En Aktif KullanÄ±cÄ±lar,"' + user.nickname.replace(/"/g, '""') + ' (' + (user.team_name || 'TakÄ±msÄ±z').replace(/"/g, '""') + ')",' + user.message_count + '\n';
+                            csv += 'En Aktif Kullanıcılar,"' + user.nickname.replace(/"/g, '""') + ' (' + (user.team_name || 'Takımsız').replace(/"/g, '""') + ')",' + user.message_count + '\n';
                         });
                         csv += '\n';
 
-                        // Puan SÄ±ralamasÄ±
+                        // Puan Sıralaması
                         window.statsData.scoring.forEach(function(team, index) {
-                            csv += 'Puan SÄ±ralamasÄ±,"' + (index + 1) + '. ' + team.name.replace(/"/g, '""') + '",' + team.score + '\n';
+                            csv += 'Puan Sıralaması,"' + (index + 1) + '. ' + team.name.replace(/"/g, '""') + '",' + team.score + '\n';
                         });
 
                         var csvBlob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -1153,35 +1153,35 @@ export const ADMIN = {
                         link.download = 'istatistikler_' + new Date().getTime() + '.csv';
                         link.click();
                         URL.revokeObjectURL(url);
-                        toast('CSV dosyasÄ± indirildi');
+                        toast('CSV dosyası indirildi');
                     }
                 },
 
                 // OYUN OTURUMU BAÅLAT
                 startGameSession: function() {
-                    if (!confirm('Yeni bir oyun oturumu baÅŸlatmak istediÄŸinizden emin misiniz?\n\nBu iÅŸlem oyun olaylarÄ±nÄ± kaydetmeye baÅŸlayacak.')) {
+                    if (!confirm('Yeni bir oyun oturumu başlatmak istediğinizden emin misiniz?\n\nBu işlem oyun olaylarını kaydetmeye başlayacak.')) {
                         return;
                     }
 
                     socket.emit('start-game-session', function(res) {
                         if (res.success) {
-                            toast('âœ… Oyun oturumu baÅŸlatÄ±ldÄ±!');
+                            toast('âœ… Oyun oturumu başlatıldı!');
                             console.log('Oyun oturumu ID:', res.sessionId);
                         } else {
-                            toast(res.error || 'Oyun baÅŸlatÄ±lamadÄ±!', true);
+                            toast(res.error || 'Oyun başlatılamadı!', true);
                         }
                     });
                 },
 
-                // OYUN OTURUMUNU BÄ°TÄ°R VE RAPOR OLUÅTUR
+                // OYUN OTURUMUNU BİTİR VE RAPOR OLUÅTUR
                 endGameSession: function() {
-                    if (!confirm('Oyunu bitirmek ve final raporunu gÃ¶rmek istediÄŸinizden emin misiniz?\n\nBu iÅŸlem geri alÄ±namaz.')) {
+                    if (!confirm('Oyunu bitirmek ve final raporunu görmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz.')) {
                         return;
                     }
 
                     socket.emit('end-game-session', function(res) {
                         if (res.success) {
-                            toast('âœ… Oyun bitti! Rapor gÃ¶steriliyor...');
+                            toast('âœ… Oyun bitti! Rapor gösteriliyor...');
                             GAME.showFinalReport(res.report);
                         } else {
                             toast(res.error || 'Oyun bitirilemedi!', true);
