@@ -4,18 +4,18 @@
 export const USER = {
 
                 cameraStream: null, // Aktif kamera stream'i
-                selectedPhotoBlob: null, // SeÃ§ilen/Ã§ekilen fotoÄŸraf
+                selectedPhotoBlob: null, // Seçilen/çekilen fotoğraf
 
                 registerNickname: function() {
                     var nickname = document.getElementById('inpNickname').value.trim();
                     if (!nickname) {
-                        toast('LÃ¼tfen bir nick girin!', true);
+                        toast('Lütfen bir nick girin!', true);
                         return;
                     }
 
-                    // Socket baÄŸlantÄ±sÄ± kontrolÃ¼
+                    // Socket bağlantısı kontrolü
                     if (!socketConnected) {
-                        toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
+                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
@@ -25,7 +25,7 @@ export const USER = {
                     socket.emit('register-user', nickname, function(res) {
                         isProcessing = false;
                         if (res.success) {
-                            // GÃœVENLÄ°K: localStorage'a kaydetme, sadece memory'de tut
+                            // GÜVENLÄ°K: localStorage'a kaydetme, sadece memory'de tut
                             currentUser = {
                                 userId: res.userId,
                                 nickname: res.nickname,
@@ -33,25 +33,25 @@ export const USER = {
                                 profilePhotoUrl: res.profilePhotoUrl || null
                             };
                             updateCurrentUserDisplay();
-                            console.log('âœ… KayÄ±t baÅŸarÄ±lÄ±! UserId:', res.userId);
+                            console.log('âœ… Kayıt başarılı! UserId:', res.userId);
 
-                            // Profil fotoÄŸrafÄ± varsa yÃ¼kle
+                            // Profil fotoğrafı varsa yükle
                             if (USER.selectedPhotoBlob) {
                                 USER.uploadProfilePhoto(function(uploadSuccess) {
                                     if (uploadSuccess) {
-                                        console.log('âœ… Profil fotoÄŸrafÄ± yÃ¼klendi');
+                                        console.log('âœ… Profil fotoğrafı yüklendi');
                                     }
-                                    // BaÅŸarÄ±lÄ± ya da deÄŸil, sayfaya geÃ§
+                                    // Başarılı ya da değil, sayfaya geç
                                     USER.selectedPhotoBlob = null; // Temizle
                                     showPage('pgLobby');
                                     history.pushState(null, null, '/lobby');
-                                    toast('HoÅŸgeldin, ' + res.nickname + '!');
+                                    toast('Hoşgeldin, ' + res.nickname + '!');
                                 });
                             } else {
-                                // FotoÄŸraf yoksa direkt geÃ§
+                                // Fotoğraf yoksa direkt geç
                                 showPage('pgLobby');
                                 history.pushState(null, null, '/lobby');
-                                toast('HoÅŸgeldin, ' + res.nickname + '!');
+                                toast('Hoşgeldin, ' + res.nickname + '!');
                             }
                         } else {
                             toast(res.error, true);
@@ -59,7 +59,7 @@ export const USER = {
                     });
                 },
 
-                // Profil fotoÄŸrafÄ± yÃ¼kleme
+                // Profil fotoğrafı yükleme
                 uploadProfilePhoto: function(callback) {
                     if (!this.selectedPhotoBlob) {
                         if (callback) callback(false);
@@ -77,24 +77,24 @@ export const USER = {
                     .then(function(response) { return response.json(); })
                     .then(function(data) {
                         if (data.success) {
-                            console.log('âœ… FotoÄŸraf yÃ¼klendi:', data.photoUrl);
+                            console.log('âœ… Fotoğraf yüklendi:', data.photoUrl);
                             if (currentUser) {
                                 currentUser.profilePhotoUrl = data.photoUrl;
                             }
                             if (callback) callback(true);
                         } else {
-                            console.error('âŒ FotoÄŸraf yÃ¼kleme hatasÄ±:', data.error);
-                            toast('FotoÄŸraf yÃ¼klenemedi', true);
+                            console.error('âŒ Fotoğraf yükleme hatası:', data.error);
+                            toast('Fotoğraf yüklenemedi', true);
                             if (callback) callback(false);
                         }
                     })
                     .catch(function(err) {
-                        console.error('âŒ FotoÄŸraf yÃ¼kleme hatasÄ±:', err);
+                        console.error('âŒ Fotoğraf yükleme hatası:', err);
                         if (callback) callback(false);
                     });
                 },
 
-                // Kamera aÃ§
+                // Kamera aç
                 openCamera: function() {
                     var video = document.getElementById('cameraVideo');
                     var container = document.getElementById('cameraContainer');
@@ -115,8 +115,8 @@ export const USER = {
                             buttons.style.display = 'none';
                         })
                         .catch(function(err) {
-                            console.error('Kamera eriÅŸim hatasÄ±:', err);
-                            toast('Kamera aÃ§Ä±lamadÄ±. LÃ¼tfen izinleri kontrol edin.', true);
+                            console.error('Kamera erişim hatası:', err);
+                            toast('Kamera açılamadı. Lütfen izinleri kontrol edin.', true);
                         });
                     } else {
                         toast('Kamera desteklenmiyor', true);
@@ -141,67 +141,67 @@ export const USER = {
                     buttons.style.display = 'grid';
                 },
 
-                // FotoÄŸraf Ã§ek
+                // Fotoğraf çek
                 capturePhoto: function() {
                     var video = document.getElementById('cameraVideo');
                     var canvas = document.getElementById('photoCanvas');
                     var ctx = canvas.getContext('2d');
 
-                    // Canvas boyutunu video ile eÅŸitle
+                    // Canvas boyutunu video ile eşitle
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
 
-                    // Video frame'ini canvas'a Ã§iz
+                    // Video frame'ini canvas'a çiz
                     ctx.drawImage(video, 0, 0);
 
-                    // Canvas'Ä± blob'a Ã§evir
+                    // Canvas'ı blob'a çevir
                     canvas.toBlob(function(blob) {
                         USER.selectedPhotoBlob = blob;
 
-                        // Ã–nizlemeyi gÃ¶ster
+                        // Önizlemeyi göster
                         var preview = document.getElementById('photoPreview');
                         var previewImg = document.getElementById('photoPreviewImg');
                         previewImg.src = URL.createObjectURL(blob);
                         preview.style.display = 'block';
 
-                        // KamerayÄ± kapat
+                        // Kamerayı kapat
                         USER.closeCamera();
 
-                        toast('FotoÄŸraf Ã§ekildi!');
+                        toast('Fotoğraf çekildi!');
                     }, 'image/jpeg', 0.85);
                 },
 
-                // Galeriden dosya seÃ§
+                // Galeriden dosya seç
                 handleFileSelect: function(event) {
                     var file = event.target.files[0];
                     if (!file) return;
 
-                    // Dosya boyutu kontrolÃ¼ (5MB)
+                    // Dosya boyutu kontrolü (5MB)
                     if (file.size > 5 * 1024 * 1024) {
-                        toast('Dosya Ã§ok bÃ¼yÃ¼k! Maksimum 5MB olmalÄ±.', true);
+                        toast('Dosya çok büyük! Maksimum 5MB olmalı.', true);
                         event.target.value = '';
                         return;
                     }
 
-                    // Dosya tipi kontrolÃ¼
+                    // Dosya tipi kontrolü
                     if (!file.type.startsWith('image/')) {
-                        toast('LÃ¼tfen bir resim dosyasÄ± seÃ§in!', true);
+                        toast('Lütfen bir resim dosyası seçin!', true);
                         event.target.value = '';
                         return;
                     }
 
                     this.selectedPhotoBlob = file;
 
-                    // Ã–nizlemeyi gÃ¶ster
+                    // Önizlemeyi göster
                     var preview = document.getElementById('photoPreview');
                     var previewImg = document.getElementById('photoPreviewImg');
                     previewImg.src = URL.createObjectURL(file);
                     preview.style.display = 'block';
 
-                    toast('FotoÄŸraf seÃ§ildi!');
+                    toast('Fotoğraf seçildi!');
                 },
 
-                // FotoÄŸrafÄ± kaldÄ±r
+                // Fotoğrafı kaldır
                 removeProfilePhoto: function() {
                     this.selectedPhotoBlob = null;
 
@@ -213,36 +213,36 @@ export const USER = {
                     previewImg.src = '';
                     fileInput.value = '';
 
-                    // Kamera aÃ§Ä±ksa kapat
+                    // Kamera açıksa kapat
                     if (this.cameraStream) {
                         this.closeCamera();
                     }
 
-                    toast('FotoÄŸraf kaldÄ±rÄ±ldÄ±');
+                    toast('Fotoğraf kaldırıldı');
                 },
 
                 logout: function() {
-                    if (confirm('Ã‡Ä±kÄ±ÅŸ yapmak istediÄŸinize emin misiniz?')) {
-                        // Cleanup: TÃ¼m timeout'larÄ± temizle
+                    if (confirm('Çıkış yapmak istediğinize emin misiniz?')) {
+                        // Cleanup: Tüm timeout'ları temizle
                         clearAllTimeouts();
 
-                        // FotoÄŸraf verilerini temizle
+                        // Fotoğraf verilerini temizle
                         this.selectedPhotoBlob = null;
                         if (this.cameraStream) {
                             this.closeCamera();
                         }
 
-                        // GÃœVENLÄ°K: Session'Ä± temizle
+                        // GÜVENLÄ°K: Session'ı temizle
                         currentUser = null;
                         currentTeamId = null;
                         isAdmin = false;
 
-                        // Server'a logout isteÄŸi gÃ¶nder (session'Ä± temizle)
+                        // Server'a logout isteği gönder (session'ı temizle)
                         socket.emit('logout-user', function() {
-                            // Nick giriÅŸ sayfasÄ±na yÃ¶nlendir
+                            // Nick giriş sayfasına yönlendir
                             router.navigate('/');
                             updateCurrentUserDisplay();
-                            toast('Ã‡Ä±kÄ±ÅŸ yapÄ±ldÄ±.');
+                            toast('Çıkış yapıldı.');
                         });
                     }
                 }

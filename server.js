@@ -2514,27 +2514,41 @@ io.on('connection', async (socket) => {
         try {
             const fs = require('fs').promises;
             const path = require('path');
-            const uploadsDir = path.join(__dirname, 'public', 'uploads', 'characters');
 
-            // Klasör yoksa oluştur
+            const charactersDir = path.join(__dirname, 'public', 'uploads', 'characters');
+            const profilesDir = path.join(__dirname, 'public', 'uploads', 'profiles');
+
+            let allPhotoUrls = [];
+
+            // Characters klasöründeki fotoğrafları getir
             try {
-                await fs.access(uploadsDir);
+                await fs.access(charactersDir);
+                const files = await fs.readdir(charactersDir);
+                const imageFiles = files.filter(file => {
+                    const ext = path.extname(file).toLowerCase();
+                    return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
+                });
+                const photoUrls = imageFiles.map(file => '/uploads/characters/' + file);
+                allPhotoUrls.push(...photoUrls);
             } catch {
-                await fs.mkdir(uploadsDir, { recursive: true });
+                await fs.mkdir(charactersDir, { recursive: true });
             }
 
-            const files = await fs.readdir(uploadsDir);
+            // Profiles klasöründeki fotoğrafları getir (kullanıcı profil fotoğrafları)
+            try {
+                await fs.access(profilesDir);
+                const files = await fs.readdir(profilesDir);
+                const imageFiles = files.filter(file => {
+                    const ext = path.extname(file).toLowerCase();
+                    return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
+                });
+                const photoUrls = imageFiles.map(file => '/uploads/profiles/' + file);
+                allPhotoUrls.push(...photoUrls);
+            } catch {
+                await fs.mkdir(profilesDir, { recursive: true });
+            }
 
-            // Sadece resim dosyalarını filtrele
-            const imageFiles = files.filter(file => {
-                const ext = path.extname(file).toLowerCase();
-                return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
-            });
-
-            // Dosya yollarını URL'ye çevir
-            const photoUrls = imageFiles.map(file => '/uploads/characters/' + file);
-
-            callback({ success: true, photos: photoUrls });
+            callback({ success: true, photos: allPhotoUrls });
         } catch (err) {
             console.error('Fotoğraf listesi hatası:', err);
             callback({ success: false, error: 'Fotoğraflar yüklenemedi!' });
