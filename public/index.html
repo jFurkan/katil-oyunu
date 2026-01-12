@@ -1099,7 +1099,7 @@
         <div class="modal-box">
             <h3 style="margin-bottom:10px; color:white;">Yönetici Girişi</h3>
             <p style="margin:0 0 15px 0; color:#999; font-size:13px; text-align:center;">Minimum 12 karakter gerekli</p>
-            <input type="password" id="inpPass" maxlength="50" placeholder="Admin şifrenizi girin..." style="text-align:center; font-size:16px; padding:12px;">
+            <input type="password" id="inpPass" maxlength="50" placeholder="Admin şifrenizi girin..." style="text-align:center; font-size:16px; padding:12px;" onkeypress="if(event.key==='Enter') GAME.checkPass()">
             <div style="display:flex; gap:10px;">
                 <button class="btn" onclick="GAME.hidePassModal()">İptal</button>
                 <button class="btn btn-primary" onclick="GAME.checkPass()">Giriş</button>
@@ -2290,7 +2290,7 @@
                         isAdmin = false;
 
                         // Server'a logout isteği gönder (session'ı temizle)
-                        socket.emit('logout-user', function() {
+                        safeSocketEmit('logout-user', null, function() {
                             // Nick giriş sayfasına yönlendir
                             router.navigate('/');
                             updateCurrentUserDisplay();
@@ -2312,7 +2312,7 @@
                         isAdmin = false;
 
                         // Server'a logout isteği gönder (session'ı temizle)
-                        socket.emit('logout-user', function() {
+                        safeSocketEmit('logout-user', null, function() {
                             // Ana sayfaya yönlendir (nickname giriş ekranı)
                             router.navigate('/');
                             updateCurrentUserDisplay();
@@ -2458,19 +2458,20 @@
                     });
                 },
                 addClue: function() {
-                    if (!socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
-                        return;
-                    }
-
                     var inp = document.getElementById('inpClue');
                     var txt = inp.value.trim();
                     if (!txt) { toast('Boş ipucu gönderilemez', true); return; }
 
+                    // Max length kontrolü
+                    if (txt.length > 500) {
+                        toast('İpucu maksimum 500 karakter olabilir!', true);
+                        return;
+                    }
+
                     if (isProcessing) return;
                     isProcessing = true;
 
-                    socket.emit('add-clue', { teamId: currentTeamId, clue: txt }, function(res) {
+                    safeSocketEmit('add-clue', { teamId: currentTeamId, clue: txt }, function(res) {
                         isProcessing = false;
                         if (res.success) { inp.value = ''; toast('İpucu iletildi'); }
                         else { toast(res.error, true); }
@@ -2534,7 +2535,7 @@
                         isAdmin = false;
 
                         // Server'a logout isteği gönder (session'ı temizle)
-                        socket.emit('logout-user', function() {
+                        safeSocketEmit('logout-user', null, function() {
                             // Nick giriş sayfasına yönlendir
                             router.navigate('/');
                             updateCurrentUserDisplay();
@@ -2564,7 +2565,13 @@
                 },
                 resetGame: function() {
                     if (confirm('TÜM veriler silinecek. Emin misiniz?')) {
-                        socket.emit('reset-game', function(res) { toast('Oyun sıfırlandı'); });
+                        safeSocketEmit('reset-game', null, function(res) {
+                            if (res.success) {
+                                toast('Oyun sıfırlandı');
+                            } else {
+                                toast(res.error || 'Sıfırlama başarısız!', true);
+                            }
+                        });
                     }
                 }
             };
@@ -2813,11 +2820,6 @@
 
                 // Mesaj gönder
                 sendMessage: function() {
-                    if (!socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
-                        return;
-                    }
-
                     var input = document.getElementById('inpTeamChat');
                     var message = input.value.trim();
 
@@ -2826,12 +2828,18 @@
                         return;
                     }
 
+                    // Max length kontrolü
+                    if (message.length > 1000) {
+                        toast('Mesaj maksimum 1000 karakter olabilir!', true);
+                        return;
+                    }
+
                     var data = {
                         message: message,
                         targetTeamId: CHAT.selectedTargetTeamId
                     };
 
-                    socket.emit('send-team-message', data, function(res) {
+                    safeSocketEmit('send-team-message', data, function(res) {
                         if (res.success) {
                             input.value = '';
                             // Mesaj otomatik olarak 'new-team-message' event'i ile gelecek
@@ -2846,7 +2854,7 @@
                     if (CHAT.isLoading) return;
                     CHAT.isLoading = true;
 
-                    socket.emit('load-team-messages', {
+                    safeSocketEmit('load-team-messages', {
                         page: page,
                         filterTeamId: CHAT.selectedTargetTeamId  // Filtre ekle
                     }, function(res) {
@@ -3485,21 +3493,23 @@
                 },
 
                 sendGeneralClue: function() {
-                    if (!socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
-                        return;
-                    }
-
                     var text = document.getElementById('generalClueText').value.trim();
                     if (!text) {
                         toast('İpucu metni giriniz', true);
                         return;
                     }
+
+                    // Max length kontrolü
+                    if (text.length > 500) {
+                        toast('İpucu maksimum 500 karakter olabilir!', true);
+                        return;
+                    }
+
                     if (confirm('Bu ipucu tüm takımlara gönderilecek. Emin misiniz?')) {
                         if (isProcessing) return;
                         isProcessing = true;
 
-                        socket.emit('send-general-clue', text, function(res) {
+                        safeSocketEmit('send-general-clue', text, function(res) {
                             isProcessing = false;
                             if (res.success) {
                                 document.getElementById('generalClueText').value = '';
@@ -3512,21 +3522,23 @@
                 },
 
                 sendAnnouncement: function() {
-                    if (!socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
-                        return;
-                    }
-
                     var text = document.getElementById('announcementText').value.trim();
                     if (!text) {
                         toast('Duyuru metni giriniz', true);
                         return;
                     }
+
+                    // Max length kontrolü
+                    if (text.length > 500) {
+                        toast('Duyuru maksimum 500 karakter olabilir!', true);
+                        return;
+                    }
+
                     if (confirm('Bu duyuru tüm takımlara gönderilecek. Emin misiniz?')) {
                         if (isProcessing) return;
                         isProcessing = true;
 
-                        socket.emit('send-announcement', text, function(res) {
+                        safeSocketEmit('send-announcement', text, function(res) {
                             isProcessing = false;
                             if (res.success) {
                                 document.getElementById('announcementText').value = '';
@@ -6121,7 +6133,7 @@
                     };
 
                     // Server'a kaydet
-                    socket.emit('add-board-item', itemData, function(response) {
+                    safeSocketEmit('add-board-item', itemData, function(response) {
                         if (response.success) {
                             toast('✅ Karakter eklendi');
                             MURDERBOARD.hideCharacterSelector();
@@ -6135,7 +6147,7 @@
                 loadBoard: function() {
                     if (!currentUser || !currentUser.teamId) return;
 
-                    socket.emit('get-board-items', function(data) {
+                    safeSocketEmit('get-board-items', null, function(data) {
                         MURDERBOARD.boardItems = data.items || [];
                         MURDERBOARD.connections = data.connections || [];
                         MURDERBOARD.renderBoard();
@@ -6340,11 +6352,15 @@
                             MURDERBOARD.showEditNoteModal(item.id);
                         } else if (hasMoved) {
                             // Server'a pozisyonu kaydet
-                            socket.emit('update-board-item-position', {
+                            safeSocketEmit('update-board-item-position', {
                                 itemId: item.id,
                                 x: Math.floor(item.x),
                                 y: Math.floor(item.y)
-                            });
+                            }, function(response) {
+                                if (!response.success) {
+                                    toast('Pozisyon kaydedilemedi!', true);
+                                }
+                            }, { showConnectionError: false }); // Fire-and-forget style, connection error gösterme
                         }
 
                         // Tüm document listener'ları temizle
@@ -6480,11 +6496,15 @@
                     const x = parseInt(itemEl.style.left);
                     const y = parseInt(itemEl.style.top);
 
-                    socket.emit('update-board-item-position', {
+                    safeSocketEmit('update-board-item-position', {
                         itemId: MURDERBOARD.draggedItem.id,
                         x: x,
                         y: y
-                    });
+                    }, function(response) {
+                        if (!response.success) {
+                            toast('Pozisyon kaydedilemedi!', true);
+                        }
+                    }, { showConnectionError: false });
 
                     MURDERBOARD.draggedItem.x = x;
                     MURDERBOARD.draggedItem.y = y;
@@ -6524,7 +6544,7 @@
                             return;
                         }
 
-                        socket.emit('add-board-connection', {
+                        safeSocketEmit('add-board-connection', {
                             fromItemId: MURDERBOARD.connectionStart,
                             toItemId: itemId
                         }, function(response) {
@@ -6708,7 +6728,7 @@
                 deleteItem: function(itemId) {
                     if (!confirm('Bu karakteri kaldırmak istiyor musunuz?')) return;
 
-                    socket.emit('delete-board-item', itemId, function(response) {
+                    safeSocketEmit('delete-board-item', itemId, function(response) {
                         if (response.success) {
                             toast('🗑️ Karakter kaldırıldı');
                             MURDERBOARD.loadBoard();
@@ -6719,7 +6739,7 @@
                 },
 
                 deleteConnection: function(connectionId) {
-                    socket.emit('delete-board-connection', connectionId, function(response) {
+                    safeSocketEmit('delete-board-connection', connectionId, function(response) {
                         if (response.success) {
                             toast('🗑️ Bağlantı silindi');
                             MURDERBOARD.loadBoard();
