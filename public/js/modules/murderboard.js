@@ -16,10 +16,16 @@ export const MURDERBOARD = {
 
                 loadAvailableCharacters: function() {
                     // Karakter listesini yükle
-                    socket.emit('get-characters-for-board', function(characters) {
-                        console.log('Karakterler yüklendi (Murder Board):', characters);
-                        MURDERBOARD.allCharacters = characters;
-                        MURDERBOARD.updateCharacterDropdown();
+                    window.safeSocketEmit('get-characters-for-board', null, function(response) {
+                        if (response && response.success) {
+                            console.log('Karakterler yüklendi (Murder Board):', response.characters);
+                            MURDERBOARD.allCharacters = response.characters || [];
+                            MURDERBOARD.updateCharacterDropdown();
+                        } else {
+                            console.error('Karakter yükleme hatası');
+                            MURDERBOARD.allCharacters = [];
+                            MURDERBOARD.updateCharacterDropdown();
+                        }
                     });
                 },
 
@@ -32,9 +38,11 @@ export const MURDERBOARD = {
 
                     // Takım adını göster (UUID değil, takım adı)
                     if (currentUser && currentUser.teamId) {
-                        socket.emit('get-team', currentUser.teamId, function(team) {
-                            if (team) {
-                                document.getElementById('mbTeamName').textContent = team.name;
+                        window.safeSocketEmit('get-team', currentUser.teamId, function(response) {
+                            if (response && response.success && response.team) {
+                                document.getElementById('mbTeamName').textContent = response.team.name;
+                            } else {
+                                document.getElementById('mbTeamName').textContent = 'Takım';
                             }
                         });
                     } else {
@@ -106,11 +114,11 @@ export const MURDERBOARD = {
 
                     const newNote = document.getElementById('editNoteTextarea').value.trim();
 
-                    socket.emit('update-board-item-note', {
+                    window.safeSocketEmit('update-board-item-note', {
                         itemId: MURDERBOARD.editingItemId,
                         note: newNote
                     }, function(response) {
-                        if (response.success) {
+                        if (response && response.success) {
                             toast('âœ… Not güncellendi');
                             MURDERBOARD.hideEditNoteModal();
                             MURDERBOARD.loadBoard();
@@ -148,8 +156,8 @@ export const MURDERBOARD = {
                     };
 
                     // Server'a kaydet
-                    socket.emit('add-board-item', itemData, function(response) {
-                        if (response.success) {
+                    window.safeSocketEmit('add-board-item', itemData, function(response) {
+                        if (response && response.success) {
                             toast('âœ… Karakter eklendi');
                             MURDERBOARD.hideCharacterSelector();
                             MURDERBOARD.loadBoard();
@@ -162,9 +170,14 @@ export const MURDERBOARD = {
                 loadBoard: function() {
                     if (!currentUser || !currentUser.teamId) return;
 
-                    socket.emit('get-board-items', function(data) {
-                        MURDERBOARD.boardItems = data.items || [];
-                        MURDERBOARD.connections = data.connections || [];
+                    window.safeSocketEmit('get-board-items', null, function(response) {
+                        if (response && response.success) {
+                            MURDERBOARD.boardItems = response.items || [];
+                            MURDERBOARD.connections = response.connections || [];
+                        } else {
+                            MURDERBOARD.boardItems = [];
+                            MURDERBOARD.connections = [];
+                        }
                         MURDERBOARD.renderBoard();
                         MURDERBOARD.updateCharacterDropdown();
                     });
@@ -367,7 +380,7 @@ export const MURDERBOARD = {
                             MURDERBOARD.showEditNoteModal(item.id);
                         } else if (hasMoved) {
                             // Server'a pozisyonu kaydet
-                            socket.emit('update-board-item-position', {
+                            window.safeSocketEmit('update-board-item-position', {
                                 itemId: item.id,
                                 x: Math.floor(item.x),
                                 y: Math.floor(item.y)
@@ -507,7 +520,7 @@ export const MURDERBOARD = {
                     const x = parseInt(itemEl.style.left);
                     const y = parseInt(itemEl.style.top);
 
-                    socket.emit('update-board-item-position', {
+                    window.safeSocketEmit('update-board-item-position', {
                         itemId: MURDERBOARD.draggedItem.id,
                         x: x,
                         y: y
@@ -551,7 +564,7 @@ export const MURDERBOARD = {
                             return;
                         }
 
-                        socket.emit('add-board-connection', {
+                        window.safeSocketEmit('add-board-connection', {
                             fromItemId: MURDERBOARD.connectionStart,
                             toItemId: itemId
                         }, function(response) {
@@ -735,8 +748,8 @@ export const MURDERBOARD = {
                 deleteItem: function(itemId) {
                     if (!confirm('Bu karakteri kaldırmak istiyor musunuz?')) return;
 
-                    socket.emit('delete-board-item', itemId, function(response) {
-                        if (response.success) {
+                    window.safeSocketEmit('delete-board-item', itemId, function(response) {
+                        if (response && response.success) {
                             toast('🗑️ Karakter kaldırıldı');
                             MURDERBOARD.loadBoard();
                         } else {
@@ -746,8 +759,8 @@ export const MURDERBOARD = {
                 },
 
                 deleteConnection: function(connectionId) {
-                    socket.emit('delete-board-connection', connectionId, function(response) {
-                        if (response.success) {
+                    window.safeSocketEmit('delete-board-connection', connectionId, function(response) {
+                        if (response && response.success) {
                             toast('🗑️ Bağlantı silindi');
                             MURDERBOARD.loadBoard();
                         } else {
@@ -759,8 +772,8 @@ export const MURDERBOARD = {
                 clearBoard: function() {
                     if (!confirm('Tüm murder board\'u temizlemek istediğinizden emin misiniz?')) return;
 
-                    socket.emit('clear-board', function(response) {
-                        if (response.success) {
+                    window.safeSocketEmit('clear-board', null, function(response) {
+                        if (response && response.success) {
                             toast('🗑️ Murder board temizlendi');
                             MURDERBOARD.loadBoard();
                         } else {

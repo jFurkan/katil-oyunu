@@ -45,8 +45,8 @@ export const IP_LOGS = {
             return;
         }
 
-        socket.emit('get-ip-logs', function(res) {
-            if (res.success) {
+        window.safeSocketEmit('get-ip-logs', null, function(res) {
+            if (res && res.success) {
                 IP_LOGS.logs = res.logs;
                 IP_LOGS.render();
                 toast('Loglar yüklendi');
@@ -135,8 +135,8 @@ export const IP_LOGS = {
             return;
         }
 
-        socket.emit('clear-ip-logs', { ipAddress: ipAddress, action: action }, function(res) {
-            if (res.success) {
+        window.safeSocketEmit('clear-ip-logs', { ipAddress: ipAddress, action: action }, function(res) {
+            if (res && res.success) {
                 toast('Log sıfırlandı: ' + res.deletedCount + ' kayıt silindi');
                 IP_LOGS.loadLogs();
             } else {
@@ -159,8 +159,8 @@ export const IP_LOGS = {
             return;
         }
 
-        socket.emit('clear-ip-logs', {}, function(res) {
-            if (res.success) {
+        window.safeSocketEmit('clear-ip-logs', {}, function(res) {
+            if (res && res.success) {
                 toast('Tüm loglar sıfırlandı: ' + res.deletedCount + ' kayıt silindi');
                 IP_LOGS.loadLogs();
             } else {
@@ -183,8 +183,8 @@ export const IP_USERS = {
             return;
         }
 
-        socket.emit('get-all-users', function(res) {
-            if (res.success) {
+        window.safeSocketEmit('get-all-users', null, function(res) {
+            if (res && res.success) {
                 IP_USERS.users = res.users;
                 IP_USERS.render();
                 toast('Kullanıcılar yüklendi: ' + res.users.length + ' kayıt');
@@ -298,8 +298,8 @@ export const IP_USERS = {
             return;
         }
 
-        socket.emit('delete-all-users', function(res) {
-            if (res.success) {
+        window.safeSocketEmit('delete-all-users', null, function(res) {
+            if (res && res.success) {
                 toast('Tüm kullanıcılar silindi: ' + res.deletedCount + ' kayıt');
                 IP_USERS.users = [];
                 IP_USERS.render();

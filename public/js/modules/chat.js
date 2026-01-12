@@ -118,8 +118,8 @@ export const CHAT = {
                         targetTeamId: CHAT.selectedTargetTeamId
                     };
 
-                    socket.emit('send-team-message', data, function(res) {
-                        if (res.success) {
+                    window.safeSocketEmit('send-team-message', data, function(res) {
+                        if (res && res.success) {
                             input.value = '';
                             // Mesaj otomatik olarak 'new-team-message' event'i ile gelecek
                         } else {
@@ -133,12 +133,12 @@ export const CHAT = {
                     if (CHAT.isLoading) return;
                     CHAT.isLoading = true;
 
-                    socket.emit('load-team-messages', {
+                    window.safeSocketEmit('load-team-messages', {
                         page: page,
                         filterTeamId: CHAT.selectedTargetTeamId  // Filtre ekle
                     }, function(res) {
                         CHAT.isLoading = false;
-                        if (res.success) {
+                        if (res && res.success) {
                             CHAT.currentPage = res.pagination.currentPage;
                             CHAT.totalPages = res.pagination.totalPages;
                             CHAT.renderMessages(res.messages);

@@ -67,8 +67,12 @@ export const ADMIN = {
                     if (section === 'users') {
                         // Manuel olarak kullanıcıları server'dan çek
                         if (socketConnected) {
-                            socket.emit('get-users-by-team', function(fetchedUsers) {
-                                users = fetchedUsers;
+                            window.safeSocketEmit('get-users-by-team', null, function(response) {
+                                if (response && response.success) {
+                                    users = response.users || [];
+                                } else {
+                                    users = [];
+                                }
                                 renderUsersList();
                             });
                         } else {
@@ -109,9 +113,14 @@ export const ADMIN = {
                         return;
                     }
 
-                    socket.emit('get-characters', function(characters) {
-                        console.log('Karakterler yüklendi:', characters);
-                        ADMIN.renderGameCharacters(characters);
+                    window.safeSocketEmit('get-characters', null, function(response) {
+                        if (response && response.success) {
+                            console.log('Karakterler yüklendi:', response.characters);
+                            ADMIN.renderGameCharacters(response.characters || []);
+                        } else {
+                            console.error('Karakter yükleme hatası');
+                            ADMIN.renderGameCharacters([]);
+                        }
                     });
                 },
 
@@ -225,12 +234,13 @@ export const ADMIN = {
                         return;
                     }
 
-                    socket.emit('get-phases', function(response) {
-                        if (response.success) {
+                    window.safeSocketEmit('get-phases', null, function(response) {
+                        if (response && response.success) {
                             console.log('Fazlar yüklendi:', response.phases);
-                            ADMIN.renderPhases(response.phases);
+                            ADMIN.renderPhases(response.phases || []);
                         } else {
-                            console.error('Faz yükleme hatası:', response.error);
+                            console.error('Faz yükleme hatası:', response ? response.error : 'Timeout');
+                            ADMIN.renderPhases([]);
                         }
                     });
                 },
@@ -332,9 +342,9 @@ export const ADMIN = {
                         if (isProcessing) return;
                         isProcessing = true;
 
-                        socket.emit('send-general-clue', text, function(res) {
+                        window.safeSocketEmit('send-general-clue', text, function(res) {
                             isProcessing = false;
-                            if (res.success) {
+                            if (res && res.success) {
                                 document.getElementById('generalClueText').value = '';
                                 toast('İpucu gönderildi');
                             } else {
@@ -359,9 +369,9 @@ export const ADMIN = {
                         if (isProcessing) return;
                         isProcessing = true;
 
-                        socket.emit('send-announcement', text, function(res) {
+                        window.safeSocketEmit('send-announcement', text, function(res) {
                             isProcessing = false;
-                            if (res.success) {
+                            if (res && res.success) {
                                 document.getElementById('announcementText').value = '';
                                 toast('Duyuru gönderildi');
                                 // Bildirim listesini güncelle
@@ -401,8 +411,8 @@ export const ADMIN = {
                     }
 
                     // Tüm takımları yükle ve dropdown'ı doldur
-                    socket.emit('admin-get-teams', function(res) {
-                        if (res.success) {
+                    window.safeSocketEmit('admin-get-teams', null, function(res) {
+                        if (res && res.success) {
                             var selector = document.getElementById('adminMessagesTeamSelector');
                             if (!selector) return;
 
@@ -434,8 +444,8 @@ export const ADMIN = {
                     }
 
                     // Takım bilgisini al
-                    socket.emit('admin-get-teams', function(res) {
-                        if (res.success) {
+                    window.safeSocketEmit('admin-get-teams', null, function(res) {
+                        if (res && res.success) {
                             var team = res.teams.find(function(t) { return t.id === teamId; });
                             if (team) {
                                 document.getElementById('adminSelectedTeamName').textContent = team.name;
@@ -444,8 +454,8 @@ export const ADMIN = {
                     });
 
                     // Admin mesajlarını yükle (bu takımla olan mesajlar)
-                    socket.emit('load-admin-messages', function(res) {
-                        if (res.success) {
+                    window.safeSocketEmit('load-admin-messages', null, function(res) {
+                        if (res && res.success) {
                             // Seçili takımın mesajlarını filtrele
                             var teamMessages = res.messages.filter(function(msg) {
                                 return msg.team_id === teamId || msg.target_team_id === teamId;
@@ -554,11 +564,11 @@ export const ADMIN = {
                         return;
                     }
 
-                    socket.emit('admin-send-message', {
+                    window.safeSocketEmit('admin-send-message', {
                         targetTeamId: ADMIN.selectedAdminTeamId,
                         message: message
                     }, function(res) {
-                        if (res.success) {
+                        if (res && res.success) {
                             if (messageInput) messageInput.value = '';
                             toast('Mesaj gönderildi!');
 
@@ -577,8 +587,8 @@ export const ADMIN = {
                     }
 
                     if (confirm('TÜM ipuçlarını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
-                        socket.emit('clear-all-clues', function(res) {
-                            if (res.success) {
+                        window.safeSocketEmit('clear-all-clues', null, function(res) {
+                            if (res && res.success) {
                                 toast('Tüm ipuçları silindi');
                             } else {
                                 toast(res.error, true);
@@ -594,8 +604,8 @@ export const ADMIN = {
                     }
 
                     if (confirm('Bu ipucunu silmek istediğinize emin misiniz?')) {
-                        socket.emit('delete-general-clue', clueId, function(res) {
-                            if (res.success) {
+                        window.safeSocketEmit('delete-general-clue', clueId, function(res) {
+                            if (res && res.success) {
                                 toast('İpucu silindi');
                             } else {
                                 toast(res.error, true);
@@ -645,8 +655,8 @@ export const ADMIN = {
                     var selectedValue = selector.value;
 
                     // Takımları server'dan çek
-                    socket.emit('admin-get-teams', function(res) {
-                        if (res.success) {
+                    window.safeSocketEmit('admin-get-teams', null, function(res) {
+                        if (res && res.success) {
                             var html = '<option value="">Takım seçin...</option>';
                             res.teams.forEach(function(team) {
                                 html += `<option value="${team.id}" ${selectedValue === team.id ? 'selected' : ''}>${htmlEscape(team.name)}</option>`;
@@ -680,8 +690,8 @@ export const ADMIN = {
                     }
 
                     // Takım chat'ini yükle
-                    socket.emit('admin-load-team-chat', teamId, function(res) {
-                        if (res.success) {
+                    window.safeSocketEmit('admin-load-team-chat', teamId, function(res) {
+                        if (res && res.success) {
                             ADMIN.selectedChatTeamName = res.teamName;
                             document.getElementById('adminChatTeamName').textContent = res.teamName;
                             document.getElementById('adminChatMessageCount').textContent = res.totalCount + ' mesaj';
@@ -891,8 +901,8 @@ export const ADMIN = {
                         return;
                     }
 
-                    socket.emit('add-credit', name, function(res) {
-                        if (res.success) {
+                    window.safeSocketEmit('add-credit', name, function(res) {
+                        if (res && res.success) {
                             input.value = '';
                             toast('İsim eklendi');
                         } else {
@@ -903,8 +913,8 @@ export const ADMIN = {
 
                 removeCredit: function(creditId, name) {
                     if (confirm('"' + name + '" isimli kişiyi listeden silmek istediğinize emin misiniz?')) {
-                        socket.emit('remove-credit', creditId, function(res) {
-                            if (res.success) {
+                        window.safeSocketEmit('remove-credit', creditId, function(res) {
+                            if (res && res.success) {
                                 toast('İsim silindi');
                             } else {
                                 toast(res.error, true);
@@ -919,11 +929,11 @@ export const ADMIN = {
 
                     var content = textarea.value.trim();
 
-                    socket.emit('update-credit-content', {
+                    window.safeSocketEmit('update-credit-content', {
                         creditId: creditId,
                         content: content
                     }, function(res) {
-                        if (res.success) {
+                        if (res && res.success) {
                             toast('İçerik güncellendi');
                         } else {
                             toast(res.error, true);
@@ -938,8 +948,8 @@ export const ADMIN = {
                         return;
                     }
 
-                    socket.emit('get-statistics', function(res) {
-                        if (res.success) {
+                    window.safeSocketEmit('get-statistics', null, function(res) {
+                        if (res && res.success) {
                             ADMIN.renderStatsOverview(res.stats.overview);
                             ADMIN.renderStatsMessaging(res.stats.messaging);
                             ADMIN.renderStatsClues(res.stats.clues);

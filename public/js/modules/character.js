@@ -52,9 +52,12 @@ export const CHARACTER = {
     },
 
     loadCharacters() {
-        const socket = window.socket;
-        socket.emit('get-characters', (characters) => {
-            this.renderCharacters(characters);
+        window.safeSocketEmit('get-characters', null, (response) => {
+            if (response && response.success) {
+                this.renderCharacters(response.characters || []);
+            } else {
+                this.renderCharacters([]);
+            }
         });
     },
 
@@ -153,18 +156,17 @@ export const CHARACTER = {
     },
 
     openPhotoSelector() {
-        const socket = window.socket;
         const modal = document.getElementById('photoSelectorModal');
         if (modal) {
             modal.style.display = 'flex';
         }
 
         // Get uploaded photos
-        socket.emit('get-uploaded-photos', (response) => {
+        window.safeSocketEmit('get-uploaded-photos', null, (response) => {
             const gallery = document.getElementById('photoGallery');
             if (!gallery) return;
 
-            if (!response.success || response.photos.length === 0) {
+            if (!response || !response.success || !response.photos || response.photos.length === 0) {
                 gallery.innerHTML = `
                     <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: #555;">
                         <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.3;">📂</div>

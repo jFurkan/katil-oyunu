@@ -232,7 +232,7 @@ export const USER = {
                         isAdmin = false;
 
                         // Server'a logout isteği gönder (session'ı temizle)
-                        socket.emit('logout-user', function() {
+                        window.safeSocketEmit('logout-user', null, function(response) {
                             // Nick giriş sayfasına yönlendir
                             router.navigate('/');
                             updateCurrentUserDisplay();

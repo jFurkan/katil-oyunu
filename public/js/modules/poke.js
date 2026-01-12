@@ -17,7 +17,13 @@ export const POKE = {
         }
 
         // Load team list
-        socket.emit('get-teams', (teams) => {
+        window.safeSocketEmit('get-teams', null, (response) => {
+            if (!response || !response.success) {
+                toast('Takımlar yüklenemedi!', true);
+                return;
+            }
+
+            const teams = response.teams || [];
             let html = '';
             const now = Date.now();
 
@@ -86,8 +92,8 @@ export const POKE = {
         }
 
         // Send poke request to server
-        socket.emit('poke-team', targetTeamId, (response) => {
-            if (response.success) {
+        window.safeSocketEmit('poke-team', targetTeamId, (response) => {
+            if (response && response.success) {
                 // Save last poke time
                 this.lastPokeTime[targetTeamId] = now;
 

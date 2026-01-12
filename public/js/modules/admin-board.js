@@ -13,9 +13,8 @@ export const ADMIN_BOARD = {
     },
 
     loadTeams: function() {
-        const socket = window.socket;
         const self = this;
-        socket.emit('admin-get-teams', function(res) {
+        window.safeSocketEmit('admin-get-teams', null, function(res) {
             const select = document.getElementById('adminBoardTeamSelect');
             if (!select) {
                 console.error('adminBoardTeamSelect bulunamadı!');
@@ -24,7 +23,7 @@ export const ADMIN_BOARD = {
 
             select.innerHTML = '<option value="">-- Takım Seçin --</option>';
 
-            if (!res.success || !res.teams || res.teams.length === 0) {
+            if (!res || !res.success || !res.teams || res.teams.length === 0) {
                 const option = document.createElement('option');
                 option.value = '';
                 option.textContent = 'Henüz takım oluşturulmamış';
@@ -57,8 +56,8 @@ export const ADMIN_BOARD = {
         document.getElementById('adminBoardEmptyStateMain').style.display = 'none';
 
         // Seçili takımın bilgilerini göster
-        socket.emit('admin-get-teams', function(res) {
-            if (!res.success) return;
+        window.safeSocketEmit('admin-get-teams', null, function(res) {
+            if (!res || !res.success) return;
             const team = res.teams.find(function(t) { return t.id === teamId; });
             if (team) {
                 document.getElementById('adminBoardTeamName').textContent = team.name;
@@ -73,11 +72,15 @@ export const ADMIN_BOARD = {
     loadBoard: function() {
         if (!this.selectedTeamId) return;
 
-        const socket = window.socket;
         const self = this;
-        socket.emit('get-team-board', this.selectedTeamId, function(data) {
-            self.boardItems = data.items || [];
-            self.connections = data.connections || [];
+        window.safeSocketEmit('get-team-board', this.selectedTeamId, function(response) {
+            if (response && response.success) {
+                self.boardItems = response.items || [];
+                self.connections = response.connections || [];
+            } else {
+                self.boardItems = [];
+                self.connections = [];
+            }
 
             // Sayıları güncelle
             document.getElementById('adminBoardItemCount').textContent = self.boardItems.length;
