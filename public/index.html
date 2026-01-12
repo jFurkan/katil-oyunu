@@ -2029,7 +2029,7 @@
                 }
 
                 isProcessing = true;
-                socket.emit('change-score', { teamId: teamId, amount: amount }, function(res) {
+                safeSocketEmit('change-score', { teamId: teamId, amount: amount }, function(res) {
                     isProcessing = false;
                     if (!res.success) toast(res.error, true);
                 });
@@ -3733,7 +3733,13 @@
                         return;
                     }
 
-                    socket.emit('admin-send-message', {
+                    // Max length kontrolü
+                    if (message.length > 1000) {
+                        toast('Mesaj maksimum 1000 karakter olabilir!', true);
+                        return;
+                    }
+
+                    safeSocketEmit('admin-send-message', {
                         targetTeamId: ADMIN.selectedAdminTeamId,
                         message: message
                     }, function(res) {
@@ -3750,13 +3756,8 @@
                 },
 
                 clearAllClues: function() {
-                    if (!socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
-                        return;
-                    }
-
                     if (confirm('TÜM ipuçlarını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
-                        socket.emit('clear-all-clues', function(res) {
+                        safeSocketEmit('clear-all-clues', null, function(res) {
                             if (res.success) {
                                 toast('Tüm ipuçları silindi');
                             } else {
@@ -3767,13 +3768,8 @@
                 },
 
                 deleteClue: function(clueId) {
-                    if (!socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
-                        return;
-                    }
-
                     if (confirm('Bu ipucunu silmek istediğinize emin misiniz?')) {
-                        socket.emit('delete-general-clue', clueId, function(res) {
+                        safeSocketEmit('delete-general-clue', clueId, function(res) {
                             if (res.success) {
                                 toast('İpucu silindi');
                             } else {
@@ -4070,7 +4066,7 @@
                         return;
                     }
 
-                    socket.emit('add-credit', name, function(res) {
+                    safeSocketEmit('add-credit', name, function(res) {
                         if (res.success) {
                             input.value = '';
                             toast('İsim eklendi');
@@ -4082,7 +4078,7 @@
 
                 removeCredit: function(creditId, name) {
                     if (confirm('"' + name + '" isimli kişiyi listeden silmek istediğinize emin misiniz?')) {
-                        socket.emit('remove-credit', creditId, function(res) {
+                        safeSocketEmit('remove-credit', creditId, function(res) {
                             if (res.success) {
                                 toast('İsim silindi');
                             } else {
@@ -4098,7 +4094,13 @@
 
                     var content = textarea.value.trim();
 
-                    socket.emit('update-credit-content', {
+                    // Max length kontrolü
+                    if (content.length > 2000) {
+                        toast('İçerik maksimum 2000 karakter olabilir!', true);
+                        return;
+                    }
+
+                    safeSocketEmit('update-credit-content', {
                         creditId: creditId,
                         content: content
                     }, function(res) {
@@ -4112,12 +4114,7 @@
 
                 // İSTATİSTİKLER FONKSİYONLARI
                 loadStatistics: function() {
-                    if (!socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
-                        return;
-                    }
-
-                    socket.emit('get-statistics', function(res) {
+                    safeSocketEmit('get-statistics', null, function(res) {
                         if (res.success) {
                             ADMIN.renderStatsOverview(res.stats.overview);
                             ADMIN.renderStatsMessaging(res.stats.messaging);
@@ -4634,12 +4631,7 @@
                         return;
                     }
 
-                    if (!socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
-                        return;
-                    }
-
-                    socket.emit('delete-all-users', function(res) {
+                    safeSocketEmit('delete-all-users', null, function(res) {
                         if (res.success) {
                             toast('Tüm kullanıcılar silindi: ' + res.deletedCount + ' kayıt');
                             IP_USERS.users = [];
@@ -5787,7 +5779,7 @@
                     }
 
                     // Server'a dürtme isteği gönder
-                    socket.emit('poke-team', targetTeamId, function(response) {
+                    safeSocketEmit('poke-team', targetTeamId, function(response) {
                         if (response.success) {
                             // Son dürtme zamanını kaydet
                             POKE.lastPokeTime[targetTeamId] = now;
@@ -6091,7 +6083,13 @@
 
                     const newNote = document.getElementById('editNoteTextarea').value.trim();
 
-                    socket.emit('update-board-item-note', {
+                    // Max length kontrolü
+                    if (newNote.length > 500) {
+                        toast('Not maksimum 500 karakter olabilir!', true);
+                        return;
+                    }
+
+                    safeSocketEmit('update-board-item-note', {
                         itemId: MURDERBOARD.editingItemId,
                         note: newNote
                     }, function(response) {
