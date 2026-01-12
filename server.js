@@ -1047,8 +1047,7 @@ async function getUsersByTeam() {
         SELECT u.*, t.name as team_name, t.color as team_color
         FROM users u
         LEFT JOIN teams t ON u.team_id = t.id
-        WHERE u.online = TRUE
-        ORDER BY u.team_id NULLS LAST, u.is_captain DESC, u.created_at
+        ORDER BY u.online DESC, u.team_id NULLS LAST, u.is_captain DESC, u.created_at
     `);
     return result.rows;
 }

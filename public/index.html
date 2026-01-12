@@ -4506,8 +4506,8 @@
 
                     var html = '';
                     this.users.forEach(function(user) {
-                        var onlineStatus = user.online ? '🟢 Online' : '⚫ Offline';
-                        var onlineColor = user.online ? '#10b981' : '#666';
+                        var onlineStatusClass = user.online ? 'online' : 'offline';
+                        var onlineStatusText = user.online ? 'Çevrimiçi' : 'Çevrimdışı';
                         var date = new Date(user.created_at);
                         var timeStr = date.toLocaleString('tr-TR', {
                             day: '2-digit',
@@ -4526,11 +4526,11 @@
                         <div style="background:#1a1a1a; border:1px solid #333; border-radius:8px; padding:15px;">
                             <div style="display:flex; justify-content:space-between; align-items:start;">
                                 <div style="flex:1;">
-                                    <div style="color:#fff; font-weight:600; font-size:16px; margin-bottom:8px;">
+                                    <div style="color:#fff; font-weight:600; font-size:16px; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+                                        <span class="status-indicator ${onlineStatusClass}" data-status="${onlineStatusText}"></span>
                                         ${htmlEscape(user.nickname)}
                                     </div>
                                     <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom:8px;">
-                                        <span style="color:${onlineColor}; font-size:12px;">${onlineStatus}</span>
                                         ${teamInfo}
                                     </div>
                                     <div style="color:#666; font-size:12px;">
@@ -4644,8 +4644,8 @@
 
                     var html = '';
                     this.users.forEach(function(user) {
-                        var onlineStatus = user.online ? '🟢 Online' : '⚫ Offline';
-                        var onlineColor = user.online ? '#10b981' : '#666';
+                        var onlineStatusClass = user.online ? 'online' : 'offline';
+                        var onlineStatusText = user.online ? 'Çevrimiçi' : 'Çevrimdışı';
 
                         var teamInfo = user.team_name ?
                             `<span style="display:inline-block; padding:4px 8px; background:${user.team_color || '#333'}; border-radius:4px; font-size:11px; color:#fff;">👥 ${htmlEscape(user.team_name)}</span>` :
@@ -4659,14 +4659,14 @@
 
                         html += `
                         <div style="background:#1a1a1a; border:1px solid #333; border-radius:12px; padding:20px; text-align:center;">
-                            <div style="margin-bottom:15px;">
+                            <div style="margin-bottom:15px; position:relative; display:inline-block;">
                                 ${photoDisplay}
+                                <span class="status-indicator ${onlineStatusClass}" data-status="${onlineStatusText}" style="position:absolute; bottom:5px; right:5px; width:12px; height:12px; border:2px solid #1a1a1a;"></span>
                             </div>
                             <div style="color:#fff; font-weight:600; font-size:16px; margin-bottom:8px;">
                                 ${htmlEscape(user.nickname)}
                             </div>
                             <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:15px; align-items:center;">
-                                <span style="color:${onlineColor}; font-size:12px;">${onlineStatus}</span>
                                 ${teamInfo}
                             </div>
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
@@ -5015,8 +5015,11 @@
                                 ${group.users.map(u => {
                                     // GÜVENLİK: onclick için JavaScript string escape (htmlEscape yetersiz)
                                     var safeNick = u.nickname.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                                    var onlineStatus = u.online ? 'online' : 'offline';
+                                    var statusText = u.online ? 'Çevrimiçi' : 'Çevrimdışı';
                                     return `
                                     <div style="background: #222; padding: 12px 15px; border-radius: 6px; display: flex; align-items: center; gap: 10px;">
+                                        <span class="status-indicator ${onlineStatus}" data-status="${statusText}"></span>
                                         ${u.is_captain ? '<span style="font-size: 20px;">👑</span>' : '<span style="font-size: 20px;">👤</span>'}
                                         <span style="color: white; font-weight: ${u.is_captain ? 'bold' : 'normal'}; flex: 1;">
                                             ${htmlEscape(u.nickname)}
@@ -5043,8 +5046,11 @@
                                 ${usersWithoutTeam.map(u => {
                                     // GÜVENLİK: onclick için JavaScript string escape (htmlEscape yetersiz)
                                     var safeNick = u.nickname.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                                    var onlineStatus = u.online ? 'online' : 'offline';
+                                    var statusText = u.online ? 'Çevrimiçi' : 'Çevrimdışı';
                                     return `
                                     <div style="background: #222; padding: 12px 15px; border-radius: 6px; display: flex; align-items: center; gap: 10px;">
+                                        <span class="status-indicator ${onlineStatus}" data-status="${statusText}"></span>
                                         <span style="font-size: 20px;">👤</span>
                                         <span style="color: white; flex: 1;">${htmlEscape(u.nickname)}</span>
                                         <button onclick="adminDeleteUser('${u.id}', '${safeNick}')" style="background: #500; border: 1px solid #800; color: #faa; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
