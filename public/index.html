@@ -1753,12 +1753,13 @@
                 currentTeamId = teamId;
 
                 // Takım bilgilerini al ve sayfayı render et
-                socket.emit('get-team', teamId, (team) => {
-                    if (team) {
+                safeSocketEmit('get-team', teamId, (response) => {
+                    if (response && response.success && response.team) {
                         showPage('pgTeam');
-                        renderTeamPage(team);
+                        renderTeamPage(response.team);
                     } else {
                         // Takım bulunamadı, lobby'ye dön
+                        toast('Takım bilgileri alınamadı!', true);
                         router.navigate('/lobby');
                     }
                 });
@@ -1852,7 +1853,7 @@
                 console.log('   Session cookie\'leri görmek için: Browser DevTools → Application → Cookies');
 
                 // SESSION RESTORE: Server'dan session kontrolü yap
-                socket.emit('reconnect-user', function(response) {
+                safeSocketEmit('reconnect-user', null, function(response) {
                     console.log('🔄 Session restore yanıtı:', response);
 
                     if (response && response.success) {
@@ -3248,9 +3249,14 @@
                     if (section === 'users') {
                         // Manuel olarak kullanıcıları server'dan çek
                         if (socketConnected) {
-                            socket.emit('get-users-by-team', function(fetchedUsers) {
-                                users = fetchedUsers;
-                                renderUsersList();
+                            safeSocketEmit('get-users-by-team', null, function(response) {
+                                if (response && response.success) {
+                                    users = response.users || [];
+                                    renderUsersList();
+                                } else {
+                                    toast('Kullanıcı listesi alınamadı!', true);
+                                    renderUsersList();
+                                }
                             });
                         } else {
                             renderUsersList();
@@ -3290,9 +3296,14 @@
                         return;
                     }
 
-                    socket.emit('get-characters', function(characters) {
-                        console.log('Karakterler yüklendi:', characters);
-                        ADMIN.renderGameCharacters(characters);
+                    safeSocketEmit('get-characters', null, function(response) {
+                        console.log('Karakterler yüklendi:', response);
+                        if (response && response.success) {
+                            ADMIN.renderGameCharacters(response.characters || []);
+                        } else {
+                            toast('Karakterler yüklenemedi!', true);
+                            ADMIN.renderGameCharacters([]);
+                        }
                     });
                 },
 
@@ -3400,12 +3411,14 @@
                         return;
                     }
 
-                    socket.emit('get-phases', function(response) {
-                        if (response.success) {
+                    safeSocketEmit('get-phases', null, function(response) {
+                        if (response && response.success) {
                             console.log('Fazlar yüklendi:', response.phases);
-                            ADMIN.renderPhases(response.phases);
+                            ADMIN.renderPhases(response.phases || []);
                         } else {
                             console.error('Faz yükleme hatası:', response.error);
+                            toast('Fazlar yüklenemedi!', true);
+                            ADMIN.renderPhases([]);
                         }
                     });
                 },
@@ -3580,8 +3593,8 @@
                     }
 
                     // Tüm takımları yükle ve dropdown'ı doldur
-                    socket.emit('admin-get-teams', function(res) {
-                        if (res.success) {
+                    safeSocketEmit('admin-get-teams', null, function(res) {
+                        if (res && res.success) {
                             var selector = document.getElementById('adminMessagesTeamSelector');
                             if (!selector) return;
 
@@ -3613,8 +3626,8 @@
                     }
 
                     // Takım bilgisini al
-                    socket.emit('admin-get-teams', function(res) {
-                        if (res.success) {
+                    safeSocketEmit('admin-get-teams', null, function(res) {
+                        if (res && res.success) {
                             var team = res.teams.find(function(t) { return t.id === teamId; });
                             if (team) {
                                 document.getElementById('adminSelectedTeamName').textContent = team.name;
@@ -3623,8 +3636,8 @@
                     });
 
                     // Admin mesajlarını yükle (bu takımla olan mesajlar)
-                    socket.emit('load-admin-messages', function(res) {
-                        if (res.success) {
+                    safeSocketEmit('load-admin-messages', null, function(res) {
+                        if (res && res.success) {
                             // Seçili takımın mesajlarını filtrele
                             var teamMessages = res.messages.filter(function(msg) {
                                 return msg.team_id === teamId || msg.target_team_id === teamId;
@@ -3637,7 +3650,7 @@
                             document.getElementById('adminMessagesViewerContainer').style.display = 'block';
                             document.getElementById('adminMessagesEmptyState').style.display = 'none';
                         } else {
-                            toast(res.error, true);
+                            toast(res.error || 'Mesajlar yüklenemedi!', true);
                         }
                     });
                 },
@@ -3820,15 +3833,15 @@
                     var selectedValue = selector.value;
 
                     // Takımları server'dan çek
-                    socket.emit('admin-get-teams', function(res) {
-                        if (res.success) {
+                    safeSocketEmit('admin-get-teams', null, function(res) {
+                        if (res && res.success) {
                             var html = '<option value="">Takım seçin...</option>';
                             res.teams.forEach(function(team) {
                                 html += `<option value="${team.id}" ${selectedValue === team.id ? 'selected' : ''}>${htmlEscape(team.name)}</option>`;
                             });
                             selector.innerHTML = html;
                         } else {
-                            toast(res.error, true);
+                            toast(res.error || 'Takımlar yüklenemedi!', true);
                         }
                     });
                 },
@@ -3855,8 +3868,8 @@
                     }
 
                     // Takım chat'ini yükle
-                    socket.emit('admin-load-team-chat', teamId, function(res) {
-                        if (res.success) {
+                    safeSocketEmit('admin-load-team-chat', teamId, function(res) {
+                        if (res && res.success) {
                             ADMIN.selectedChatTeamName = res.teamName;
                             document.getElementById('adminChatTeamName').textContent = res.teamName;
                             document.getElementById('adminChatMessageCount').textContent = res.totalCount + ' mesaj';
@@ -4399,13 +4412,13 @@
                         return;
                     }
 
-                    socket.emit('get-ip-logs', function(res) {
-                        if (res.success) {
+                    safeSocketEmit('get-ip-logs', null, function(res) {
+                        if (res && res.success) {
                             IP_LOGS.logs = res.logs;
                             IP_LOGS.render();
                             toast('Loglar yüklendi');
                         } else {
-                            toast(res.error, true);
+                            toast(res.error || 'Loglar yüklenemedi!', true);
                         }
                     });
                 },
@@ -4484,12 +4497,12 @@
                         return;
                     }
 
-                    socket.emit('clear-ip-logs', { ipAddress: ipAddress, action: action }, function(res) {
-                        if (res.success) {
+                    safeSocketEmit('clear-ip-logs', { ipAddress: ipAddress, action: action }, function(res) {
+                        if (res && res.success) {
                             toast('Log sıfırlandı: ' + res.deletedCount + ' kayıt silindi');
                             IP_LOGS.loadLogs();
                         } else {
-                            toast(res.error, true);
+                            toast(res.error || 'Log sıfırlanamadı!', true);
                         }
                     });
                 },
@@ -4504,12 +4517,12 @@
                         return;
                     }
 
-                    socket.emit('clear-ip-logs', {}, function(res) {
-                        if (res.success) {
+                    safeSocketEmit('clear-ip-logs', {}, function(res) {
+                        if (res && res.success) {
                             toast('Tüm loglar sıfırlandı: ' + res.deletedCount + ' kayıt silindi');
                             IP_LOGS.loadLogs();
                         } else {
-                            toast(res.error, true);
+                            toast(res.error || 'Loglar sıfırlanamadı!', true);
                         }
                     });
                 }
@@ -4525,13 +4538,13 @@
                         return;
                     }
 
-                    socket.emit('get-all-users', function(res) {
-                        if (res.success) {
+                    safeSocketEmit('get-all-users', null, function(res) {
+                        if (res && res.success) {
                             IP_USERS.users = res.users;
                             IP_USERS.render();
                             toast('Kullanıcılar yüklendi: ' + res.users.length + ' kayıt');
                         } else {
-                            toast(res.error, true);
+                            toast(res.error || 'Kullanıcılar yüklenemedi!', true);
                         }
                     });
                 },
@@ -4608,8 +4621,8 @@
                         return;
                     }
 
-                    socket.emit('delete-user', userId, function(res) {
-                        if (res.success) {
+                    safeSocketEmit('delete-user', userId, function(res) {
+                        if (res && res.success) {
                             toast('Kullanıcı silindi: ' + res.user.nickname + ' - Nickname artık kullanıma açık!');
 
                             // Listeden çıkar
@@ -5713,7 +5726,13 @@
                     }
 
                     // Takım listesini yükle
-                    socket.emit('get-teams', function(teams) {
+                    safeSocketEmit('get-teams', null, function(response) {
+                        if (!response || !response.success) {
+                            toast('Takımlar yüklenemedi!', true);
+                            return;
+                        }
+
+                        var teams = response.teams || [];
                         var html = '';
                         var now = Date.now();
 
@@ -5810,7 +5829,7 @@
                     }
 
                     // Socket'e gönder (varsayılan: görünür değil)
-                    socket.emit('add-character', {
+                    safeSocketEmit('add-character', {
                         name: name,
                         photoUrl: photoUrl || null,
                         description: description || null,
@@ -5819,7 +5838,7 @@
                         additionalInfo: additionalInfo || null,
                         visibleToTeams: false
                     }, function(response) {
-                        if (response.success) {
+                        if (response && response.success) {
                             toast('✅ Karakter başarıyla eklendi! Görünürlüğünü "Oyun Kontrolü" bölümünden ayarlayabilirsiniz.');
 
                             // Formu temizle
@@ -5840,8 +5859,13 @@
                 },
 
                 loadCharacters: function() {
-                    socket.emit('get-characters', function(characters) {
-                        CHARACTER.renderCharacters(characters);
+                    safeSocketEmit('get-characters', null, function(response) {
+                        if (response && response.success) {
+                            CHARACTER.renderCharacters(response.characters || []);
+                        } else {
+                            toast('Karakterler yüklenemedi!', true);
+                            CHARACTER.renderCharacters([]);
+                        }
                     });
                 },
 
@@ -5920,8 +5944,8 @@
                         return;
                     }
 
-                    socket.emit('delete-character', characterId, function(response) {
-                        if (response.success) {
+                    safeSocketEmit('delete-character', characterId, function(response) {
+                        if (response && response.success) {
                             toast('🗑️ Karakter silindi');
                             CHARACTER.loadCharacters();
                             ADMIN.loadGameCharacters(); // Oyun kontrolü listesini güncelle
@@ -5936,10 +5960,10 @@
                     document.getElementById('photoSelectorModal').style.display = 'flex';
 
                     // Yüklenmiş fotoğrafları getir
-                    socket.emit('get-uploaded-photos', function(response) {
+                    safeSocketEmit('get-uploaded-photos', null, function(response) {
                         const gallery = document.getElementById('photoGallery');
 
-                        if (!response.success || response.photos.length === 0) {
+                        if (!response || !response.success || !response.photos || response.photos.length === 0) {
                             gallery.innerHTML = `
                                 <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: #555;">
                                     <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.3;">📂</div>
@@ -5993,10 +6017,15 @@
 
                 loadAvailableCharacters: function() {
                     // Karakter listesini yükle
-                    socket.emit('get-characters-for-board', function(characters) {
-                        console.log('Karakterler yüklendi (Murder Board):', characters);
-                        MURDERBOARD.allCharacters = characters;
-                        MURDERBOARD.updateCharacterDropdown();
+                    safeSocketEmit('get-characters-for-board', null, function(response) {
+                        if (response && response.success) {
+                            console.log('Karakterler yüklendi (Murder Board):', response.characters);
+                            MURDERBOARD.allCharacters = response.characters || [];
+                            MURDERBOARD.updateCharacterDropdown();
+                        } else {
+                            toast('Karakterler yüklenemedi!', true);
+                            MURDERBOARD.allCharacters = [];
+                        }
                     });
                 },
 
@@ -6009,9 +6038,11 @@
 
                     // Takım adını göster (UUID değil, takım adı)
                     if (currentUser && currentUser.teamId) {
-                        socket.emit('get-team', currentUser.teamId, function(team) {
-                            if (team) {
-                                document.getElementById('mbTeamName').textContent = team.name;
+                        safeSocketEmit('get-team', currentUser.teamId, function(response) {
+                            if (response && response.success && response.team) {
+                                document.getElementById('mbTeamName').textContent = response.team.name;
+                            } else {
+                                document.getElementById('mbTeamName').textContent = 'Takım';
                             }
                         });
                     } else {
@@ -6750,8 +6781,8 @@
                 clearBoard: function() {
                     if (!confirm('Tüm murder board\'u temizlemek istediğinizden emin misiniz?')) return;
 
-                    socket.emit('clear-board', function(response) {
-                        if (response.success) {
+                    safeSocketEmit('clear-board', null, function(response) {
+                        if (response && response.success) {
                             toast('🗑️ Murder board temizlendi');
                             MURDERBOARD.loadBoard();
                         } else {
@@ -6812,7 +6843,7 @@
 
                 loadTeams: function() {
                     const self = this;
-                    socket.emit('admin-get-teams', function(res) {
+                    safeSocketEmit('admin-get-teams', null, function(res) {
                         const select = document.getElementById('adminBoardTeamSelect');
                         if (!select) {
                             console.error('adminBoardTeamSelect bulunamadı!');
@@ -6853,8 +6884,8 @@
                     document.getElementById('adminBoardEmptyStateMain').style.display = 'none';
 
                     // Seçili takımın bilgilerini göster
-                    socket.emit('admin-get-teams', function(res) {
-                        if (!res.success) return;
+                    safeSocketEmit('admin-get-teams', null, function(res) {
+                        if (!res || !res.success) return;
                         const team = res.teams.find(function(t) { return t.id === teamId; });
                         if (team) {
                             document.getElementById('adminBoardTeamName').textContent = team.name;
@@ -6870,9 +6901,15 @@
                     if (!this.selectedTeamId) return;
 
                     const self = this;
-                    socket.emit('get-team-board', this.selectedTeamId, function(data) {
-                        self.boardItems = data.items || [];
-                        self.connections = data.connections || [];
+                    safeSocketEmit('get-team-board', this.selectedTeamId, function(response) {
+                        if (response && response.success) {
+                            self.boardItems = response.items || [];
+                            self.connections = response.connections || [];
+                        } else {
+                            toast('Board yüklenemedi!', true);
+                            self.boardItems = [];
+                            self.connections = [];
+                        }
 
                         // Sayıları güncelle
                         document.getElementById('adminBoardItemCount').textContent = self.boardItems.length;
@@ -7137,8 +7174,8 @@
                 // Confirmation geçti, server'a istek gönder
                 toast('Oyun sıfırlanıyor, lütfen bekleyin...');
 
-                socket.emit('reset-game', function(response) {
-                    if (response.success) {
+                safeSocketEmit('reset-game', null, function(response) {
+                    if (response && response.success) {
                         GAME_RESET.hideConfirmModal();
                         toast('✅ Oyun başarıyla sıfırlandı! Sayfa yenileniyor...');
 
