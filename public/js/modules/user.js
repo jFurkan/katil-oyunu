@@ -13,16 +13,10 @@ export const USER = {
                         return;
                     }
 
-                    // Socket bağlantısı kontrolü
-                    if (!socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
-                        return;
-                    }
-
                     if (isProcessing) return;
                     isProcessing = true;
 
-                    socket.emit('register-user', nickname, function(res) {
+                    window.safeSocketEmit('register-user', nickname, function(res) {
                         isProcessing = false;
                         if (res.success) {
                             // GÜVENLÄ°K: localStorage'a kaydetme, sadece memory'de tut

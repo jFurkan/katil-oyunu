@@ -1919,6 +1919,69 @@
                 console.error('Socket bağlantı hatası:', err);
                 toast('Bağlantı hatası!', true);
             });
+
+            // ===== SOCKET EMIT GÜVENLİK KATMANI =====
+            // Timeout ve bağlantı kontrolü ile güvenli socket.emit wrapper
+            window.safeSocketEmit = function(eventName, data, callback, options) {
+                options = options || {};
+                var timeout = options.timeout || 10000; // Default 10 saniye
+                var showConnectionError = options.showConnectionError !== false; // Default true
+                var showTimeoutError = options.showTimeoutError !== false; // Default true
+
+                // 1. Bağlantı kontrolü
+                if (!socketConnected || !socket.connected) {
+                    if (showConnectionError) {
+                        toast('Bağlantı yok! Lütfen internet bağlantınızı kontrol edin.', true);
+                    }
+                    if (callback) {
+                        callback({ success: false, error: 'No connection' });
+                    }
+                    return false;
+                }
+
+                // 2. Callback yoksa boş fonksiyon ekle
+                if (typeof callback !== 'function') {
+                    callback = function() {};
+                }
+
+                // 3. Timeout mekanizması
+                var callbackCalled = false;
+                var timeoutId = setTimeout(function() {
+                    if (!callbackCalled) {
+                        callbackCalled = true;
+                        if (showTimeoutError) {
+                            toast('İstek zaman aşımına uğradı. Lütfen tekrar deneyin.', true);
+                        }
+                        console.warn('Socket emit timeout:', eventName);
+                        callback({ success: false, error: 'Timeout' });
+                    }
+                }, timeout);
+
+                // 4. Wrapped callback
+                var wrappedCallback = function(response) {
+                    if (!callbackCalled) {
+                        callbackCalled = true;
+                        clearTimeout(timeoutId);
+                        callback(response);
+                    }
+                };
+
+                // 5. Emit yap
+                try {
+                    socket.emit(eventName, data, wrappedCallback);
+                    return true;
+                } catch (error) {
+                    console.error('Socket emit error:', error);
+                    clearTimeout(timeoutId);
+                    if (!callbackCalled) {
+                        callbackCalled = true;
+                        toast('Bir hata oluştu!', true);
+                        callback({ success: false, error: 'Exception: ' + error.message });
+                    }
+                    return false;
+                }
+            };
+
             // GÜVENLİK: sessionStorage kullan (localStorage yerine) - tarayıcı kapatılınca temizlensin
             var notifications = JSON.parse(sessionStorage.getItem('notifications') || '[]');
             var generalClues = [];
@@ -1976,7 +2039,7 @@
                 if (isProcessing) return;
                 if (confirm(teamName + ' takımını silmek istiyor musunuz?')) {
                     isProcessing = true;
-                    socket.emit('delete-team', teamId, function(res) {
+                    safeSocketEmit('delete-team', teamId, function(res) {
                         isProcessing = false;
                         if (res.success) toast('Takım silindi.');
                         else toast(res.error, true);
@@ -1988,7 +2051,7 @@
                 if (isProcessing) return;
                 if (confirm(nickname + ' kullanıcısını silmek istiyor musunuz? Bu işlem geri alınamaz.')) {
                     isProcessing = true;
-                    socket.emit('delete-user', userId, function(res) {
+                    safeSocketEmit('delete-user', userId, function(res) {
                         isProcessing = false;
                         if (res.success) toast('Kullanıcı silindi.');
                         else toast(res.error, true);
@@ -2008,16 +2071,10 @@
                         return;
                     }
 
-                    // Socket bağlantısı kontrolü
-                    if (!socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
-                        return;
-                    }
-
                     if (isProcessing) return;
                     isProcessing = true;
 
-                    socket.emit('register-user', nickname, function(res) {
+                    safeSocketEmit('register-user', nickname, function(res) {
                         isProcessing = false;
                         if (res.success) {
                             // GÜVENLİK: localStorage'a kaydetme, sadece memory'de tut
@@ -2332,7 +2389,7 @@
                     if (isProcessing) return;
                     isProcessing = true;
 
-                    socket.emit('create-team', {
+                    safeSocketEmit('create-team', {
                         name: name,
                         password: password,
                         color: CUSTOMIZE.selectedColor,
@@ -2383,7 +2440,7 @@
                     if (isProcessing) return;
                     isProcessing = true;
 
-                    socket.emit('join-team', { teamId: selectedJoinId, password: password, userId: currentUser.userId }, function(res) {
+                    safeSocketEmit('join-team', { teamId: selectedJoinId, password: password, userId: currentUser.userId }, function(res) {
                         isProcessing = false;
                         if (res.success) {
                             // GÜVENLİK: localStorage yerine sadece memory'de tut
@@ -2434,17 +2491,12 @@
                 },
                 hidePassModal: function() { document.getElementById('passModal').classList.remove('show'); },
                 checkPass: function() {
-                    if (!socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
-                        return;
-                    }
-
                     var pass = document.getElementById('inpPass').value;
 
                     if (isProcessing) return;
                     isProcessing = true;
 
-                    socket.emit('admin-login', pass, function(res) {
+                    safeSocketEmit('admin-login', pass, function(res) {
                         isProcessing = false;
                         if (res.success) {
                             isAdmin = true; // Admin yetkisini set et
@@ -3288,12 +3340,6 @@
                 toggleGameCharacterVisibility: function(characterId, visible, checkboxElement) {
                     console.log('toggleGameCharacterVisibility çağrıldı:', characterId, visible);
 
-                    if (!socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
-                        console.error('Socket bağlantısı yok!');
-                        return;
-                    }
-
                     // Toggle görselini güncelle
                     const label = checkboxElement.parentElement;
                     const toggleBg = label.querySelector('.toggle-bg');
@@ -3311,7 +3357,7 @@
                         }
                     }
 
-                    socket.emit('toggle-character-visibility', {
+                    safeSocketEmit('toggle-character-visibility', {
                         characterId: characterId,
                         visible: visible
                     }, function(response) {
@@ -3941,7 +3987,7 @@
                     if (isProcessing) return;
                     isProcessing = true;
 
-                    socket.emit('start-game', { minutes: minutes, title: title }, function(res) {
+                    safeSocketEmit('start-game', { minutes: minutes, title: title }, function(res) {
                         isProcessing = false;
                         if (res.success) {
                             toast('Oyun başlatıldı!');
@@ -3955,15 +4001,10 @@
                 },
 
                 addTime: function(seconds) {
-                    if (!socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
-                        return;
-                    }
-
                     if (isProcessing) return;
                     isProcessing = true;
 
-                    socket.emit('add-time', seconds, function(res) {
+                    safeSocketEmit('add-time', seconds, function(res) {
                         isProcessing = false;
                         if (res.success) {
                             var mins = Math.floor(seconds / 60);
@@ -3975,16 +4016,11 @@
                 },
 
                 endGame: function() {
-                    if (!socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
-                        return;
-                    }
-
                     if (confirm('Oyunu bitirmek istediğinize emin misiniz?')) {
                         if (isProcessing) return;
                         isProcessing = true;
 
-                        socket.emit('end-game', function(res) {
+                        safeSocketEmit('end-game', null, function(res) {
                             isProcessing = false;
                             if (res.success) {
                                 toast('Oyun bitirildi!');
@@ -4284,7 +4320,7 @@
                         return;
                     }
 
-                    socket.emit('start-game-session', function(res) {
+                    safeSocketEmit('start-game-session', null, function(res) {
                         if (res.success) {
                             toast('✅ Oyun oturumu başlatıldı!');
                             console.log('Oyun oturumu ID:', res.sessionId);
@@ -4300,7 +4336,7 @@
                         return;
                     }
 
-                    socket.emit('end-game-session', function(res) {
+                    safeSocketEmit('end-game-session', null, function(res) {
                         if (res.success) {
                             toast('✅ Oyun bitti! Rapor gösteriliyor...');
                             GAME.showFinalReport(res.report);

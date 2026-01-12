@@ -266,12 +266,7 @@ export const IP_USERS = {
             return;
         }
 
-        if (!socketConnected) {
-            toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
-            return;
-        }
-
-        socket.emit('delete-user', userId, function(res) {
+        window.safeSocketEmit('delete-user', userId, function(res) {
             if (res.success) {
                 toast('Kullanıcı silindi: ' + res.user.nickname + ' - Nickname artık kullanıma açık!');
 

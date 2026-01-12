@@ -190,7 +190,7 @@ export const ADMIN = {
                         }
                     }
 
-                    socket.emit('toggle-character-visibility', {
+                    window.safeSocketEmit('toggle-character-visibility', {
                         characterId: characterId,
                         visible: visible
                     }, function(response) {
@@ -820,7 +820,7 @@ export const ADMIN = {
                     if (isProcessing) return;
                     isProcessing = true;
 
-                    socket.emit('start-game', { minutes: minutes, title: title }, function(res) {
+                    window.safeSocketEmit('start-game', { minutes: minutes, title: title }, function(res) {
                         isProcessing = false;
                         if (res.success) {
                             toast('Oyun başlatıldı!');
@@ -834,15 +834,10 @@ export const ADMIN = {
                 },
 
                 addTime: function(seconds) {
-                    if (!socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
-                        return;
-                    }
-
                     if (isProcessing) return;
                     isProcessing = true;
 
-                    socket.emit('add-time', seconds, function(res) {
+                    window.safeSocketEmit('add-time', seconds, function(res) {
                         isProcessing = false;
                         if (res.success) {
                             var mins = Math.floor(seconds / 60);
@@ -854,16 +849,11 @@ export const ADMIN = {
                 },
 
                 endGame: function() {
-                    if (!socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
-                        return;
-                    }
-
                     if (confirm('Oyunu bitirmek istediğinize emin misiniz?')) {
                         if (isProcessing) return;
                         isProcessing = true;
 
-                        socket.emit('end-game', function(res) {
+                        window.safeSocketEmit('end-game', null, function(res) {
                             isProcessing = false;
                             if (res.success) {
                                 toast('Oyun bitirildi!');
@@ -1163,7 +1153,7 @@ export const ADMIN = {
                         return;
                     }
 
-                    socket.emit('start-game-session', function(res) {
+                    window.safeSocketEmit('start-game-session', null, function(res) {
                         if (res.success) {
                             toast('âœ… Oyun oturumu başlatıldı!');
                             console.log('Oyun oturumu ID:', res.sessionId);
@@ -1179,7 +1169,7 @@ export const ADMIN = {
                         return;
                     }
 
-                    socket.emit('end-game-session', function(res) {
+                    window.safeSocketEmit('end-game-session', null, function(res) {
                         if (res.success) {
                             toast('âœ… Oyun bitti! Rapor gösteriliyor...');
                             GAME.showFinalReport(res.report);

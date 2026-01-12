@@ -20,7 +20,7 @@ export const CHARACTER = {
         }
 
         // Send to socket (default: not visible)
-        socket.emit('add-character', {
+        window.safeSocketEmit('add-character', {
             name: name,
             photoUrl: photoUrl || null,
             description: description || null,
@@ -139,7 +139,7 @@ export const CHARACTER = {
         const socket = window.socket;
         const toast = window.toast;
 
-        socket.emit('delete-character', characterId, (response) => {
+        window.safeSocketEmit('delete-character', characterId, (response) => {
             if (response.success) {
                 toast('🗑️ Karakter silindi');
                 this.loadCharacters();
