@@ -46,6 +46,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     console.log('🎉 All modules initialized successfully!');
+
+    // Verify module objects are available on window
+    console.log('🔍 Module Objects on window:');
+    console.log('  - window.ADMIN:', typeof window.ADMIN);
+    console.log('  - window.CHAT:', typeof window.CHAT);
+    console.log('  - window.CHARACTER:', typeof window.CHARACTER);
+    console.log('  - window.MURDERBOARD:', typeof window.MURDERBOARD);
+    console.log('  - window.POKE:', typeof window.POKE);
+    console.log('  - window.CUSTOMIZE:', typeof window.CUSTOMIZE);
+    console.log('  - window.ADMIN_BOARD:', typeof window.ADMIN_BOARD);
+    console.log('  - window.GAME_RESET:', typeof window.GAME_RESET);
 });
 
 // Export for global access if needed

@@ -1270,6 +1270,8 @@
         };
 
         console.log('✅ Socket and safeSocketEmit initialized');
+        console.log('🔍 Socket connected:', socket.connected);
+        console.log('🔍 Socket ID:', socket.id);
 
         // Import modular components
         // (THEME, NOTIFICATIONS, LEADERBOARD, NOTIFICATION now loaded from modules)
@@ -7058,6 +7060,18 @@
                 // O zamana kadar nickname sayfası gösterilsin (HTML'de zaten default aktif)
                 // showPage('pgNickname', false); - KALDIRILDI: Router zaten doğru sayfayı gösterecek
             };
+
+            // ========================================
+            // DEBUG: Verify all objects are initialized
+            // ========================================
+            console.log('🔍 IIFE Objects initialized:');
+            console.log('  - window.USER:', typeof window.USER);
+            console.log('  - window.GAME:', typeof window.GAME);
+            console.log('  - window.NOTIF:', typeof window.NOTIF);
+            console.log('  - window.currentUser:', window.currentUser);
+            console.log('  - window.isAdmin:', window.isAdmin);
+            console.log('  - window.teams:', window.teams?.length, 'teams');
+            console.log('  - window.users:', window.users?.length, 'users');
         })();
 
         // ARKA PLAN MÜZİĞİ KONTROLÜ
