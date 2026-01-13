@@ -1,10 +1,13 @@
 // Character Management Module
 // Admin interface for managing game characters
 
+// Get global functions
+const toast = window.toast;
+const escapeHtml = window.escapeHtml;
+
 export const CHARACTER = {
     addCharacter() {
         const socket = window.socket;
-        const toast = window.toast;
 
         const name = document.getElementById('charName').value.trim();
         const photoUrl = document.getElementById('charPhotoUrl').value.trim();
@@ -140,7 +143,6 @@ export const CHARACTER = {
         }
 
         const socket = window.socket;
-        const toast = window.toast;
 
         window.safeSocketEmit('delete-character', characterId, (response) => {
             if (response.success) {

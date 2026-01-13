@@ -1,6 +1,10 @@
 // Poke/Nudge System Module
 // Allows teams to "poke" other teams
 
+// Get global functions
+const toast = window.toast;
+const escapeHtml = window.escapeHtml;
+
 export const POKE = {
     lastPokeTime: {},
 

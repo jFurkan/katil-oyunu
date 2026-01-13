@@ -1,6 +1,11 @@
 // IP Management Module
 // Admin IP logs, user management, and photo administration
 
+// Get global functions
+const toast = window.toast;
+const escapeHtml = window.escapeHtml;
+const formatTime = window.formatTime;
+
 export const IP_SECTION = {
     currentTab: 'logs',
 

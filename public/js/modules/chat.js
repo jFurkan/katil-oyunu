@@ -1,6 +1,11 @@
 ﻿// Chat Module
 // Team chat functionality
 
+// Get global functions
+const toast = window.toast;
+const escapeHtml = window.escapeHtml;
+const formatTime = window.formatTime;
+
 export const CHAT = {
 
                 currentPage: 1,

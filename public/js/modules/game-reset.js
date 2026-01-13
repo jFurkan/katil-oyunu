@@ -1,6 +1,9 @@
 // Game Reset Module
 // Game reset functionality with confirmation
 
+// Get global functions
+const toast = window.toast;
+
 export const GAME_RESET = {
     showConfirmModal: function() {
         const modal = document.getElementById('resetConfirmModal');

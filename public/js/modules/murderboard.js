@@ -1,6 +1,10 @@
 ﻿// Murder Board Module
 // Investigation board with drag-drop, connections, and zoom functionality
 
+// Get global functions
+const toast = window.toast;
+const escapeHtml = window.escapeHtml;
+
 export const MURDERBOARD = {
 
                 connectionMode: false,

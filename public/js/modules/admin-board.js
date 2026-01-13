@@ -1,6 +1,10 @@
 // Admin Board Monitoring Module
 // Admin interface for viewing team murder boards
 
+// Get global functions
+const toast = window.toast;
+const escapeHtml = window.escapeHtml;
+
 export const ADMIN_BOARD = {
     selectedTeamId: null,
     boardItems: [],

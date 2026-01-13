@@ -1,6 +1,10 @@
 ﻿// Admin Panel Module
 // Admin controls for game management
 
+// Get global functions
+const toast = window.toast;
+const escapeHtml = window.escapeHtml;
+
 export const ADMIN = {
 
                 currentSection: 'game',

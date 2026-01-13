@@ -4,6 +4,11 @@
 // Module-level processing flag
 let isProcessing = false;
 
+// Get global functions
+const toast = window.toast;
+const updateCurrentUserDisplay = window.updateCurrentUserDisplay;
+const showPage = window.showPage;
+
 export const USER = {
 
                 cameraStream: null, // Aktif kamera stream'i
@@ -23,7 +28,7 @@ export const USER = {
                         isProcessing = false;
                         if (res.success) {
                             // GÜVENLÄ°K: localStorage'a kaydetme, sadece memory'de tut
-                            currentUser = {
+                            window.currentUser = {
                                 userId: res.userId,
                                 nickname: res.nickname,
                                 teamId: null,
@@ -75,8 +80,8 @@ export const USER = {
                     .then(function(data) {
                         if (data.success) {
                             console.log('âœ… Fotoğraf yüklendi:', data.photoUrl);
-                            if (currentUser) {
-                                currentUser.profilePhotoUrl = data.photoUrl;
+                            if (window.currentUser) {
+                                window.currentUser.profilePhotoUrl = data.photoUrl;
                             }
                             if (callback) callback(true);
                         } else {
@@ -221,7 +226,7 @@ export const USER = {
                 logout: function() {
                     if (confirm('Çıkış yapmak istediğinize emin misiniz?')) {
                         // Cleanup: Tüm timeout'ları temizle
-                        clearAllTimeouts();
+                        window.clearAllTimeouts();
 
                         // Fotoğraf verilerini temizle
                         this.selectedPhotoBlob = null;
@@ -230,14 +235,14 @@ export const USER = {
                         }
 
                         // GÜVENLÄ°K: Session'ı temizle
-                        currentUser = null;
-                        currentTeamId = null;
-                        isAdmin = false;
+                        window.currentUser = null;
+                        window.currentTeamId = null;
+                        window.isAdmin = false;
 
                         // Server'a logout isteği gönder (session'ı temizle)
                         window.safeSocketEmit('logout-user', null, function(response) {
                             // Nick giriş sayfasına yönlendir
-                            router.navigate('/');
+                            window.router.navigate('/');
                             updateCurrentUserDisplay();
                             toast('Çıkış yapıldı.');
                         });
