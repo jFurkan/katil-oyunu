@@ -1903,7 +1903,7 @@
 
                     if (response && response.success) {
                         // Admin yetkisini önce set et (routing için gerekli)
-                        window.isAdmin = response.window.isAdmin || false;
+                        window.isAdmin = response.isAdmin || false;
 
                         if (response.userId) {
                             // Normal kullanıcı restore et
@@ -1920,7 +1920,7 @@
                             }
 
                             console.log('✅ Session restore edildi:', response.nickname, '- Admin:', window.isAdmin, '- SessionID mevcut');
-                        } else if (response.window.isAdmin) {
+                        } else if (response.isAdmin) {
                             // Admin-only session (userId yok)
                             window.currentUser = null;
                             window.currentTeamId = null;
@@ -7143,7 +7143,7 @@
         });
 
         // Müzik Ayarları Sayfasını Aç (GLOBAL)
-        function openMusicSettings() {
+        window.openMusicSettings = function openMusicSettings() {
             // Mevcut sayfayı URL parametresi olarak gönder (en güvenilir yöntem)
             var currentPath = window.location.pathname + window.location.search + window.location.hash;
             var returnUrl = encodeURIComponent(currentPath);
@@ -7154,7 +7154,7 @@
 
         // Takımlar arası sohbet açılır/kapanır toggle
         let interTeamChatOpen = true; // Başlangıçta açık
-        function toggleInterTeamChat() {
+        window.toggleInterTeamChat = function toggleInterTeamChat() {
             const content = document.getElementById('interTeamChatContent');
             const icon = document.getElementById('interTeamChatToggleIcon');
 
