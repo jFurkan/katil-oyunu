@@ -468,10 +468,10 @@ export const PHOTO_ADMIN = {
 
         toast('Fotoğraf siliniyor...');
 
-        fetch('/api/admin/delete-user-photo', {
+        fetch('/api/admin/update-user-photo', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: userId }),
+            body: JSON.stringify({ userId: userId, action: 'delete' }),
             credentials: 'include'
         })
         .then(function(response) { return response.json(); })
