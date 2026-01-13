@@ -1230,14 +1230,50 @@
         // ========================================
 
         // Socket.IO bağlantısı - Cookie göndermesi için withCredentials gerekli
+        console.log('🔌 Attempting to connect socket.io...');
+
+        if (typeof io === 'undefined') {
+            console.error('❌ FATAL: io is not defined! Socket.io library failed to load.');
+            console.error('   Check if /socket.io/socket.io.js is accessible');
+            alert('HATA: Socket.io kütüphanesi yüklenemedi! Sayfayı yenileyin.');
+        } else {
+            console.log('✅ io() function is available');
+        }
+
         window.socket = io({
             withCredentials: true,  // Cookie gönder (session için kritik!)
-            transports: ['websocket'],  // WebSocket-only (polling kapalı, daha stabil)
-            path: '/socket.io'  // Default path
+            transports: ['websocket', 'polling'],  // Try websocket first, fallback to polling
+            path: '/socket.io',  // Default path
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionAttempts: 5
         });
         var socket = window.socket;
         var socketConnected = false; // Bağlantı durumu
         window.socketConnected = socketConnected;
+
+        // Log connection attempts and errors
+        socket.on('connect_error', (error) => {
+            console.error('❌ Socket connection error:', error.message);
+            console.error('   Error details:', error);
+        });
+
+        socket.on('connect_timeout', () => {
+            console.error('❌ Socket connection timeout');
+        });
+
+        socket.on('error', (error) => {
+            console.error('❌ Socket error:', error);
+        });
+
+        socket.on('reconnect_attempt', (attemptNumber) => {
+            console.log(`🔄 Socket reconnection attempt ${attemptNumber}...`);
+        });
+
+        socket.on('reconnect_failed', () => {
+            console.error('❌ Socket reconnection failed after all attempts');
+            alert('Sunucuya bağlanılamadı! Lütfen internet bağlantınızı kontrol edin.');
+        });
 
         // ========================================
         // SAFE SOCKET EMIT - Timeout & Error Handling
