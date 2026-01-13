@@ -1693,6 +1693,37 @@
             });
             var socket = window.socket;
             var socketConnected = false; // Bağlantı durumu
+
+            // ========================================
+            // SAFE SOCKET EMIT - Timeout & Error Handling
+            // ========================================
+            window.safeSocketEmit = function(eventName, data, callback, timeout = 10000) {
+                if (!socket.connected) {
+                    toast('Bağlantı yok! Lütfen bekleyin...', true);
+                    if (callback) callback({ success: false, error: 'No connection' });
+                    return;
+                }
+
+                let callbackCalled = false;
+                const wrappedCallback = (response) => {
+                    if (!callbackCalled) {
+                        callbackCalled = true;
+                        clearTimeout(timeoutId);
+                        if (callback) callback(response);
+                    }
+                };
+
+                const timeoutId = setTimeout(() => {
+                    if (!callbackCalled) {
+                        callbackCalled = true;
+                        toast('İstek zaman aşımına uğradı!', true);
+                        if (callback) callback({ success: false, error: 'Timeout' });
+                    }
+                }, timeout);
+
+                socket.emit(eventName, data, wrappedCallback);
+            };
+
             var teams = [];
             var users = [];
             var currentUser = null; // GÜVENLİK: localStorage yerine sadece memory'de tut
