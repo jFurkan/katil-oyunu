@@ -3274,6 +3274,34 @@ io.on('connection', async (socket) => {
         }
     });
 
+    // Get teams list (for poke feature and team selection)
+    socket.on('get-teams', async (callback) => {
+        if (typeof callback !== 'function') callback = () => {};
+        // GÜVENLİK: Kullanıcı kontrolü
+        if (!socket.data.userId) {
+            callback({ success: false, error: 'Önce giriş yapmalısınız!' });
+            return;
+        }
+
+        try {
+            const result = await pool.query(`
+                SELECT id, name, color, score, created_at
+                FROM teams
+                ORDER BY name ASC
+            `);
+
+            callback({
+                success: true,
+                teams: result.rows
+            });
+
+            console.log(`📋 Takımlar listesi yüklendi (user: ${socket.data.userId}): ${result.rows.length} takım`);
+        } catch (err) {
+            console.error('Takımlar listesi yükleme hatası:', err);
+            callback({ success: false, error: 'Takımlar yüklenemedi!' });
+        }
+    });
+
     // Takım dürtme (Poke) sistemi
     socket.on('poke-team', async (targetTeamId, callback) => {
         if (typeof callback !== 'function') callback = () => {};
