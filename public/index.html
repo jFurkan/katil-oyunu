@@ -1327,7 +1327,7 @@
                 this.updateUI();
 
                 // Eğer kullanıcı takım sayfasındaysa göster
-                if (currentUser && !isAdmin) {
+                if (window.currentUser && !window.isAdmin) {
                     document.getElementById('notificationCenterBtn').style.display = 'flex';
                 }
             },
@@ -1530,7 +1530,7 @@
                 }
 
                 // Eğer kullanıcı takım sayfasındaysa ve oyun başlamışsa göster
-                if (currentUser && !isAdmin && gameState.started) {
+                if (window.currentUser && !window.isAdmin && gameState.started) {
                     document.getElementById('liveLeaderboard').classList.remove('hidden');
                     if (!this.visible) {
                         this.toggle(); // İlk kez gösteriliyorsa visible yap
@@ -1553,7 +1553,7 @@
                         );
 
                         // Eğer kullanıcının takımı lider olduysa özel bildirim
-                        if (currentUser && currentUser.team_id === currentLeader.id) {
+                        if (window.currentUser && window.currentUser.team_id === currentLeader.id) {
                             toast('🎉 Tebrikler! Takımınız 1. sıraya yükseldi!');
                         }
                     }
@@ -1729,15 +1729,21 @@
 
             var teams = [];
             var users = [];
-            var currentUser = null; // GÜVENLİK: localStorage yerine sadece memory'de tut
+            var window.currentUser = null; // GÜVENLİK: localStorage yerine sadece memory'de tut
             var credits = [
                 { id: 'credit_1', name: 'Furkan', content: 'Oyunun tasarımı ve geliştirmesi' },
                 { id: 'credit_2', name: 'Claude', content: 'Kodlama ve teknik destek' }
             ];
-            var currentTeamId = null; // GÜVENLİK: localStorage yerine server'dan al
+            var window.currentTeamId = null; // GÜVENLİK: localStorage yerine server'dan al
             var selectedJoinId = null;
             var isProcessing = false;
-            var isAdmin = false; // Admin panel erişimi için
+            var window.isAdmin = false; // Admin panel erişimi için
+
+            // Make global variables accessible to modules
+            window.window.currentUser = window.currentUser;
+            window.window.currentTeamId = window.currentTeamId;
+            window.window.isAdmin = window.isAdmin;
+            window.isProcessing = isProcessing;
 
             // Navigation history - geri butonları için
             var pageHistory = [];
@@ -1763,7 +1769,7 @@
 
             // Route 2: Lobby - requires authentication
             router.register('/lobby', () => {
-                if (!currentUser) {
+                if (!window.currentUser) {
                     router.navigate('/');
                     return;
                 }
@@ -1780,11 +1786,11 @@
 
             // Route 3: Team page - requires authentication and team ID
             router.register('/team/:teamId', ({ teamId }) => {
-                if (!currentUser) {
+                if (!window.currentUser) {
                     router.navigate('/');
                     return;
                 }
-                currentTeamId = teamId;
+                window.window.currentTeamId = teamId;
 
                 // Takım bilgilerini al ve sayfayı render et
                 safeSocketEmit('get-team', teamId, (response) => {
@@ -1801,14 +1807,14 @@
                 return {
                     cleanup: () => {
                         // Cleanup: Takım ID'sini temizle (sadece başka bir route'a gidiyorsa)
-                        // currentTeamId = null; // exitTeam fonksiyonu bunu yapıyor
+                        // window.currentTeamId = null; // exitTeam fonksiyonu bunu yapıyor
                     }
                 };
             });
 
             // Route 4: Admin panel main page
             router.register('/admin', () => {
-                if (!isAdmin) {
+                if (!window.isAdmin) {
                     router.navigate('/');
                     toast('Admin yetkisi gereklidir', true);
                     return;
@@ -1830,7 +1836,7 @@
 
             // Route 5: Admin panel sections
             router.register('/admin/:section', ({ section }) => {
-                if (!isAdmin) {
+                if (!window.isAdmin) {
                     router.navigate('/');
                     toast('Admin yetkisi gereklidir', true);
                     return;
@@ -1864,7 +1870,7 @@
 
             // Route 7: Notifications - requires authentication
             router.register('/notifications', () => {
-                if (!currentUser) {
+                if (!window.currentUser) {
                     router.navigate('/');
                     return;
                 }
@@ -1892,11 +1898,11 @@
 
                     if (response && response.success) {
                         // Admin yetkisini önce set et (routing için gerekli)
-                        isAdmin = response.isAdmin || false;
+                        window.window.isAdmin = response.window.isAdmin || false;
 
                         if (response.userId) {
                             // Normal kullanıcı restore et
-                            currentUser = {
+                            window.window.currentUser = {
                                 userId: response.userId,
                                 nickname: response.nickname,
                                 teamId: response.teamId || null
@@ -1905,23 +1911,23 @@
 
                             // Takım ID'sini restore et
                             if (response.teamId) {
-                                currentTeamId = response.teamId;
+                                window.window.currentTeamId = response.teamId;
                             }
 
-                            console.log('✅ Session restore edildi:', response.nickname, '- Admin:', isAdmin, '- SessionID mevcut');
-                        } else if (response.isAdmin) {
+                            console.log('✅ Session restore edildi:', response.nickname, '- Admin:', window.isAdmin, '- SessionID mevcut');
+                        } else if (response.window.isAdmin) {
                             // Admin-only session (userId yok)
-                            currentUser = null;
-                            currentTeamId = null;
+                            window.window.currentUser = null;
+                            window.window.currentTeamId = null;
                             updateCurrentUserDisplay();
 
                             console.log('✅ Admin session restore edildi - SessionID mevcut');
                         }
                     } else {
                         // Session yok veya süresi dolmuş
-                        currentUser = null;
-                        currentTeamId = null;
-                        isAdmin = false;
+                        window.window.currentUser = null;
+                        window.window.currentTeamId = null;
+                        window.window.isAdmin = false;
                         updateCurrentUserDisplay();
                         console.log('⚠️  Session bulunamadı veya süresi dolmuş - Giriş yapmanız gerekebilir');
                     }
@@ -1930,15 +1936,15 @@
                     var currentPath = window.location.pathname;
 
                     // Ana sayfadaysa ve session varsa, uygun sayfaya yönlendir
-                    if ((currentPath === '/' || currentPath === '') && currentUser) {
-                        if (currentTeamId) {
-                            router.navigate('/team/' + currentTeamId, false);
+                    if ((currentPath === '/' || currentPath === '') && window.currentUser) {
+                        if (window.currentTeamId) {
+                            router.navigate('/team/' + window.currentTeamId, false);
                         } else {
                             router.navigate('/lobby', false);
                         }
                     } else {
                         // Mevcut URL'i handle et (route handler'lar auth check yapacak)
-                        // ÖNEMLİ: isAdmin zaten yukarıda set edildi, router artık bunu görecek
+                        // ÖNEMLİ: window.isAdmin zaten yukarıda set edildi, router artık bunu görecek
                         router.handleRoute(currentPath);
                     }
                 });
@@ -2113,7 +2119,7 @@
                         isProcessing = false;
                         if (res.success) {
                             // GÜVENLİK: localStorage'a kaydetme, sadece memory'de tut
-                            currentUser = {
+                            window.window.currentUser = {
                                 userId: res.userId,
                                 nickname: res.nickname,
                                 teamId: null,
@@ -2165,8 +2171,8 @@
                     .then(function(data) {
                         if (data.success) {
                             console.log('✅ Fotoğraf yüklendi:', data.photoUrl);
-                            if (currentUser) {
-                                currentUser.profilePhotoUrl = data.photoUrl;
+                            if (window.currentUser) {
+                                window.currentUser.profilePhotoUrl = data.photoUrl;
                             }
                             if (callback) callback(true);
                         } else {
@@ -2320,9 +2326,9 @@
                         }
 
                         // GÜVENLİK: Session'ı temizle
-                        currentUser = null;
-                        currentTeamId = null;
-                        isAdmin = false;
+                        window.window.currentUser = null;
+                        window.window.currentTeamId = null;
+                        window.window.isAdmin = false;
 
                         // Server'a logout isteği gönder (session'ı temizle)
                         safeSocketEmit('logout-user', null, function() {
@@ -2342,9 +2348,9 @@
                         // Cleanup: Tüm timeout'ları temizle
                         clearAllTimeouts();
 
-                        currentUser = null;
-                        currentTeamId = null;
-                        isAdmin = false;
+                        window.window.currentUser = null;
+                        window.window.currentTeamId = null;
+                        window.window.isAdmin = false;
 
                         // Server'a logout isteği gönder (session'ı temizle)
                         safeSocketEmit('logout-user', null, function() {
@@ -2406,7 +2412,7 @@
                 },
                 
                 createTeam: function() {
-                    if (!currentUser) {
+                    if (!window.currentUser) {
                         toast('Önce nick girmeniz gerekiyor!', true);
                         return;
                     }
@@ -2428,13 +2434,13 @@
                         name: name,
                         password: password,
                         color: CUSTOMIZE.selectedColor,
-                        userId: currentUser.userId
+                        userId: window.currentUser.userId
                     }, function(res) {
                         isProcessing = false;
                         if (res.success) {
                             // GÜVENLİK: localStorage yerine sadece memory'de tut
-                            currentTeamId = res.team.id;
-                            if (currentUser) currentUser.teamId = res.team.id;
+                            window.window.currentTeamId = res.team.id;
+                            if (window.currentUser) window.currentUser.teamId = res.team.id;
                             GAME.hideCreateForm();
                             document.getElementById('inpNewTeam').value = '';
                             document.getElementById('inpNewTeamPassword').value = '';
@@ -2458,7 +2464,7 @@
                     document.getElementById('inpJoinPassword').focus();
                 },
                 joinTeam: function() {
-                    if (!currentUser) {
+                    if (!window.currentUser) {
                         toast('Önce nick girmeniz gerekiyor!', true);
                         return;
                     }
@@ -2475,12 +2481,12 @@
                     if (isProcessing) return;
                     isProcessing = true;
 
-                    safeSocketEmit('join-team', { teamId: selectedJoinId, password: password, userId: currentUser.userId }, function(res) {
+                    safeSocketEmit('join-team', { teamId: selectedJoinId, password: password, userId: window.currentUser.userId }, function(res) {
                         isProcessing = false;
                         if (res.success) {
                             // GÜVENLİK: localStorage yerine sadece memory'de tut
-                            currentTeamId = selectedJoinId;
-                            if (currentUser) currentUser.teamId = selectedJoinId;
+                            window.window.currentTeamId = selectedJoinId;
+                            if (window.currentUser) window.currentUser.teamId = selectedJoinId;
                             GAME.hideJoinForm();
                             document.getElementById('inpJoinPassword').value = '';
 
@@ -2506,7 +2512,7 @@
                     if (isProcessing) return;
                     isProcessing = true;
 
-                    safeSocketEmit('add-clue', { teamId: currentTeamId, clue: txt }, function(res) {
+                    safeSocketEmit('add-clue', { teamId: window.currentTeamId, clue: txt }, function(res) {
                         isProcessing = false;
                         if (res.success) { inp.value = ''; toast('İpucu iletildi'); }
                         else { toast(res.error, true); }
@@ -2514,12 +2520,12 @@
                 },
 
                 exitTeam: function() {
-                    currentTeamId = null;
+                    window.window.currentTeamId = null;
                     router.navigate('/lobby');
                 },
                 exitAdmin: function() {
                     // Admin panelinden çıkış - kullanıcı varsa takım seçim ekranına, yoksa nickname ekranına
-                    if (currentUser) {
+                    if (window.currentUser) {
                         router.navigate('/lobby');
                     } else {
                         router.navigate('/');
@@ -2535,7 +2541,7 @@
                     safeSocketEmit('admin-login', pass, function(res) {
                         isProcessing = false;
                         if (res.success) {
-                            isAdmin = true; // Admin yetkisini set et
+                            window.window.isAdmin = true; // Admin yetkisini set et
                             GAME.hidePassModal();
 
                             // ÖNCE sayfayı değiştir
@@ -2549,7 +2555,7 @@
                 },
                 goLobby: function() {
                     // UX İYİLEŞTİRME: Geri dön - kullanıcı varsa takım seçim ekranına, yoksa nickname ekranına
-                    if (currentUser) {
+                    if (window.currentUser) {
                         // Kullanıcı giriş yapmış - takım seçim ekranına git (logout yapma)
                         router.navigate('/lobby');
                         updateCurrentUserDisplay();
@@ -2565,9 +2571,9 @@
                         // Cleanup: Tüm timeout'ları temizle
                         clearAllTimeouts();
 
-                        currentUser = null;
-                        currentTeamId = null;
-                        isAdmin = false;
+                        window.window.currentUser = null;
+                        window.window.currentTeamId = null;
+                        window.window.isAdmin = false;
 
                         // Server'a logout isteği gönder (session'ı temizle)
                         safeSocketEmit('logout-user', null, function() {
@@ -2844,9 +2850,9 @@
                 // Mevcut takımları güncelle
                 updateAvailableTeams: function(teams) {
                     // Kendi takımını hariç tut
-                    if (currentUser && currentUser.teamId) {
+                    if (window.currentUser && window.currentUser.teamId) {
                         CHAT.availableTeams = teams.filter(function(team) {
-                            return team.id !== currentUser.teamId;
+                            return team.id !== window.currentUser.teamId;
                         });
                     } else {
                         CHAT.availableTeams = teams;
@@ -2947,7 +2953,7 @@
                     var html = '';
                     sortedMessages.forEach(function(msg) {
                         var time = new Date(msg.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-                        var isOwnMessage = currentUser && msg.user_id === currentUser.userId;
+                        var isOwnMessage = window.currentUser && msg.user_id === window.currentUser.userId;
 
                         // Hedef takım etiketi
                         var targetLabel = '';
@@ -3075,7 +3081,7 @@
                         }
 
                         var time = new Date(message.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-                        var isOwnMessage = currentUser && message.user_id === currentUser.userId;
+                        var isOwnMessage = window.currentUser && message.user_id === window.currentUser.userId;
 
                         // Hedef takım etiketi
                         var targetLabel = '';
@@ -5285,8 +5291,8 @@
                 if (document.getElementById('pgScoreboard').classList.contains('active')) renderScoreboard();
                 if (document.getElementById('joinForm').style.display === 'block') renderJoinList();
 
-                if (currentTeamId) {
-                    var myTeam = teams.find(t => t.id === currentTeamId);
+                if (window.currentTeamId) {
+                    var myTeam = teams.find(t => t.id === window.currentTeamId);
                     if (myTeam) renderTeamPage(myTeam);
                 }
             });
@@ -5303,8 +5309,8 @@
             });
 
             socket.on('team-deleted', function(id) {
-                if (currentTeamId === id) {
-                    currentTeamId = null;
+                if (window.currentTeamId === id) {
+                    window.window.currentTeamId = null;
                     router.navigate('/lobby');
                     toast('Takım silindi', true);
                 }
@@ -5314,7 +5320,7 @@
                 // Admin panelindeyse atma
                 var isInAdminPanel = document.getElementById('pgAdmin').classList.contains('active');
                 if (!isInAdminPanel) {
-                    currentTeamId = null;
+                    window.window.currentTeamId = null;
                     router.navigate('/lobby');
                 }
             });
@@ -5497,7 +5503,7 @@
             // Yeni admin mesajı (admin'e gönderilen özel mesaj)
             socket.on('new-admin-message', function(message) {
                 // Bildirim göster
-                if (currentUser && currentUser.isAdmin) {
+                if (window.currentUser && window.currentUser.window.isAdmin) {
                     toast(`📩 ${message.team_name} takımından yeni mesaj!`);
                 }
 
@@ -5618,7 +5624,7 @@
             socket.on('phases-update', function(phases) {
                 console.log('Faz listesi güncellendi:', phases);
                 // Eğer admin ve oyun kontrolü bölümündeyse listeyi güncelle
-                if (isAdmin &&
+                if (window.isAdmin &&
                     document.getElementById('pgAdmin').classList.contains('active') &&
                     document.getElementById('adminSectionGame').style.display !== 'none') {
                     ADMIN.renderPhases(phases);
@@ -5631,9 +5637,9 @@
                 clearAllTimeouts();
 
                 // GÜVENLİK: Session temizliği
-                currentUser = null;
-                currentTeamId = null;
-                isAdmin = false;
+                window.window.currentUser = null;
+                window.window.currentTeamId = null;
+                window.window.isAdmin = false;
 
                 // Nick giriş sayfasına yönlendir
                 router.navigate('/');
@@ -5754,7 +5760,7 @@
 
                 // Modal göster
                 showPokeModal: function() {
-                    if (!currentUser || !currentTeamId) {
+                    if (!window.currentUser || !window.currentTeamId) {
                         toast('Dürtme özelliğini kullanmak için bir takıma giriş yapmalısınız!', true);
                         return;
                     }
@@ -5772,7 +5778,7 @@
 
                         teams.forEach(function(team) {
                             // Kendi takımını gösterme
-                            if (team.id === currentTeamId) return;
+                            if (team.id === window.currentTeamId) return;
 
                             // Rate limiting kontrolü
                             var lastPoke = POKE.lastPokeTime[team.id] || 0;
@@ -6071,8 +6077,8 @@
                     MURDERBOARD.loadBoard();
 
                     // Takım adını göster (UUID değil, takım adı)
-                    if (currentUser && currentUser.teamId) {
-                        safeSocketEmit('get-team', currentUser.teamId, function(response) {
+                    if (window.currentUser && window.currentUser.teamId) {
+                        safeSocketEmit('get-team', window.currentUser.teamId, function(response) {
                             if (response && response.success && response.team) {
                                 document.getElementById('mbTeamName').textContent = response.team.name;
                             } else {
@@ -6208,7 +6214,7 @@
                 },
 
                 loadBoard: function() {
-                    if (!currentUser || !currentUser.teamId) return;
+                    if (!window.currentUser || !window.currentUser.teamId) return;
 
                     safeSocketEmit('get-board-items', null, function(data) {
                         MURDERBOARD.boardItems = data.items || [];
@@ -7094,8 +7100,8 @@
             // Init
             window.onload = function() {
                 // UX İYİLEŞTİRME: Her zaman temiz bir başlangıç
-                currentUser = null;
-                currentTeamId = null;
+                window.window.currentUser = null;
+                window.window.currentTeamId = null;
                 pageHistory = [];
 
                 NOTIF.updateBadge(); // Bildirim badge'ini güncelle
