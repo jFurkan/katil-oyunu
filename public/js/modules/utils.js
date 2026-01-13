@@ -72,4 +72,6 @@ if (typeof window !== 'undefined') {
     window.formatDate = formatDate;
     window.escapeHtml = escapeHtml;
     window.htmlEscape = htmlEscape;
+    window.trackTimeout = trackTimeout;
+    window.clearAllTimeouts = clearAllTimeouts;
 }
