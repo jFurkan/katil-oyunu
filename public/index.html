@@ -5325,12 +5325,7 @@
                 }
             });
 
-            // Oyun Bitti - Final Raporu
-            socket.on('game-ended', function(report) {
-                console.log('Oyun bitti, final raporu alındı:', report);
-                toast('🏁 Oyun bitti! Rapor gösteriliyor...');
-                GAME.showFinalReport(report);
-            });
+            // NOTE: game-ended handler moved to line ~5584 to avoid duplicate registration
 
             // Bildirim Eventi
             socket.on('notification', function(data) {
