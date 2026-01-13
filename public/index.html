@@ -1225,6 +1225,52 @@
     <!-- Bildirim Sesi -->
 
     <script>
+        // ========================================
+        // CRITICAL: Socket & safeSocketEmit MUST be defined FIRST
+        // ========================================
+
+        // Socket.IO bağlantısı - Cookie göndermesi için withCredentials gerekli
+        window.socket = io({
+            withCredentials: true,  // Cookie gönder (session için kritik!)
+            transports: ['websocket'],  // WebSocket-only (polling kapalı, daha stabil)
+            path: '/socket.io'  // Default path
+        });
+        var socket = window.socket;
+        var socketConnected = false; // Bağlantı durumu
+        window.socketConnected = socketConnected;
+
+        // ========================================
+        // SAFE SOCKET EMIT - Timeout & Error Handling
+        // ========================================
+        window.safeSocketEmit = function(eventName, data, callback, timeout = 10000) {
+            if (!socket.connected) {
+                window.toast('Bağlantı yok! Lütfen bekleyin...', true);
+                if (callback) callback({ success: false, error: 'No connection' });
+                return;
+            }
+
+            let callbackCalled = false;
+            const wrappedCallback = (response) => {
+                if (!callbackCalled) {
+                    callbackCalled = true;
+                    clearTimeout(timeoutId);
+                    if (callback) callback(response);
+                }
+            };
+
+            const timeoutId = setTimeout(() => {
+                if (!callbackCalled) {
+                    callbackCalled = true;
+                    window.toast('İstek zaman aşımına uğradı!', true);
+                    if (callback) callback({ success: false, error: 'Timeout' });
+                }
+            }, timeout);
+
+            socket.emit(eventName, data, wrappedCallback);
+        };
+
+        console.log('✅ Socket and safeSocketEmit initialized');
+
         // Import modular components
         // (THEME, NOTIFICATIONS, LEADERBOARD, NOTIFICATION now loaded from modules)
 
@@ -1682,47 +1728,8 @@
         });
 
         (function() {
-            // Socket.IO bağlantısı - Cookie göndermesi için withCredentials gerekli
-            window.socket = io({
-                withCredentials: true,  // Cookie gönder (session için kritik!)
-                transports: ['websocket'],  // WebSocket-only (polling kapalı, daha stabil)
-                path: '/socket.io'  // Default path
-            });
+            // Socket and safeSocketEmit are now defined globally at the top of script
             var socket = window.socket;
-            var socketConnected = false; // Bağlantı durumu
-            window.socketConnected = socketConnected;
-
-            // ========================================
-            // SAFE SOCKET EMIT - Timeout & Error Handling
-            // ========================================
-            window.safeSocketEmit = function(eventName, data, callback, timeout = 10000) {
-                if (!socket.connected) {
-                    toast('Bağlantı yok! Lütfen bekleyin...', true);
-                    if (callback) callback({ success: false, error: 'No connection' });
-                    return;
-                }
-
-                let callbackCalled = false;
-                const wrappedCallback = (response) => {
-                    if (!callbackCalled) {
-                        callbackCalled = true;
-                        clearTimeout(timeoutId);
-                        if (callback) callback(response);
-                    }
-                };
-
-                const timeoutId = setTimeout(() => {
-                    if (!callbackCalled) {
-                        callbackCalled = true;
-                        toast('İstek zaman aşımına uğradı!', true);
-                        if (callback) callback({ success: false, error: 'Timeout' });
-                    }
-                }, timeout);
-
-                socket.emit(eventName, data, wrappedCallback);
-            };
-
-            // Local reference for inline code convenience
             var safeSocketEmit = window.safeSocketEmit;
 
             var teams = [];
@@ -1964,67 +1971,7 @@
                 toast('Bağlantı hatası!', true);
             });
 
-            // ===== SOCKET EMIT GÜVENLİK KATMANI =====
-            // Timeout ve bağlantı kontrolü ile güvenli socket.emit wrapper
-            window.safeSocketEmit = function(eventName, data, callback, options) {
-                options = options || {};
-                var timeout = options.timeout || 10000; // Default 10 saniye
-                var showConnectionError = options.showConnectionError !== false; // Default true
-                var showTimeoutError = options.showTimeoutError !== false; // Default true
-
-                // 1. Bağlantı kontrolü
-                if (!socketConnected || !socket.connected) {
-                    if (showConnectionError) {
-                        toast('Bağlantı yok! Lütfen internet bağlantınızı kontrol edin.', true);
-                    }
-                    if (callback) {
-                        callback({ success: false, error: 'No connection' });
-                    }
-                    return false;
-                }
-
-                // 2. Callback yoksa boş fonksiyon ekle
-                if (typeof callback !== 'function') {
-                    callback = function() {};
-                }
-
-                // 3. Timeout mekanizması
-                var callbackCalled = false;
-                var timeoutId = setTimeout(function() {
-                    if (!callbackCalled) {
-                        callbackCalled = true;
-                        if (showTimeoutError) {
-                            toast('İstek zaman aşımına uğradı. Lütfen tekrar deneyin.', true);
-                        }
-                        console.warn('Socket emit timeout:', eventName);
-                        callback({ success: false, error: 'Timeout' });
-                    }
-                }, timeout);
-
-                // 4. Wrapped callback
-                var wrappedCallback = function(response) {
-                    if (!callbackCalled) {
-                        callbackCalled = true;
-                        clearTimeout(timeoutId);
-                        callback(response);
-                    }
-                };
-
-                // 5. Emit yap
-                try {
-                    socket.emit(eventName, data, wrappedCallback);
-                    return true;
-                } catch (error) {
-                    console.error('Socket emit error:', error);
-                    clearTimeout(timeoutId);
-                    if (!callbackCalled) {
-                        callbackCalled = true;
-                        toast('Bir hata oluştu!', true);
-                        callback({ success: false, error: 'Exception: ' + error.message });
-                    }
-                    return false;
-                }
-            };
+            // safeSocketEmit is now defined globally at the top of script (removed duplicate)
 
             // GÜVENLİK: sessionStorage kullan (localStorage yerine) - tarayıcı kapatılınca temizlensin
             var notifications = JSON.parse(sessionStorage.getItem('notifications') || '[]');
