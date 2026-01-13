@@ -1,6 +1,9 @@
 ﻿// User Module
 // User registration, profile photo, and authentication
 
+// Module-level processing flag
+let isProcessing = false;
+
 export const USER = {
 
                 cameraStream: null, // Aktif kamera stream'i
