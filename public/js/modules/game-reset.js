@@ -2,7 +2,6 @@
 // Game reset functionality with confirmation
 
 // Get global functions
-const toast = window.toast;
 
 export const GAME_RESET = {
     showConfirmModal: function() {
@@ -33,25 +32,25 @@ export const GAME_RESET = {
         const confirmText = input.value.trim().toUpperCase();
 
         if (confirmText !== 'SIFIRLA') {
-            toast('Onaylamak için "SIFIRLA" yazmalısınız!', true);
+            window.toast('Onaylamak için "SIFIRLA" yazmalısınız!', true);
             input.focus();
             return;
         }
 
         // Confirmation geçti, server'a istek gönder
-        toast('Oyun sıfırlanıyor, lütfen bekleyin...');
+        window.toast('Oyun sıfırlanıyor, lütfen bekleyin...');
 
         window.safeSocketEmit('reset-game', null, function(response) {
             if (response && response.success) {
                 GAME_RESET.hideConfirmModal();
-                toast('✅ Oyun başarıyla sıfırlandı! Sayfa yenileniyor...');
+                window.toast('✅ Oyun başarıyla sıfırlandı! Sayfa yenileniyor...');
 
                 // 2 saniye sonra sayfayı yenile
                 setTimeout(function() {
                     window.location.reload();
                 }, 2000);
             } else {
-                toast(response.error || 'Sıfırlama başarısız!', true);
+                window.toast(response.error || 'Sıfırlama başarısız!', true);
             }
         });
     }

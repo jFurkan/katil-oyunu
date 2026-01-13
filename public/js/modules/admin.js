@@ -2,8 +2,6 @@
 // Admin controls for game management
 
 // Get global functions
-const toast = window.toast;
-const escapeHtml = window.escapeHtml;
 
 export const ADMIN = {
 
@@ -159,9 +157,9 @@ export const ADMIN = {
                                 `}
 
                                 <div style="flex: 1; min-width: 0;">
-                                    <div style="color: #4dd4d4; font-weight: 600; font-size: 14px;">${escapeHtml(char.name)}</div>
+                                    <div style="color: #4dd4d4; font-weight: 600; font-size: 14px;">${window.escapeHtml(char.name)}</div>
                                     <div style="color: #666; font-size: 11px; margin-top: 2px;">
-                                        ${char.age ? char.age + ' yaş' : ''} ${char.occupation ? ' â€¢ ' + escapeHtml(char.occupation) : ''}
+                                        ${char.age ? char.age + ' yaş' : ''} ${char.occupation ? ' â€¢ ' + window.escapeHtml(char.occupation) : ''}
                                     </div>
                                 </div>
 
@@ -181,7 +179,7 @@ export const ADMIN = {
                     console.log('toggleGameCharacterVisibility çağrıldı:', characterId, visible);
 
                     if (!window.socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        window.toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         console.error('Socket bağlantısı yok!');
                         return;
                     }
@@ -209,7 +207,7 @@ export const ADMIN = {
                     }, function(response) {
                         console.log('Toggle response:', response);
                         if (response.success) {
-                            toast(visible ? 'ğŸ‘ï¸ Karakter açıldı - Takımlar görebilir' : 'ğŸ”’ Karakter kapatıldı');
+                            window.toast(visible ? 'ğŸ‘ï¸ Karakter açıldı - Takımlar görebilir' : 'ğŸ”’ Karakter kapatıldı');
                         } else {
                             // Hata varsa toggle'ı geri al
                             checkboxElement.checked = !visible;
@@ -224,7 +222,7 @@ export const ADMIN = {
                                     toggleBtn.style.left = '4px';
                                 }
                             }
-                            toast(response.error || 'İşlem başarısız!', true);
+                            window.toast(response.error || 'İşlem başarısız!', true);
                             ADMIN.loadGameCharacters(); // Hata varsa listeyi yenile
                         }
                     });
@@ -278,7 +276,7 @@ export const ADMIN = {
                             <div style="padding: 15px; background: ${isActive ? '#0d2818' : '#0a0a0a'}; border: 1px solid ${isActive ? '#1a5d1a' : '#333'}; border-radius: 8px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                     <div style="font-weight: 600; color: ${isActive ? '#4dd44d' : '#4dd4d4'}; font-size: 14px;">
-                                        ${isActive ? 'ğŸŸ¢ ' : ''}${escapeHtml(phase.title)}
+                                        ${isActive ? 'ğŸŸ¢ ' : ''}${window.escapeHtml(phase.title)}
                                     </div>
                                     <div style="font-size: 11px; color: #666;">
                                         ${phase.durationMinutes} dakika
@@ -315,7 +313,7 @@ export const ADMIN = {
                                     ${phase.leadingTeamName ? `
                                         <div style="margin-top: 10px; padding: 8px; background: #0d0d0d; border-radius: 6px; text-align: center; font-size: 11px;">
                                             <span style="color: #666;">Lider Takım:</span>
-                                            <span style="color: #d4af37; font-weight: 600;">${escapeHtml(phase.leadingTeamName)}</span>
+                                            <span style="color: #d4af37; font-weight: 600;">${window.escapeHtml(phase.leadingTeamName)}</span>
                                             <span style="color: #888;">(${phase.leadingTeamScore} puan)</span>
                                         </div>
                                     ` : ''}
@@ -333,13 +331,13 @@ export const ADMIN = {
 
                 sendGeneralClue: function() {
                     if (!window.socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        window.toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
                     var text = document.getElementById('generalClueText').value.trim();
                     if (!text) {
-                        toast('İpucu metni giriniz', true);
+                        window.toast('İpucu metni giriniz', true);
                         return;
                     }
                     if (confirm('Bu ipucu tüm takımlara gönderilecek. Emin misiniz?')) {
@@ -350,9 +348,9 @@ export const ADMIN = {
                             isProcessing = false;
                             if (res && res.success) {
                                 document.getElementById('generalClueText').value = '';
-                                toast('İpucu gönderildi');
+                                window.toast('İpucu gönderildi');
                             } else {
-                                toast(res.error, true);
+                                window.toast(res.error, true);
                             }
                         });
                     }
@@ -360,13 +358,13 @@ export const ADMIN = {
 
                 sendAnnouncement: function() {
                     if (!window.socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        window.toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
                     var text = document.getElementById('announcementText').value.trim();
                     if (!text) {
-                        toast('Duyuru metni giriniz', true);
+                        window.toast('Duyuru metni giriniz', true);
                         return;
                     }
                     if (confirm('Bu duyuru tüm takımlara gönderilecek. Emin misiniz?')) {
@@ -377,13 +375,13 @@ export const ADMIN = {
                             isProcessing = false;
                             if (res && res.success) {
                                 document.getElementById('announcementText').value = '';
-                                toast('Duyuru gönderildi');
+                                window.toast('Duyuru gönderildi');
                                 // Bildirim listesini güncelle
                                 setTimeout(function() {
                                     NOTIF.renderAdminList();
                                 }, 500);
                             } else {
-                                toast(res.error, true);
+                                window.toast(res.error, true);
                             }
                         });
                     }
@@ -392,14 +390,14 @@ export const ADMIN = {
                 clearAllNotifications: function() {
                     if (confirm('TÜM bildirimleri silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
                         NOTIF.clearAll();
-                        toast('Tüm bildirimler silindi');
+                        window.toast('Tüm bildirimler silindi');
                     }
                 },
 
                 deleteNotification: function(notifId) {
                     if (confirm('Bu bildirimi silmek istediğinize emin misiniz?')) {
                         NOTIF.deleteById(notifId);
-                        toast('Bildirim silindi');
+                        window.toast('Bildirim silindi');
                     }
                 },
 
@@ -410,7 +408,7 @@ export const ADMIN = {
                 // Admin mesajlarını yükle
                 loadAdminMessages: function() {
                     if (!window.socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        window.toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
@@ -425,7 +423,7 @@ export const ADMIN = {
                                 selector.innerHTML += `<option value="${team.id}">${htmlEscape(team.name)}</option>`;
                             });
                         } else {
-                            toast(res.error, true);
+                            window.toast(res.error, true);
                         }
                     });
                 },
@@ -443,7 +441,7 @@ export const ADMIN = {
                     ADMIN.selectedAdminTeamId = teamId;
 
                     if (!window.socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        window.toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
@@ -472,7 +470,7 @@ export const ADMIN = {
                             document.getElementById('adminMessagesViewerContainer').style.display = 'block';
                             document.getElementById('adminMessagesEmptyState').style.display = 'none';
                         } else {
-                            toast(res.error, true);
+                            window.toast(res.error, true);
                         }
                     });
                 },
@@ -551,12 +549,12 @@ export const ADMIN = {
                 // Admin'den takıma mesaj gönder
                 sendReplyMessage: function() {
                     if (!window.socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        window.toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
                     if (!ADMIN.selectedAdminTeamId) {
-                        toast('Lütfen dropdown\'dan bir takım seçin!', true);
+                        window.toast('Lütfen dropdown\'dan bir takım seçin!', true);
                         return;
                     }
 
@@ -564,7 +562,7 @@ export const ADMIN = {
                     var message = messageInput ? messageInput.value.trim() : '';
 
                     if (!message) {
-                        toast('Mesaj boş olamaz!', true);
+                        window.toast('Mesaj boş olamaz!', true);
                         return;
                     }
 
@@ -574,28 +572,28 @@ export const ADMIN = {
                     }, function(res) {
                         if (res && res.success) {
                             if (messageInput) messageInput.value = '';
-                            toast('Mesaj gönderildi!');
+                            window.toast('Mesaj gönderildi!');
 
                             // Mesajları yeniden yükle (gönderilen mesaj görünsün)
                             ADMIN.selectTeamForAdminMessages(ADMIN.selectedAdminTeamId);
                         } else {
-                            toast(res.error, true);
+                            window.toast(res.error, true);
                         }
                     });
                 },
 
                 clearAllClues: function() {
                     if (!window.socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        window.toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
                     if (confirm('TÜM ipuçlarını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
                         window.safeSocketEmit('clear-all-clues', null, function(res) {
                             if (res && res.success) {
-                                toast('Tüm ipuçları silindi');
+                                window.toast('Tüm ipuçları silindi');
                             } else {
-                                toast(res.error, true);
+                                window.toast(res.error, true);
                             }
                         });
                     }
@@ -603,16 +601,16 @@ export const ADMIN = {
 
                 deleteClue: function(clueId) {
                     if (!window.socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        window.toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
                     if (confirm('Bu ipucunu silmek istediğinize emin misiniz?')) {
                         window.safeSocketEmit('delete-general-clue', clueId, function(res) {
                             if (res && res.success) {
-                                toast('İpucu silindi');
+                                window.toast('İpucu silindi');
                             } else {
-                                toast(res.error, true);
+                                window.toast(res.error, true);
                             }
                         });
                     }
@@ -649,7 +647,7 @@ export const ADMIN = {
                 // Chat İzleme - Takım seçici dropdown'ı güncelle
                 updateChatTeamSelector: function() {
                     if (!window.socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        window.toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
@@ -667,7 +665,7 @@ export const ADMIN = {
                             });
                             selector.innerHTML = html;
                         } else {
-                            toast(res.error, true);
+                            window.toast(res.error, true);
                         }
                     });
                 },
@@ -689,7 +687,7 @@ export const ADMIN = {
                     ADMIN.selectedChatTeamId = teamId;
 
                     if (!window.socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        window.toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
@@ -707,7 +705,7 @@ export const ADMIN = {
                             document.getElementById('adminChatViewerContainer').style.display = 'block';
                             document.getElementById('adminChatEmptyState').style.display = 'none';
                         } else {
-                            toast(res.error, true);
+                            window.toast(res.error, true);
                         }
                     });
                 },
@@ -819,7 +817,7 @@ export const ADMIN = {
 
                 startGame: function() {
                     if (!window.socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        window.toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
@@ -827,7 +825,7 @@ export const ADMIN = {
                     var title = document.getElementById('gameTitle').value.trim();
 
                     if (!minutes || minutes <= 0) {
-                        toast('Geçerli bir süre giriniz!', true);
+                        window.toast('Geçerli bir süre giriniz!', true);
                         return;
                     }
 
@@ -837,12 +835,12 @@ export const ADMIN = {
                     window.safeSocketEmit('start-game', { minutes: minutes, title: title }, function(res) {
                         isProcessing = false;
                         if (res.success) {
-                            toast('Oyun başlatıldı!');
+                            window.toast('Oyun başlatıldı!');
                             document.getElementById('gameMinutes').value = '';
                             document.getElementById('gameTitle').value = '';
                             // Backend otomatik olarak session ve faz kaydını başlatır
                         } else {
-                            toast(res.error, true);
+                            window.toast(res.error, true);
                         }
                     });
                 },
@@ -855,9 +853,9 @@ export const ADMIN = {
                         isProcessing = false;
                         if (res.success) {
                             var mins = Math.floor(seconds / 60);
-                            toast(mins + ' dakika eklendi');
+                            window.toast(mins + ' dakika eklendi');
                         } else {
-                            toast(res.error, true);
+                            window.toast(res.error, true);
                         }
                     });
                 },
@@ -870,10 +868,10 @@ export const ADMIN = {
                         window.safeSocketEmit('end-game', null, function(res) {
                             isProcessing = false;
                             if (res.success) {
-                                toast('Oyun bitirildi!');
+                                window.toast('Oyun bitirildi!');
                                 // Backend otomatik olarak faz + session kapatıp 'game-ended' event ile rapor gönderir
                             } else {
-                                toast(res.error, true);
+                                window.toast(res.error, true);
                             }
                         });
                     }
@@ -882,7 +880,7 @@ export const ADMIN = {
                 updateCountdownDisplay: function() {
                     var display = document.getElementById('adminCountdown');
                     if (display) {
-                        display.textContent = formatTime(gameState.countdown);
+                        display.textContent = window.formatTime(gameState.countdown);
                         if (gameState.countdown < 60) {
                             display.classList.add('warning');
                         } else {
@@ -901,16 +899,16 @@ export const ADMIN = {
                     var name = input.value.trim();
 
                     if (!name) {
-                        toast('İsim giriniz', true);
+                        window.toast('İsim giriniz', true);
                         return;
                     }
 
                     window.safeSocketEmit('add-credit', name, function(res) {
                         if (res && res.success) {
                             input.value = '';
-                            toast('İsim eklendi');
+                            window.toast('İsim eklendi');
                         } else {
-                            toast(res.error, true);
+                            window.toast(res.error, true);
                         }
                     });
                 },
@@ -919,9 +917,9 @@ export const ADMIN = {
                     if (confirm('"' + name + '" isimli kişiyi listeden silmek istediğinize emin misiniz?')) {
                         window.safeSocketEmit('remove-credit', creditId, function(res) {
                             if (res && res.success) {
-                                toast('İsim silindi');
+                                window.toast('İsim silindi');
                             } else {
-                                toast(res.error, true);
+                                window.toast(res.error, true);
                             }
                         });
                     }
@@ -938,9 +936,9 @@ export const ADMIN = {
                         content: content
                     }, function(res) {
                         if (res && res.success) {
-                            toast('İçerik güncellendi');
+                            window.toast('İçerik güncellendi');
                         } else {
-                            toast(res.error, true);
+                            window.toast(res.error, true);
                         }
                     });
                 },
@@ -948,7 +946,7 @@ export const ADMIN = {
                 // İSTATİSTİKLER FONKSİYONLARI
                 loadStatistics: function() {
                     if (!window.socketConnected) {
-                        toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+                        window.toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
@@ -963,9 +961,9 @@ export const ADMIN = {
                             // Export için veriyi sakla
                             window.statsData = res.stats;
 
-                            toast('İstatistikler yüklendi');
+                            window.toast('İstatistikler yüklendi');
                         } else {
-                            toast(res.error || 'İstatistikler yüklenemedi!', true);
+                            window.toast(res.error || 'İstatistikler yüklenemedi!', true);
                         }
                     });
                 },
@@ -1101,7 +1099,7 @@ export const ADMIN = {
 
                 exportStats: function(format) {
                     if (!window.statsData) {
-                        toast('Önce istatistikleri yükleyin', true);
+                        window.toast('Önce istatistikleri yükleyin', true);
                         return;
                     }
 
@@ -1114,7 +1112,7 @@ export const ADMIN = {
                         link.download = 'istatistikler_' + new Date().getTime() + '.json';
                         link.click();
                         URL.revokeObjectURL(url);
-                        toast('JSON dosyası indirildi');
+                        window.toast('JSON dosyası indirildi');
                     } else if (format === 'csv') {
                         var csv = 'Kategori,Veri,Değer\n';
 
@@ -1157,7 +1155,7 @@ export const ADMIN = {
                         link.download = 'istatistikler_' + new Date().getTime() + '.csv';
                         link.click();
                         URL.revokeObjectURL(url);
-                        toast('CSV dosyası indirildi');
+                        window.toast('CSV dosyası indirildi');
                     }
                 },
 
@@ -1169,10 +1167,10 @@ export const ADMIN = {
 
                     window.safeSocketEmit('start-game-session', null, function(res) {
                         if (res.success) {
-                            toast('âœ… Oyun oturumu başlatıldı!');
+                            window.toast('âœ… Oyun oturumu başlatıldı!');
                             console.log('Oyun oturumu ID:', res.sessionId);
                         } else {
-                            toast(res.error || 'Oyun başlatılamadı!', true);
+                            window.toast(res.error || 'Oyun başlatılamadı!', true);
                         }
                     });
                 },
@@ -1185,10 +1183,10 @@ export const ADMIN = {
 
                     window.safeSocketEmit('end-game-session', null, function(res) {
                         if (res.success) {
-                            toast('âœ… Oyun bitti! Rapor gösteriliyor...');
+                            window.toast('âœ… Oyun bitti! Rapor gösteriliyor...');
                             GAME.showFinalReport(res.report);
                         } else {
-                            toast(res.error || 'Oyun bitirilemedi!', true);
+                            window.toast(res.error || 'Oyun bitirilemedi!', true);
                         }
                     });
                 }

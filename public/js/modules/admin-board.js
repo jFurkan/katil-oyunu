@@ -2,8 +2,6 @@
 // Admin interface for viewing team murder boards
 
 // Get global functions
-const toast = window.toast;
-const escapeHtml = window.escapeHtml;
 
 export const ADMIN_BOARD = {
     selectedTeamId: null,
@@ -134,17 +132,17 @@ export const ADMIN_BOARD = {
 
             // Fotoğraf
             if (item.photo_url) {
-                html += '<img src="' + item.photo_url + '" alt="' + escapeHtml(item.character_name) + '" style="width:100%; height:80px; object-fit:cover; border-radius:8px; margin-bottom:8px; border:1px solid #444;">';
+                html += '<img src="' + item.photo_url + '" alt="' + window.escapeHtml(item.character_name) + '" style="width:100%; height:80px; object-fit:cover; border-radius:8px; margin-bottom:8px; border:1px solid #444;">';
             } else {
                 html += '<div style="width:100%; height:80px; background:#222; border-radius:8px; margin-bottom:8px; display:flex; align-items:center; justify-content:center; font-size:32px; border:1px solid #444;">👤</div>';
             }
 
             // İsim
-            html += '<div style="color:#4dd4d4; font-weight:600; font-size:13px; margin-bottom:5px; text-align:center;">' + escapeHtml(item.character_name) + '</div>';
+            html += '<div style="color:#4dd4d4; font-weight:600; font-size:13px; margin-bottom:5px; text-align:center;">' + window.escapeHtml(item.character_name) + '</div>';
 
             // Not (varsa)
             if (item.note) {
-                html += '<div style="color:#888; font-size:11px; line-height:1.4; margin-top:5px; padding:6px; background:#000; border-radius:6px; max-height:60px; overflow-y:auto;">' + escapeHtml(item.note) + '</div>';
+                html += '<div style="color:#888; font-size:11px; line-height:1.4; margin-top:5px; padding:6px; background:#000; border-radius:6px; max-height:60px; overflow-y:auto;">' + window.escapeHtml(item.note) + '</div>';
             }
 
             div.innerHTML = html;
@@ -205,7 +203,7 @@ export const ADMIN_BOARD = {
         const toast = window.toast;
         if (this.selectedTeamId) {
             this.loadBoard();
-            toast('🔄 Board yenilendi');
+            window.toast('🔄 Board yenilendi');
         }
     },
 

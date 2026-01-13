@@ -2,8 +2,6 @@
 // Allows teams to "poke" other teams
 
 // Get global functions
-const toast = window.toast;
-const escapeHtml = window.escapeHtml;
 
 export const POKE = {
     lastPokeTime: {},
@@ -16,14 +14,14 @@ export const POKE = {
         const htmlEscape = window.htmlEscape;
 
         if (!currentUser || !currentTeamId) {
-            toast('Dürtme özelliğini kullanmak için bir takıma giriş yapmalısınız!', true);
+            window.toast('Dürtme özelliğini kullanmak için bir takıma giriş yapmalısınız!', true);
             return;
         }
 
         // Load team list
         window.safeSocketEmit('get-teams', null, (response) => {
             if (!response || !response.success) {
-                toast('Takımlar yüklenemedi!', true);
+                window.toast('Takımlar yüklenemedi!', true);
                 return;
             }
 
@@ -91,7 +89,7 @@ export const POKE = {
         // Client-side rate limiting
         if (timeSinceLastPoke < 60000) {
             const remainingSeconds = Math.ceil((60000 - timeSinceLastPoke) / 1000);
-            toast(`Bu takımı ${remainingSeconds} saniye sonra tekrar dürtebilirsiniz!`, true);
+            window.toast(`Bu takımı ${remainingSeconds} saniye sonra tekrar dürtebilirsiniz!`, true);
             return;
         }
 
@@ -101,10 +99,10 @@ export const POKE = {
                 // Save last poke time
                 this.lastPokeTime[targetTeamId] = now;
 
-                toast(`👋 ${targetTeamName} takımını dürttünüz!`, false);
+                window.toast(`👋 ${targetTeamName} takımını dürttünüz!`, false);
                 this.hidePokeModal();
             } else {
-                toast(response.error || 'Dürtme gönderilemedi!', true);
+                window.toast(response.error || 'Dürtme gönderilemedi!', true);
             }
         });
     }

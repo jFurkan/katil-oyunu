@@ -4,10 +4,7 @@
 // Module-level processing flag
 let isProcessing = false;
 
-// Get global functions
-const toast = window.toast;
-const updateCurrentUserDisplay = window.updateCurrentUserDisplay;
-const showPage = window.showPage;
+// Note: We access global functions via window at runtime to avoid undefined references during module load
 
 export const USER = {
 
@@ -17,7 +14,7 @@ export const USER = {
                 registerNickname: function() {
                     var nickname = document.getElementById('inpNickname').value.trim();
                     if (!nickname) {
-                        toast('Lütfen bir nick girin!', true);
+                        window.toast('Lütfen bir nick girin!', true);
                         return;
                     }
 
@@ -34,7 +31,7 @@ export const USER = {
                                 teamId: null,
                                 profilePhotoUrl: res.profilePhotoUrl || null
                             };
-                            updateCurrentUserDisplay();
+                            window.updateCurrentUserDisplay();
                             console.log('âœ… Kayıt başarılı! UserId:', res.userId);
 
                             // Profil fotoğrafı varsa yükle
@@ -45,18 +42,18 @@ export const USER = {
                                     }
                                     // Başarılı ya da değil, sayfaya geç
                                     USER.selectedPhotoBlob = null; // Temizle
-                                    showPage('pgLobby');
+                                    window.showPage('pgLobby');
                                     history.pushState(null, null, '/lobby');
-                                    toast('Hoşgeldin, ' + res.nickname + '!');
+                                    window.toast('Hoşgeldin, ' + res.nickname + '!');
                                 });
                             } else {
                                 // Fotoğraf yoksa direkt geç
-                                showPage('pgLobby');
+                                window.showPage('pgLobby');
                                 history.pushState(null, null, '/lobby');
-                                toast('Hoşgeldin, ' + res.nickname + '!');
+                                window.toast('Hoşgeldin, ' + res.nickname + '!');
                             }
                         } else {
-                            toast(res.error, true);
+                            window.toast(res.error, true);
                         }
                     });
                 },
@@ -86,7 +83,7 @@ export const USER = {
                             if (callback) callback(true);
                         } else {
                             console.error('âŒ Fotoğraf yükleme hatası:', data.error);
-                            toast('Fotoğraf yüklenemedi', true);
+                            window.toast('Fotoğraf yüklenemedi', true);
                             if (callback) callback(false);
                         }
                     })
@@ -118,10 +115,10 @@ export const USER = {
                         })
                         .catch(function(err) {
                             console.error('Kamera erişim hatası:', err);
-                            toast('Kamera açılamadı. Lütfen izinleri kontrol edin.', true);
+                            window.toast('Kamera açılamadı. Lütfen izinleri kontrol edin.', true);
                         });
                     } else {
-                        toast('Kamera desteklenmiyor', true);
+                        window.toast('Kamera desteklenmiyor', true);
                     }
                 },
 
@@ -169,7 +166,7 @@ export const USER = {
                         // Kamerayı kapat
                         USER.closeCamera();
 
-                        toast('Fotoğraf çekildi!');
+                        window.toast('Fotoğraf çekildi!');
                     }, 'image/jpeg', 0.85);
                 },
 
@@ -180,14 +177,14 @@ export const USER = {
 
                     // Dosya boyutu kontrolü (5MB)
                     if (file.size > 5 * 1024 * 1024) {
-                        toast('Dosya çok büyük! Maksimum 5MB olmalı.', true);
+                        window.toast('Dosya çok büyük! Maksimum 5MB olmalı.', true);
                         event.target.value = '';
                         return;
                     }
 
                     // Dosya tipi kontrolü
                     if (!file.type.startsWith('image/')) {
-                        toast('Lütfen bir resim dosyası seçin!', true);
+                        window.toast('Lütfen bir resim dosyası seçin!', true);
                         event.target.value = '';
                         return;
                     }
@@ -200,7 +197,7 @@ export const USER = {
                     previewImg.src = URL.createObjectURL(file);
                     preview.style.display = 'block';
 
-                    toast('Fotoğraf seçildi!');
+                    window.toast('Fotoğraf seçildi!');
                 },
 
                 // Fotoğrafı kaldır
@@ -220,7 +217,7 @@ export const USER = {
                         this.closeCamera();
                     }
 
-                    toast('Fotoğraf kaldırıldı');
+                    window.toast('Fotoğraf kaldırıldı');
                 },
 
                 logout: function() {
@@ -243,8 +240,8 @@ export const USER = {
                         window.safeSocketEmit('logout-user', null, function(response) {
                             // Nick giriş sayfasına yönlendir
                             window.router.navigate('/');
-                            updateCurrentUserDisplay();
-                            toast('Çıkış yapıldı.');
+                            window.updateCurrentUserDisplay();
+                            window.toast('Çıkış yapıldı.');
                         });
                     }
                 }

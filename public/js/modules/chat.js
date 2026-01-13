@@ -2,9 +2,6 @@
 // Team chat functionality
 
 // Get global functions
-const toast = window.toast;
-const escapeHtml = window.escapeHtml;
-const formatTime = window.formatTime;
 
 export const CHAT = {
 
@@ -106,7 +103,7 @@ export const CHAT = {
                 // Mesaj gÃ¶nder
                 sendMessage: function() {
                     if (!window.socketConnected) {
-                        toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
+                        window.toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
                         return;
                     }
 
@@ -114,7 +111,7 @@ export const CHAT = {
                     var message = input.value.trim();
 
                     if (!message) {
-                        toast('Mesaj boÅŸ olamaz!', true);
+                        window.toast('Mesaj boÅŸ olamaz!', true);
                         return;
                     }
 
@@ -128,7 +125,7 @@ export const CHAT = {
                             input.value = '';
                             // Mesaj otomatik olarak 'new-team-message' event'i ile gelecek
                         } else {
-                            toast(res.error, true);
+                            window.toast(res.error, true);
                         }
                     });
                 },
@@ -149,7 +146,7 @@ export const CHAT = {
                             CHAT.renderMessages(res.messages);
                             CHAT.updatePagination(res.pagination);
                         } else {
-                            toast(res.error, true);
+                            window.toast(res.error, true);
                         }
                     });
                 },

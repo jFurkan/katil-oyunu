@@ -2,8 +2,6 @@
 // Investigation board with drag-drop, connections, and zoom functionality
 
 // Get global functions
-const toast = window.toast;
-const escapeHtml = window.escapeHtml;
 
 export const MURDERBOARD = {
 
@@ -123,11 +121,11 @@ export const MURDERBOARD = {
                         note: newNote
                     }, function(response) {
                         if (response && response.success) {
-                            toast('âœ… Not güncellendi');
+                            window.toast('âœ… Not güncellendi');
                             MURDERBOARD.hideEditNoteModal();
                             MURDERBOARD.loadBoard();
                         } else {
-                            toast(response.error || 'Not güncellenemedi!', true);
+                            window.toast(response.error || 'Not güncellenemedi!', true);
                         }
                     });
                 },
@@ -137,7 +135,7 @@ export const MURDERBOARD = {
                     const note = document.getElementById('characterNote').value.trim();
 
                     if (!dropdown.value) {
-                        toast('Lütfen bir karakter seçin!', true);
+                        window.toast('Lütfen bir karakter seçin!', true);
                         return;
                     }
 
@@ -162,11 +160,11 @@ export const MURDERBOARD = {
                     // Server'a kaydet
                     window.safeSocketEmit('add-board-item', itemData, function(response) {
                         if (response && response.success) {
-                            toast('âœ… Karakter eklendi');
+                            window.toast('âœ… Karakter eklendi');
                             MURDERBOARD.hideCharacterSelector();
                             MURDERBOARD.loadBoard();
                         } else {
-                            toast(response.error || 'Karakter eklenemedi!', true);
+                            window.toast(response.error || 'Karakter eklenemedi!', true);
                         }
                     });
                 },
@@ -549,7 +547,7 @@ export const MURDERBOARD = {
                         btn.style.background = 'linear-gradient(135deg, #1a4d1a, #0d3310)';
                         btn.style.borderColor = '#4dd44d';
                         btn.style.color = '#4dd44d';
-                        toast('🔗 Bağlantı modu aktif - İki karakter seçin');
+                        window.toast('🔗 Bağlantı modu aktif - İki karakter seçin');
                     } else {
                         btn.style.background = 'linear-gradient(135deg, #4d4d1a, #333310)';
                         btn.style.borderColor = '#d4d44d';
@@ -560,10 +558,10 @@ export const MURDERBOARD = {
                 handleConnectionClick: function(itemId) {
                     if (!MURDERBOARD.connectionStart) {
                         MURDERBOARD.connectionStart = itemId;
-                        toast('İkinci karakteri seçin');
+                        window.toast('İkinci karakteri seçin');
                     } else {
                         if (MURDERBOARD.connectionStart === itemId) {
-                            toast('Aynı karaktere bağlantı eklenemez!', true);
+                            window.toast('Aynı karaktere bağlantı eklenemez!', true);
                             MURDERBOARD.connectionStart = null;
                             return;
                         }
@@ -573,12 +571,12 @@ export const MURDERBOARD = {
                             toItemId: itemId
                         }, function(response) {
                             if (response.success) {
-                                toast('âœ… Bağlantı eklendi - Başka bir karakter seçerek devam edebilirsiniz');
+                                window.toast('âœ… Bağlantı eklendi - Başka bir karakter seçerek devam edebilirsiniz');
                                 MURDERBOARD.loadBoard();
                                 // Bağlantı modunu kapatma - devam edebilsin
                                 MURDERBOARD.connectionStart = null; // Sadece başlangıç noktasını sıfırla
                             } else {
-                                toast(response.error || 'Bağlantı eklenemedi!', true);
+                                window.toast(response.error || 'Bağlantı eklenemedi!', true);
                             }
                         });
                     }
@@ -754,10 +752,10 @@ export const MURDERBOARD = {
 
                     window.safeSocketEmit('delete-board-item', itemId, function(response) {
                         if (response && response.success) {
-                            toast('🗑️ Karakter kaldırıldı');
+                            window.toast('🗑️ Karakter kaldırıldı');
                             MURDERBOARD.loadBoard();
                         } else {
-                            toast(response.error || 'Karakter kaldırılamadı!', true);
+                            window.toast(response.error || 'Karakter kaldırılamadı!', true);
                         }
                     });
                 },
@@ -765,10 +763,10 @@ export const MURDERBOARD = {
                 deleteConnection: function(connectionId) {
                     window.safeSocketEmit('delete-board-connection', connectionId, function(response) {
                         if (response && response.success) {
-                            toast('🗑️ Bağlantı silindi');
+                            window.toast('🗑️ Bağlantı silindi');
                             MURDERBOARD.loadBoard();
                         } else {
-                            toast(response.error || 'Bağlantı silinemedi!', true);
+                            window.toast(response.error || 'Bağlantı silinemedi!', true);
                         }
                     });
                 },
@@ -778,10 +776,10 @@ export const MURDERBOARD = {
 
                     window.safeSocketEmit('clear-board', null, function(response) {
                         if (response && response.success) {
-                            toast('🗑️ Murder board temizlendi');
+                            window.toast('🗑️ Murder board temizlendi');
                             MURDERBOARD.loadBoard();
                         } else {
-                            toast(response.error || 'Temizlenemedi!', true);
+                            window.toast(response.error || 'Temizlenemedi!', true);
                         }
                     });
                 },

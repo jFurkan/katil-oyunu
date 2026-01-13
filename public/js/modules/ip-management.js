@@ -2,9 +2,6 @@
 // Admin IP logs, user management, and photo administration
 
 // Get global functions
-const toast = window.toast;
-const escapeHtml = window.escapeHtml;
-const formatTime = window.formatTime;
 
 export const IP_SECTION = {
     currentTab: 'logs',
@@ -46,7 +43,7 @@ export const IP_LOGS = {
         const toast = window.toast;
 
         if (!socketConnected) {
-            toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+            window.toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
             return;
         }
 
@@ -54,9 +51,9 @@ export const IP_LOGS = {
             if (res && res.success) {
                 IP_LOGS.logs = res.logs;
                 IP_LOGS.render();
-                toast('Loglar yüklendi');
+                window.toast('Loglar yüklendi');
             } else {
-                toast(res.error, true);
+                window.toast(res.error, true);
             }
         });
     },
@@ -136,16 +133,16 @@ export const IP_LOGS = {
         }
 
         if (!socketConnected) {
-            toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+            window.toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
             return;
         }
 
         window.safeSocketEmit('clear-ip-logs', { ipAddress: ipAddress, action: action }, function(res) {
             if (res && res.success) {
-                toast('Log sıfırlandı: ' + res.deletedCount + ' kayıt silindi');
+                window.toast('Log sıfırlandı: ' + res.deletedCount + ' kayıt silindi');
                 IP_LOGS.loadLogs();
             } else {
-                toast(res.error, true);
+                window.toast(res.error, true);
             }
         });
     },
@@ -160,16 +157,16 @@ export const IP_LOGS = {
         }
 
         if (!socketConnected) {
-            toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+            window.toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
             return;
         }
 
         window.safeSocketEmit('clear-ip-logs', {}, function(res) {
             if (res && res.success) {
-                toast('Tüm loglar sıfırlandı: ' + res.deletedCount + ' kayıt silindi');
+                window.toast('Tüm loglar sıfırlandı: ' + res.deletedCount + ' kayıt silindi');
                 IP_LOGS.loadLogs();
             } else {
-                toast(res.error, true);
+                window.toast(res.error, true);
             }
         });
     }
@@ -184,7 +181,7 @@ export const IP_USERS = {
         const toast = window.toast;
 
         if (!socketConnected) {
-            toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+            window.toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
             return;
         }
 
@@ -192,9 +189,9 @@ export const IP_USERS = {
             if (res && res.success) {
                 IP_USERS.users = res.users;
                 IP_USERS.render();
-                toast('Kullanıcılar yüklendi: ' + res.users.length + ' kayıt');
+                window.toast('Kullanıcılar yüklendi: ' + res.users.length + ' kayıt');
             } else {
-                toast(res.error, true);
+                window.toast(res.error, true);
             }
         });
     },
@@ -273,13 +270,13 @@ export const IP_USERS = {
 
         window.safeSocketEmit('delete-user', userId, function(res) {
             if (res.success) {
-                toast('Kullanıcı silindi: ' + res.user.nickname + ' - Nickname artık kullanıma açık!');
+                window.toast('Kullanıcı silindi: ' + res.user.nickname + ' - Nickname artık kullanıma açık!');
 
                 // Listeden çıkar
                 IP_USERS.users = IP_USERS.users.filter(u => u.id !== userId);
                 IP_USERS.render();
             } else {
-                toast(res.error, true);
+                window.toast(res.error, true);
             }
         });
     },
@@ -290,7 +287,7 @@ export const IP_USERS = {
         const toast = window.toast;
 
         if (this.users.length === 0) {
-            toast('Silinecek kullanıcı yok', true);
+            window.toast('Silinecek kullanıcı yok', true);
             return;
         }
 
@@ -299,17 +296,17 @@ export const IP_USERS = {
         }
 
         if (!socketConnected) {
-            toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
+            window.toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
             return;
         }
 
         window.safeSocketEmit('delete-all-users', null, function(res) {
             if (res && res.success) {
-                toast('Tüm kullanıcılar silindi: ' + res.deletedCount + ' kayıt');
+                window.toast('Tüm kullanıcılar silindi: ' + res.deletedCount + ' kayıt');
                 IP_USERS.users = [];
                 IP_USERS.render();
             } else {
-                toast(res.error, true);
+                window.toast(res.error, true);
             }
         });
     }
@@ -332,14 +329,14 @@ export const PHOTO_ADMIN = {
             if (data.success) {
                 PHOTO_ADMIN.users = data.users;
                 PHOTO_ADMIN.render();
-                toast('Kullanıcılar yüklendi: ' + data.users.length + ' kayıt');
+                window.toast('Kullanıcılar yüklendi: ' + data.users.length + ' kayıt');
             } else {
-                toast(data.error, true);
+                window.toast(data.error, true);
             }
         })
         .catch(function(err) {
             console.error('Kullanıcı yükleme hatası:', err);
-            toast('Kullanıcılar yüklenemedi', true);
+            window.toast('Kullanıcılar yüklenemedi', true);
         });
     },
 
@@ -413,19 +410,19 @@ export const PHOTO_ADMIN = {
         if (!file) return;
 
         if (file.size > 5 * 1024 * 1024) {
-            toast('Dosya çok büyük! Maksimum 5MB olmalı.', true);
+            window.toast('Dosya çok büyük! Maksimum 5MB olmalı.', true);
             event.target.value = '';
             return;
         }
 
         if (!file.type.startsWith('image/')) {
-            toast('Lütfen bir resim dosyası seçin!', true);
+            window.toast('Lütfen bir resim dosyası seçin!', true);
             event.target.value = '';
             return;
         }
 
         if (!this.currentUserId) {
-            toast('Kullanıcı seçilmedi', true);
+            window.toast('Kullanıcı seçilmedi', true);
             return;
         }
 
@@ -433,7 +430,7 @@ export const PHOTO_ADMIN = {
         formData.append('photo', file);
         formData.append('userId', this.currentUserId);
 
-        toast('Fotoğraf yükleniyor...');
+        window.toast('Fotoğraf yükleniyor...');
 
         fetch('/api/admin/update-user-photo', {
             method: 'POST',
@@ -443,15 +440,15 @@ export const PHOTO_ADMIN = {
         .then(function(response) { return response.json(); })
         .then(function(data) {
             if (data.success) {
-                toast('Fotoğraf güncellendi!');
+                window.toast('Fotoğraf güncellendi!');
                 PHOTO_ADMIN.loadUsers();
             } else {
-                toast(data.error, true);
+                window.toast(data.error, true);
             }
         })
         .catch(function(err) {
             console.error('Fotoğraf yükleme hatası:', err);
-            toast('Fotoğraf yüklenemedi', true);
+            window.toast('Fotoğraf yüklenemedi', true);
         })
         .finally(function() {
             event.target.value = '';
@@ -466,7 +463,7 @@ export const PHOTO_ADMIN = {
             return;
         }
 
-        toast('Fotoğraf siliniyor...');
+        window.toast('Fotoğraf siliniyor...');
 
         fetch('/api/admin/update-user-photo', {
             method: 'POST',
@@ -477,15 +474,15 @@ export const PHOTO_ADMIN = {
         .then(function(response) { return response.json(); })
         .then(function(data) {
             if (data.success) {
-                toast('Fotoğraf silindi!');
+                window.toast('Fotoğraf silindi!');
                 PHOTO_ADMIN.loadUsers();
             } else {
-                toast(data.error, true);
+                window.toast(data.error, true);
             }
         })
         .catch(function(err) {
             console.error('Fotoğraf silme hatası:', err);
-            toast('Fotoğraf silinemedi', true);
+            window.toast('Fotoğraf silinemedi', true);
         });
     }
 };

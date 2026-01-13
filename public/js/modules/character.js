@@ -2,8 +2,6 @@
 // Admin interface for managing game characters
 
 // Get global functions
-const toast = window.toast;
-const escapeHtml = window.escapeHtml;
 
 export const CHARACTER = {
     addCharacter() {
@@ -18,7 +16,7 @@ export const CHARACTER = {
 
         // Validation
         if (!name) {
-            toast('Karakter ismi zorunludur!', true);
+            window.toast('Karakter ismi zorunludur!', true);
             return;
         }
 
@@ -33,7 +31,7 @@ export const CHARACTER = {
             visibleToTeams: false
         }, (response) => {
             if (response.success) {
-                toast('✅ Karakter başarıyla eklendi! Görünürlüğünü "Oyun Kontrolü" bölümünden ayarlayabilirsiniz.');
+                window.toast('✅ Karakter başarıyla eklendi! Görünürlüğünü "Oyun Kontrolü" bölümünden ayarlayabilirsiniz.');
 
                 // Clear form
                 document.getElementById('charName').value = '';
@@ -49,7 +47,7 @@ export const CHARACTER = {
                     window.ADMIN.loadGameCharacters(); // Update game control list
                 }
             } else {
-                toast(response.error || 'Karakter eklenemedi!', true);
+                window.toast(response.error || 'Karakter eklenemedi!', true);
             }
         });
     },
@@ -97,7 +95,7 @@ export const CHARACTER = {
                         <div style="flex: 1; min-width: 0;">
                             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
                                 <div style="flex: 1;">
-                                    <h4 style="color: #4dd4d4; margin: 0; font-size: 16px; font-weight: 600;">${escapeHtml(char.name)}</h4>
+                                    <h4 style="color: #4dd4d4; margin: 0; font-size: 16px; font-weight: 600;">${window.escapeHtml(char.name)}</h4>
                                     <div style="margin-top: 4px;">
                                         <span style="display: inline-block; padding: 2px 8px; background: ${char.visible_to_teams ? '#1a4d1a' : '#4d4d1a'}; border: 1px solid ${char.visible_to_teams ? '#4dd44d' : '#888'}; color: ${char.visible_to_teams ? '#4dd44d' : '#888'}; border-radius: 4px; font-size: 10px;">
                                             ${char.visible_to_teams ? '👁️ Görünür' : '🔒 Gizli'}
@@ -110,18 +108,18 @@ export const CHARACTER = {
                             ${char.age || char.occupation ? `
                                 <div style="display: flex; gap: 12px; margin-bottom: 8px; flex-wrap: wrap;">
                                     ${char.age ? `<span style="color: #888; font-size: 12px;">📅 ${char.age} yaşında</span>` : ''}
-                                    ${char.occupation ? `<span style="color: #888; font-size: 12px;">💼 ${escapeHtml(char.occupation)}</span>` : ''}
+                                    ${char.occupation ? `<span style="color: #888; font-size: 12px;">💼 ${window.escapeHtml(char.occupation)}</span>` : ''}
                                 </div>
                             ` : ''}
 
                             ${char.description ? `
-                                <p style="color: #aaa; font-size: 13px; margin: 0 0 8px 0; line-height: 1.5;">${escapeHtml(char.description)}</p>
+                                <p style="color: #aaa; font-size: 13px; margin: 0 0 8px 0; line-height: 1.5;">${window.escapeHtml(char.description)}</p>
                             ` : ''}
 
                             ${char.additional_info ? `
                                 <details style="margin-top: 8px;">
                                     <summary style="color: #666; font-size: 12px; cursor: pointer; user-select: none;">Ek Bilgiler</summary>
-                                    <p style="color: #888; font-size: 12px; margin: 8px 0 0 0; padding-left: 12px; border-left: 2px solid #333; line-height: 1.5;">${escapeHtml(char.additional_info)}</p>
+                                    <p style="color: #888; font-size: 12px; margin: 8px 0 0 0; padding-left: 12px; border-left: 2px solid #333; line-height: 1.5;">${window.escapeHtml(char.additional_info)}</p>
                                 </details>
                             ` : ''}
 
@@ -146,13 +144,13 @@ export const CHARACTER = {
 
         window.safeSocketEmit('delete-character', characterId, (response) => {
             if (response.success) {
-                toast('🗑️ Karakter silindi');
+                window.toast('🗑️ Karakter silindi');
                 this.loadCharacters();
                 if (window.ADMIN) {
                     window.ADMIN.loadGameCharacters(); // Update game control list
                 }
             } else {
-                toast(response.error || 'Karakter silinemedi!', true);
+                window.toast(response.error || 'Karakter silinemedi!', true);
             }
         });
     },
@@ -208,7 +206,7 @@ export const CHARACTER = {
 
         const toast = window.toast;
         if (toast) {
-            toast('✅ Fotoğraf seçildi');
+            window.toast('✅ Fotoğraf seçildi');
         }
 
         this.closePhotoSelector();
