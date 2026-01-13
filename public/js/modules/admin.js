@@ -50,7 +50,7 @@ export const ADMIN = {
 
                     // Karakterler bölümü açıldıysa karakterleri yükle
                     if (section === 'characters') {
-                        CHARACTER.loadCharacters();
+                        window.CHARACTER.loadCharacters();
                     }
 
                     // Admin Mesajları bölümü açıldıysa mesajları yükle
@@ -60,8 +60,8 @@ export const ADMIN = {
 
                     // Murder Board İzleme bölümü açıldıysa takımları ve board'u yükle
                     if (section === 'murderboard') {
-                        if (socketConnected) {
-                            ADMIN_BOARD.init();
+                        if (window.socketConnected) {
+                            window.ADMIN_BOARD.init();
                         } else {
                             console.log('Socket bağlantısı bekliyor...');
                         }
@@ -70,17 +70,17 @@ export const ADMIN = {
                     // Kullanıcılar bölümü açıldıysa listeyi render et
                     if (section === 'users') {
                         // Manuel olarak kullanıcıları server'dan çek
-                        if (socketConnected) {
+                        if (window.socketConnected) {
                             window.safeSocketEmit('get-users-by-team', null, function(response) {
                                 if (response && response.success) {
-                                    users = response.users || [];
+                                    window.users = response.users || [];
                                 } else {
-                                    users = [];
+                                    window.users = [];
                                 }
-                                renderUsersList();
+                                window.renderUsersList();
                             });
                         } else {
-                            renderUsersList();
+                            window.renderUsersList();
                         }
                     }
 
@@ -91,17 +91,17 @@ export const ADMIN = {
 
                     // Emeği geçenler bölümü açıldıysa listeyi render et
                     if (section === 'credits') {
-                        renderCreditsList();
+                        window.renderCreditsList();
                     }
 
                     // IP Logları bölümü açıldıysa varsayılan tab'ı göster
                     if (section === 'iplogs') {
-                        IP_SECTION.showTab('logs');
+                        window.IP_SECTION.showTab('logs');
                     }
 
                     // Profil Fotoğrafları bölümü açıldıysa kullanıcıları yükle
                     if (section === 'profilephotos') {
-                        PHOTO_ADMIN.loadUsers();
+                        window.PHOTO_ADMIN.loadUsers();
                     }
 
                     // İstatistikler bölümü açıldıysa verileri yükle
@@ -112,7 +112,7 @@ export const ADMIN = {
 
                 loadGameCharacters: function() {
                     console.log('loadGameCharacters çağrıldı');
-                    if (!socketConnected) {
+                    if (!window.socketConnected) {
                         console.error('Socket bağlantısı yok, karakterler yüklenemiyor!');
                         return;
                     }
@@ -180,7 +180,7 @@ export const ADMIN = {
                 toggleGameCharacterVisibility: function(characterId, visible, checkboxElement) {
                     console.log('toggleGameCharacterVisibility çağrıldı:', characterId, visible);
 
-                    if (!socketConnected) {
+                    if (!window.socketConnected) {
                         toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         console.error('Socket bağlantısı yok!');
                         return;
@@ -233,7 +233,7 @@ export const ADMIN = {
                 // FAZ YÖNETİMİ
                 loadPhases: function() {
                     console.log('loadPhases çağrıldı');
-                    if (!socketConnected) {
+                    if (!window.socketConnected) {
                         console.error('Socket bağlantısı yok, fazlar yüklenemiyor!');
                         return;
                     }
@@ -332,7 +332,7 @@ export const ADMIN = {
                 },
 
                 sendGeneralClue: function() {
-                    if (!socketConnected) {
+                    if (!window.socketConnected) {
                         toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
@@ -359,7 +359,7 @@ export const ADMIN = {
                 },
 
                 sendAnnouncement: function() {
-                    if (!socketConnected) {
+                    if (!window.socketConnected) {
                         toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
@@ -409,7 +409,7 @@ export const ADMIN = {
 
                 // Admin mesajlarını yükle
                 loadAdminMessages: function() {
-                    if (!socketConnected) {
+                    if (!window.socketConnected) {
                         toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
@@ -442,7 +442,7 @@ export const ADMIN = {
 
                     ADMIN.selectedAdminTeamId = teamId;
 
-                    if (!socketConnected) {
+                    if (!window.socketConnected) {
                         toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
@@ -550,7 +550,7 @@ export const ADMIN = {
 
                 // Admin'den takıma mesaj gönder
                 sendReplyMessage: function() {
-                    if (!socketConnected) {
+                    if (!window.socketConnected) {
                         toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
@@ -585,7 +585,7 @@ export const ADMIN = {
                 },
 
                 clearAllClues: function() {
-                    if (!socketConnected) {
+                    if (!window.socketConnected) {
                         toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
@@ -602,7 +602,7 @@ export const ADMIN = {
                 },
 
                 deleteClue: function(clueId) {
-                    if (!socketConnected) {
+                    if (!window.socketConnected) {
                         toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
@@ -648,7 +648,7 @@ export const ADMIN = {
 
                 // Chat İzleme - Takım seçici dropdown'ı güncelle
                 updateChatTeamSelector: function() {
-                    if (!socketConnected) {
+                    if (!window.socketConnected) {
                         toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
@@ -688,7 +688,7 @@ export const ADMIN = {
 
                     ADMIN.selectedChatTeamId = teamId;
 
-                    if (!socketConnected) {
+                    if (!window.socketConnected) {
                         toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
@@ -818,7 +818,7 @@ export const ADMIN = {
                 },
 
                 startGame: function() {
-                    if (!socketConnected) {
+                    if (!window.socketConnected) {
                         toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
@@ -947,7 +947,7 @@ export const ADMIN = {
 
                 // İSTATİSTİKLER FONKSİYONLARI
                 loadStatistics: function() {
-                    if (!socketConnected) {
+                    if (!window.socketConnected) {
                         toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }

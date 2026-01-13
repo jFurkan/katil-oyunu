@@ -105,7 +105,7 @@ export const CHAT = {
 
                 // Mesaj gÃ¶nder
                 sendMessage: function() {
-                    if (!socketConnected) {
+                    if (!window.socketConnected) {
                         toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
                         return;
                     }
