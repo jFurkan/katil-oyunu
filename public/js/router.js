@@ -83,7 +83,12 @@ class Router {
         } else {
             // 404 - Route bulunamadı
             console.warn('404: Route not found:', path);
-            this.navigate('/', false);
+            // CRITICAL: Don't redirect to / if / is the missing route (infinite loop!)
+            if (path !== '/') {
+                this.navigate('/', false);
+            } else {
+                console.error('FATAL: Root route (/) not registered! Check IIFE execution.');
+            }
         }
     }
 
