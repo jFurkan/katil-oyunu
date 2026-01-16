@@ -106,24 +106,31 @@ export const GAME = {
         }
 
         // Avatar ve renk bilgilerini al
-        let avatarUrl = null;
-        let teamColor = '#3b82f6'; // Default color
+        let avatar = '🕵️'; // Default avatar
+        let color = '#3b82f6'; // Default color
 
         if (window.CUSTOMIZE) {
-            teamColor = window.CUSTOMIZE.selectedColor || '#3b82f6';
+            color = window.CUSTOMIZE.selectedColor || '#3b82f6';
         }
 
         // Avatar seçimi
         const selectedAvatar = document.querySelector('.avatar-option.selected');
         if (selectedAvatar) {
-            avatarUrl = selectedAvatar.getAttribute('data-avatar');
+            avatar = selectedAvatar.getAttribute('data-avatar');
+        }
+
+        // Kullanıcı ID kontrolü
+        if (!window.currentUser || !window.currentUser.userId) {
+            window.toast('Lütfen önce giriş yapın!', true);
+            return;
         }
 
         window.safeSocketEmit('create-team', {
-            teamName: teamName,
-            teamPassword: teamPassword,
-            avatarUrl: avatarUrl,
-            teamColor: teamColor
+            name: teamName,
+            password: teamPassword,
+            avatar: avatar,
+            color: color,
+            userId: window.currentUser.userId
         }, function(response) {
             if (response.success) {
                 window.currentTeamId = response.teamId;
@@ -149,9 +156,16 @@ export const GAME = {
             return;
         }
 
+        // Kullanıcı ID kontrolü
+        if (!window.currentUser || !window.currentUser.userId) {
+            window.toast('Lütfen önce giriş yapın!', true);
+            return;
+        }
+
         window.safeSocketEmit('join-team', {
             teamId: window.selectedJoinId,
-            teamPassword: teamPassword
+            password: teamPassword,
+            userId: window.currentUser.userId
         }, function(response) {
             if (response.success) {
                 window.currentTeamId = window.selectedJoinId;
