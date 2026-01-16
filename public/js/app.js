@@ -15,6 +15,7 @@ import { CUSTOMIZE } from './modules/customize.js';
 import { ADMIN } from './modules/admin.js';
 import { CHAT } from './modules/chat.js';
 import { USER } from './modules/user.js';
+import { GAME } from './modules/game.js';
 import { IP_SECTION, IP_LOGS, IP_USERS, PHOTO_ADMIN } from './modules/ip-management.js';
 import { ADMIN_BOARD } from './modules/admin-board.js';
 import { GAME_RESET } from './modules/game-reset.js';
@@ -49,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Verify module objects are available on window
     console.log('🔍 Module Objects on window:');
+    console.log('  - window.GAME:', typeof window.GAME);
     console.log('  - window.ADMIN:', typeof window.ADMIN);
     console.log('  - window.CHAT:', typeof window.CHAT);
     console.log('  - window.CHARACTER:', typeof window.CHARACTER);
@@ -81,6 +83,7 @@ export {
     ADMIN,
     CHAT,
     USER,
+    GAME,
     IP_SECTION,
     IP_LOGS,
     IP_USERS,
