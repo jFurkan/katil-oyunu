@@ -1841,8 +1841,9 @@
             // IP SECTION FONKSİYONLARI (Tab Yönetimi)
             // RENDER FONKSİYONLARI
 
-            function renderJoinList() {
+            window.renderJoinList = function renderJoinList() {
                 var c = document.getElementById('joinList');
+                var teams = window.teams || [];
                 if (teams.length === 0) { c.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">Aktif takım yok</div>'; return; }
                 var html = '';
                 teams.forEach(t => {

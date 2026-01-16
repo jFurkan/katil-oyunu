@@ -1,7 +1,8 @@
 ﻿// Admin Panel Module
 // Admin controls for game management
 
-// Get global functions
+// Processing guard to prevent double submissions
+let isProcessing = false;
 
 export const ADMIN = {
 

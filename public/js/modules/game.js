@@ -84,17 +84,17 @@ export const GAME = {
         const teamId = el.getAttribute('data-id');
         const teamName = el.getAttribute('data-name');
         window.selectedJoinId = teamId;
-        document.getElementById('selectedTeamNameDisplay').textContent = teamName;
+        document.getElementById('selectedTeamName').textContent = teamName;
         // Şifre kısmını göster
         document.getElementById('joinTeamList').style.display = 'none';
         document.getElementById('joinPasswordSection').style.display = 'block';
-        document.getElementById('inpJoinPass').value = '';
-        document.getElementById('inpJoinPass').focus();
+        document.getElementById('inpJoinPassword').value = '';
+        document.getElementById('inpJoinPassword').focus();
     },
 
     createTeam: function() {
         const teamName = document.getElementById('inpNewTeam').value.trim();
-        const teamPassword = document.getElementById('inpNewPass').value.trim();
+        const teamPassword = document.getElementById('inpNewTeamPassword').value.trim();
 
         if (!teamName) {
             window.toast('Lütfen takım adı girin!', true);
@@ -137,7 +137,7 @@ export const GAME = {
     },
 
     joinTeam: function() {
-        const teamPassword = document.getElementById('inpJoinPass').value.trim();
+        const teamPassword = document.getElementById('inpJoinPassword').value.trim();
 
         if (!teamPassword) {
             window.toast('Lütfen şifre girin!', true);
