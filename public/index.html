@@ -1751,18 +1751,21 @@
             }
         };
 
-        // Menü dışına tıklandığında kapat
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.theme-switcher')) {
-                THEME.closeMenu();
-            }
+        // Menü dışına tıklandığında kapat - wait for DOMContentLoaded to ensure modules loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('click', function(e) {
+                // Only call THEME if it's loaded
+                if (window.THEME && !e.target.closest('.theme-switcher')) {
+                    window.THEME.closeMenu();
+                }
 
-            // Team dropdown dışına tıklandığında kapat
-            var teamDropdown = document.getElementById('teamDropdown');
-            var btnTeamSelector = document.getElementById('btnTeamSelector');
-            if (teamDropdown && !e.target.closest('#btnTeamSelector') && !e.target.closest('#teamDropdown')) {
-                teamDropdown.style.display = 'none';
-            }
+                // Team dropdown dışına tıklandığında kapat
+                var teamDropdown = document.getElementById('teamDropdown');
+                var btnTeamSelector = document.getElementById('btnTeamSelector');
+                if (teamDropdown && !e.target.closest('#btnTeamSelector') && !e.target.closest('#teamDropdown')) {
+                    teamDropdown.style.display = 'none';
+                }
+            });
         });
 
         (function() {
