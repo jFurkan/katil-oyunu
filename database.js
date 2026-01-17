@@ -348,7 +348,66 @@ async function initDatabase() {
             ON phases(session_id, started_at DESC)
         `);
 
-        console.log('✓ Database initialized');
+        // PERFORMANCE INDEXES: Add frequently queried columns
+
+        // Clues index (team_id için hızlı JOIN)
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_clues_team_id
+            ON clues(team_id)
+        `);
+
+        // Users indexes (team_id ve socket_id sık sorgulanıyor)
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_users_team_id
+            ON users(team_id)
+        `);
+
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_users_socket_id
+            ON users(socket_id)
+        `);
+
+        // Team messages index (team_id ile sık sorgulanıyor)
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_team_messages_team_id
+            ON team_messages(team_id)
+        `);
+
+        // Team messages target index (hedef takım sorguları için)
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_team_messages_target
+            ON team_messages(target_team_id)
+        `);
+
+        // Murder board items index (team_id ile sık sorgulanıyor)
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_murder_board_items_team
+            ON murder_board_items(team_id)
+        `);
+
+        // Murder board connections indexes (JOIN sorguları için)
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_murder_board_conn_team
+            ON murder_board_connections(team_id)
+        `);
+
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_murder_board_conn_from
+            ON murder_board_connections(from_item_id)
+        `);
+
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_murder_board_conn_to
+            ON murder_board_connections(to_item_id)
+        `);
+
+        // IP activity cleanup için timestamp index
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_ip_activity_created_at
+            ON ip_activity(created_at)
+        `);
+
+        console.log('✓ Database initialized with performance indexes');
     } catch (err) {
         console.error('Database init error:', err);
         throw err;

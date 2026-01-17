@@ -14,6 +14,9 @@ const multer = require('multer'); // File upload için
 const sharp = require('sharp'); // Image processing için
 const fs = require('fs').promises; // File system işlemleri için
 const compression = require('compression'); // Response compression için
+const bcrypt = require('bcrypt'); // Password hashing için
+const sanitizeHtml = require('sanitize-html'); // XSS protection için
+const Tokens = require('csrf'); // CSRF protection için
 const { pool, initDatabase } = require('./database');
 
 // ========================================
@@ -27,13 +30,23 @@ let phaseStartStats = null; // Faz başlangıç istatistikleri (ipucu, mesaj, vb
 async function incrementSessionCounter(counterType) {
     if (!currentSessionId) return;
 
-    const validCounters = ['total_clues', 'total_messages', 'total_score_changes'];
-    if (!validCounters.includes(counterType)) return;
+    // SECURITY: Strict whitelist to prevent SQL injection
+    const columnMap = {
+        'total_clues': 'total_clues',
+        'total_messages': 'total_messages',
+        'total_score_changes': 'total_score_changes'
+    };
+
+    const column = columnMap[counterType];
+    if (!column) {
+        console.warn('⚠️  Invalid counter type:', counterType);
+        return;
+    }
 
     try {
         await pool.query(`
             UPDATE game_sessions
-            SET ${counterType} = ${counterType} + 1
+            SET ${column} = ${column} + 1
             WHERE id = $1
         `, [currentSessionId]);
     } catch (err) {
@@ -1720,22 +1733,32 @@ io.on('connection', async (socket) => {
 
             // GÜVENLİK: Session kontrolü - eğer session varsa kaydet
             if (socket.request.session) {
-                // HTTP-only cookie'ye userId kaydet (güvenli oturum)
-                // NOT: Socket.IO'da session.regenerate() kullanmıyoruz çünkü Set-Cookie header gönderilemez
-                socket.request.session.userId = userId;
-
-                console.log('💾 Session\'a userId kaydediliyor:', {
-                    sessionID: socket.request.sessionID,
-                    userId: userId,
-                    nickname: trimmedNick
-                });
-
-                socket.request.session.save(async (saveErr) => {
-                    if (saveErr) {
-                        console.error('❌ Session save error:', saveErr);
-                    } else {
-                        console.log('✅ Session kaydedildi:', socket.request.sessionID);
+                // SECURITY FIX: Regenerate session to prevent session fixation attacks
+                socket.request.session.regenerate((regenerateErr) => {
+                    if (regenerateErr) {
+                        console.error('❌ Session regeneration error:', regenerateErr);
+                        callback({ success: false, error: 'Session initialization failed' });
+                        return;
                     }
+
+                    // HTTP-only cookie'ye userId kaydet (güvenli oturum)
+                    socket.request.session.userId = userId;
+
+                    if (process.env.NODE_ENV !== 'production') {
+                        console.log('💾 Session regenerated and userId saved:', {
+                            sessionID: socket.request.sessionID,
+                            userId: userId,
+                            nickname: trimmedNick
+                        });
+                    }
+
+                    socket.request.session.save(async (saveErr) => {
+                        if (saveErr) {
+                            console.error('❌ Session save error:', saveErr);
+                        } else {
+                            if (process.env.NODE_ENV !== 'production') {
+                                console.log('✅ Session kaydedildi:', socket.request.sessionID);
+                            }
 
                     // Profil fotoğrafını al
                     const photoResult = await pool.query('SELECT profile_photo_url FROM users WHERE id = $1', [userId]);
@@ -1750,12 +1773,19 @@ io.on('connection', async (socket) => {
                     });
 
                     // Log mesajı - yeni kayıt mı yoksa reconnect mi?
-                    if (isReconnect) {
-                        console.log('✓ Kullanıcı yeniden bağlandı:', trimmedNick, '- IP:', clientIP, '- userId:', userId);
+                    if (process.env.NODE_ENV !== 'production') {
+                        if (isReconnect) {
+                            console.log('✓ Kullanıcı yeniden bağlandı:', trimmedNick, '- IP:', clientIP, '- userId:', userId);
+                        } else {
+                            console.log('✓ Yeni kullanıcı kaydedildi:', trimmedNick, '- IP:', clientIP, '- userId:', userId);
+                        }
                     } else {
-                        console.log('✓ Yeni kullanıcı kaydedildi:', trimmedNick, '- IP:', clientIP, '- userId:', userId);
+                        // PRODUCTION: Log without sensitive data
+                        console.log(isReconnect ? '✓ Kullanıcı yeniden bağlandı' : '✓ Yeni kullanıcı kaydedildi:', trimmedNick);
                     }
-                });
+                        } // Close else block
+                    }); // Close session.save callback
+                }); // Close session.regenerate callback
             } else {
                 // Profil fotoğrafını al
                 const photoResult = await pool.query('SELECT profile_photo_url FROM users WHERE id = $1', [userId]);
@@ -1959,10 +1989,13 @@ io.on('connection', async (socket) => {
             const avatar = data.avatar || '🕵️';
             const color = data.color || '#3b82f6';
 
+            // SECURITY: Hash password before storing (bcrypt with 10 rounds)
+            const hashedPassword = await bcrypt.hash(teamPassword, 10);
+
             // Takım oluştur ve captain nickname kaydet
             await pool.query(
                 'INSERT INTO teams (id, name, password, score, avatar, color, captain_nickname) VALUES ($1, $2, $3, 0, $4, $5, $6)',
-                [teamId, teamName, teamPassword, avatar, color, user.nickname]
+                [teamId, teamName, hashedPassword, avatar, color, user.nickname]
             );
 
             // Kullanıcıyı takıma ekle ve captain yap
@@ -2004,7 +2037,12 @@ io.on('connection', async (socket) => {
             const users = await getUsersByTeam();
             io.emit('users-update', users);
 
-            console.log('Takım oluşturuldu:', data.name, '- Kaptan:', user.nickname, '- IP:', clientIP);
+            // PRODUCTION: Don't log IP in production
+            if (process.env.NODE_ENV !== 'production') {
+                console.log('Takım oluşturuldu:', data.name, '- Kaptan:', user.nickname, '- IP:', clientIP);
+            } else {
+                console.log('Takım oluşturuldu:', data.name, '- Kaptan:', user.nickname);
+            }
         } catch (err) {
             console.error('Takım oluşturma hatası:', err);
             callback({ success: false, error: 'Takım oluşturulamadı!' });
@@ -2053,7 +2091,9 @@ io.on('connection', async (socket) => {
                 return;
             }
 
-            if (team.password !== passwordValidation.value) {
+            // SECURITY: Use bcrypt.compare() for password verification
+            const passwordMatch = await bcrypt.compare(passwordValidation.value, team.password);
+            if (!passwordMatch) {
                 callback({ success: false, error: 'Hatalı şifre!' });
                 return;
             }
@@ -2221,38 +2261,63 @@ io.on('connection', async (socket) => {
 
             // GÜVENLİK: Session kontrolü - eğer session varsa kaydet
             if (socket.request.session) {
-                // HTTP-only session'a admin bilgisini kaydet
-                // NOT: Socket.IO'da regenerate() kullanmıyoruz, cookie sync sorunu yaratıyor
-                socket.request.session.isAdmin = true;
-
-                // Eğer userId varsa onu da session'a kaydet
-                if (socket.data.userId) {
-                    socket.request.session.userId = socket.data.userId;
-                }
-
-                // team_id'yi session'dan temizle
-                delete socket.request.session.teamId;
-
-                socket.request.session.save((saveErr) => {
-                    if (saveErr) {
-                        console.error('❌ Admin session save error:', saveErr);
-                    } else {
-                        console.log('✅ Admin session saved. isAdmin=', socket.request.session.isAdmin, 'sessionID=', socket.request.sessionID);
+                // SECURITY FIX: Regenerate session to prevent session fixation attacks
+                socket.request.session.regenerate((regenerateErr) => {
+                    if (regenerateErr) {
+                        console.error('❌ Admin session regeneration error:', regenerateErr);
+                        callback({ success: false, error: 'Session initialization failed' });
+                        return;
                     }
-                    callback({ success: true });
-                    console.log('✓ Admin girişi yapıldı:', socket.id, '- IP:', clientIP);
-                });
+
+                    // HTTP-only session'a admin bilgisini kaydet
+                    socket.request.session.isAdmin = true;
+
+                    // Eğer userId varsa onu da session'a kaydet
+                    if (socket.data.userId) {
+                        socket.request.session.userId = socket.data.userId;
+                    }
+
+                    // team_id'yi session'dan temizle
+                    delete socket.request.session.teamId;
+
+                    socket.request.session.save((saveErr) => {
+                        if (saveErr) {
+                            console.error('❌ Admin session save error:', saveErr);
+                        } else {
+                            if (process.env.NODE_ENV !== 'production') {
+                                console.log('✅ Admin session saved. isAdmin=', socket.request.session.isAdmin, 'sessionID=', socket.request.sessionID);
+                            }
+                        }
+                        callback({ success: true });
+                        // PRODUCTION: Don't log IP in production
+                        if (process.env.NODE_ENV !== 'production') {
+                            console.log('✓ Admin girişi yapıldı:', socket.id, '- IP:', clientIP);
+                        } else {
+                            console.log('✓ Admin girişi yapıldı:', socket.id);
+                        }
+                    });
+                }); // Close regenerate callback
             } else {
                 // Session yoksa direkt callback
                 callback({ success: true });
-                console.log('✓ Admin girişi yapıldı (session yok):', socket.id, '- IP:', clientIP);
+                // PRODUCTION: Don't log IP in production
+                if (process.env.NODE_ENV !== 'production') {
+                    console.log('✓ Admin girişi yapıldı (session yok):', socket.id, '- IP:', clientIP);
+                } else {
+                    console.log('✓ Admin girişi yapıldı (session yok):', socket.id);
+                }
             }
         } else {
             // Başarısız giriş - kaydet
             adminLoginLimiter.recordFailure(clientIP);
 
             callback({ success: false, error: 'Yanlış şifre!' });
-            console.log('⚠️  Başarısız admin girişi:', socket.id, '- IP:', clientIP);
+            // PRODUCTION: Log failed admin attempts but without IP
+            if (process.env.NODE_ENV !== 'production') {
+                console.log('⚠️  Başarısız admin girişi:', socket.id, '- IP:', clientIP);
+            } else {
+                console.log('⚠️  Başarısız admin girişi:', socket.id);
+            }
         }
     });
 
