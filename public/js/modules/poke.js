@@ -7,8 +7,8 @@ export const POKE = {
     lastPokeTime: {},
 
     showPokeModal() {
-        const window.currentUser = window.window.currentUser;
-        const window.currentTeamId = window.window.currentTeamId;
+        const currentUser = window.currentUser;
+        const currentTeamId = window.currentTeamId;
         const socket = window.socket;
         const toast = window.toast;
         const htmlEscape = window.htmlEscape;

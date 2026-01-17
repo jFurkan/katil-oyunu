@@ -4,6 +4,7 @@
 export const NOTIFICATION = {
     container: null,
     nextId: 1,
+    timeouts: {}, // Store timeout IDs for cleanup
 
     init() {
         this.container = document.getElementById('notificationContainer');
@@ -55,8 +56,8 @@ export const NOTIFICATION = {
 
         this.container.appendChild(notif);
 
-        // Auto-close after 8 seconds
-        setTimeout(() => {
+        // Auto-close after 8 seconds - store timeout ID for cleanup
+        this.timeouts[id] = setTimeout(() => {
             this.close(id);
         }, 8000);
 
@@ -64,6 +65,12 @@ export const NOTIFICATION = {
     },
 
     close(id) {
+        // Clear auto-close timeout if exists
+        if (this.timeouts[id]) {
+            clearTimeout(this.timeouts[id]);
+            delete this.timeouts[id];
+        }
+
         const notif = document.getElementById(id);
         if (notif) {
             notif.classList.add('closing');

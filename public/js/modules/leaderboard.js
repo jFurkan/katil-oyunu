@@ -77,13 +77,19 @@ export const LEADERBOARD = {
     update(teams) {
         if (!teams || teams.length === 0) return;
 
-        // Sort by score
-        const sortedTeams = teams.sort((a, b) => b.score - a.score);
+        // Sort by score (use slice to avoid mutating original array)
+        const sortedTeams = teams.slice().sort((a, b) => b.score - a.score);
 
         const list = document.getElementById('liveLeaderboardList');
         if (!list) return;
 
-        const escapeHtml = window.escapeHtml || (text => text);
+        // SECURITY: Use safe escaping or throw error if not available
+        const escapeHtml = window.escapeHtml || function(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        };
 
         list.innerHTML = sortedTeams.map((team, index) => {
             const rank = index + 1;
@@ -132,9 +138,9 @@ export const LEADERBOARD = {
         }
 
         // Show if user is on team page and game started
-        const window.currentUser = window.window.currentUser;
+        const currentUser = window.currentUser;
         const isAdmin = window.isAdmin;
-        const window.gameState = window.window.gameState;
+        const gameState = window.gameState;
 
         if (window.currentUser && !window.isAdmin && window.gameState && window.gameState.started) {
             const board = document.getElementById('liveLeaderboard');
@@ -164,7 +170,7 @@ export const LEADERBOARD = {
                 }
 
                 // Special notification if user's team became leader
-                const window.currentUser = window.window.currentUser;
+                const currentUser = window.currentUser;
                 const toast = window.toast;
                 if (window.currentUser && window.currentUser.team_id === currentLeader.id && toast) {
                     toast('🎉 Tebrikler! Takımınız 1. sıraya yükseldi!');

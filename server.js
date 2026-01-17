@@ -891,17 +891,17 @@ async function endGameSessionAuto() {
 
         // En çok ipucu toplayan
         const mostCluesTeam = teams.rows.reduce((prev, current) =>
-            (parseInt(current.clue_count) > parseInt(prev.clue_count)) ? current : prev
+            (parseInt(current.clue_count, 10) > parseInt(prev.clue_count, 10)) ? current : prev
         , teams.rows[0]);
-        if (mostCluesTeam && parseInt(mostCluesTeam.clue_count) > 0) {
+        if (mostCluesTeam && parseInt(mostCluesTeam.clue_count, 10) > 0) {
             badges.push({ teamId: mostCluesTeam.id, teamName: mostCluesTeam.name, badge: '🔍 En Detektif', reason: `${mostCluesTeam.clue_count} ipucu` });
         }
 
         // En sosyal takım
         const mostSocialTeam = teams.rows.reduce((prev, current) =>
-            (parseInt(current.message_count) > parseInt(prev.message_count)) ? current : prev
+            (parseInt(current.message_count, 10) > parseInt(prev.message_count, 10)) ? current : prev
         , teams.rows[0]);
-        if (mostSocialTeam && parseInt(mostSocialTeam.message_count) > 0) {
+        if (mostSocialTeam && parseInt(mostSocialTeam.message_count, 10) > 0) {
             badges.push({ teamId: mostSocialTeam.id, teamName: mostSocialTeam.name, badge: '💬 En Sosyal', reason: `${mostSocialTeam.message_count} mesaj` });
         }
 
@@ -923,14 +923,14 @@ async function endGameSessionAuto() {
                 id: t.id,
                 name: t.name,
                 score: t.score,
-                clueCount: parseInt(t.clue_count),
-                messageCount: parseInt(t.message_count),
+                clueCount: parseInt(t.clue_count, 10),
+                messageCount: parseInt(t.message_count, 10),
                 avatar: t.avatar,
                 color: t.color
             })),
             stats: {
-                totalClues: parseInt(totalClues.rows[0].count),
-                totalMessages: parseInt(totalMessages.rows[0].count),
+                totalClues: parseInt(totalClues.rows[0].count, 10),
+                totalMessages: parseInt(totalMessages.rows[0].count, 10),
                 durationMinutes: durationMinutes,
                 totalTeams: teams.rows.length
             },
@@ -1106,7 +1106,7 @@ async function getTeamMessagesCount(teamId, excludeAdminMessages = false) {
     }
 
     const result = await pool.query(query, [teamId]);
-    return parseInt(result.rows[0].count);
+    return parseInt(result.rows[0].count, 10);
 }
 
 // Filtrelenmiş takım mesajları (belirli bir kişiyle olan konuşma)
@@ -1170,7 +1170,7 @@ async function getFilteredTeamMessagesCount(teamId, filterTeamId) {
     `;
 
     const result = await pool.query(query, [teamId, filterTeamId]);
-    return parseInt(result.rows[0].count);
+    return parseInt(result.rows[0].count, 10);
 }
 
 // Socket.IO Event Rate Limiter (Spam koruması)
@@ -1340,7 +1340,7 @@ class IPBotProtection {
     async checkLimit(ipAddress, action, maxAllowed = 5, hours = 24) {
         try {
             // GÜVENLİK: SQL injection riskini önle - hours parametresini integer olarak validate et
-            const validHours = Math.max(1, Math.min(168, parseInt(hours) || 24)); // 1-168 saat arası
+            const validHours = Math.max(1, Math.min(168, parseInt(hours, 10) || 24)); // 1-168 saat arası
 
             const result = await pool.query(
                 `SELECT COUNT(*) as count FROM ip_activity
@@ -1349,7 +1349,7 @@ class IPBotProtection {
                 [ipAddress, action, validHours]
             );
 
-            const count = parseInt(result.rows[0].count);
+            const count = parseInt(result.rows[0].count, 10);
             return count <= maxAllowed;
         } catch (err) {
             console.error('IP check error:', err);
@@ -1568,7 +1568,7 @@ io.use((socket, next) => {
 
     // Bağlantı sayısı limiti (DDoS koruması)
     const clientCount = io.engine.clientsCount;
-    const MAX_CONNECTIONS = parseInt(process.env.MAX_CONNECTIONS) || 1000;
+    const MAX_CONNECTIONS = parseInt(process.env.MAX_CONNECTIONS, 10) || 1000;
 
     if (clientCount >= MAX_CONNECTIONS) {
         console.log('❌ WebSocket bağlantısı reddedildi - maksimum bağlantı sayısına ulaşıldı');
@@ -1686,7 +1686,7 @@ io.on('connection', async (socket) => {
                     [clientIP, 'register-user']
                 );
 
-                const sameIPRegistration = parseInt(ipCheckResult.rows[0].count) > 0;
+                const sameIPRegistration = parseInt(ipCheckResult.rows[0].count, 10) > 0;
 
                 if (sameIPRegistration) {
                     // Aynı IP'den 24 saat içinde kayıt var - bu muhtemelen aynı kişi
@@ -2104,7 +2104,7 @@ io.on('connection', async (socket) => {
                 [data.teamId]
             );
             const MAX_MEMBERS = 9;
-            if (parseInt(memberCount.rows[0].count) >= MAX_MEMBERS) {
+            if (parseInt(memberCount.rows[0].count, 10) >= MAX_MEMBERS) {
                 callback({ success: false, error: 'Takım dolu! (Maksimum 9 kişi)' });
                 return;
             }
@@ -2491,7 +2491,7 @@ io.on('connection', async (socket) => {
             // Yaş validasyonu
             let age = null;
             if (characterData.age) {
-                age = parseInt(characterData.age);
+                age = parseInt(characterData.age, 10);
                 if (isNaN(age) || age < 0 || age > 150) {
                     callback({ success: false, error: 'Geçersiz yaş değeri!' });
                     return;
@@ -3692,10 +3692,10 @@ io.on('connection', async (socket) => {
             const messagesResult = await pool.query('SELECT COUNT(*) FROM team_messages');
             const cluesResult = await pool.query('SELECT COUNT(*) FROM clues');
 
-            const totalTeams = parseInt(teamsResult.rows[0].count);
-            const totalUsers = parseInt(usersResult.rows[0].count);
-            const totalMessages = parseInt(messagesResult.rows[0].count);
-            const totalClues = parseInt(cluesResult.rows[0].count);
+            const totalTeams = parseInt(teamsResult.rows[0].count, 10);
+            const totalUsers = parseInt(usersResult.rows[0].count, 10);
+            const totalMessages = parseInt(messagesResult.rows[0].count, 10);
+            const totalClues = parseInt(cluesResult.rows[0].count, 10);
 
             // Takım başına mesaj sayısı
             const teamMessagesResult = await pool.query(`

@@ -46,8 +46,8 @@ export function goBack() {
         showPage(previousPage, false); // Don't add to history
     } else {
         // No history, go to lobby or nickname page
-        const window.currentUser = window.window.currentUser;
-        if (window.currentUser) {
+        const currentUser = window.currentUser;
+        if (currentUser) {
             showPage('pgLobby', false);
         } else {
             showPage('pgNickname', false);
@@ -58,10 +58,10 @@ export function goBack() {
 export function updateCurrentUserDisplay() {
     const userInfo = document.getElementById('currentUserInfo');
     const userNick = document.getElementById('currentUserNick');
-    const window.currentUser = window.window.currentUser;
+    const currentUser = window.currentUser;
 
-    if (window.currentUser && window.currentUser.nickname) {
-        if (userNick) userNick.textContent = window.currentUser.nickname;
+    if (currentUser && currentUser.nickname) {
+        if (userNick) userNick.textContent = currentUser.nickname;
         if (userInfo) userInfo.style.display = 'block';
     } else {
         if (userInfo) userInfo.style.display = 'none';

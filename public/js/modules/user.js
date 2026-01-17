@@ -238,7 +238,8 @@ export const USER = {
                         window.currentUser = null;
                         window.currentTeamId = null;
                         window.isAdmin = false;
-n                        // FIX: Clear all global state on logout
+
+                        // FIX: Clear all global state on logout
                         window.teams = [];
                         window.users = [];
                         window.credits = [];

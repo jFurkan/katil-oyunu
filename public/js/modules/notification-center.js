@@ -41,7 +41,7 @@ export const NOTIFICATIONS = {
         this.updateUI();
 
         // Show notification center button if user is on team page
-        const window.currentUser = window.window.currentUser;
+        const currentUser = window.currentUser;
         const isAdmin = window.isAdmin;
         if (window.currentUser && !window.isAdmin) {
             const btn = document.getElementById('notificationCenterBtn');
@@ -116,7 +116,13 @@ export const NOTIFICATIONS = {
                 </div>
             `;
         } else {
-            const escapeHtml = window.escapeHtml || (text => text);
+            // SECURITY: Use safe escaping or fallback to DOM-based escaping
+            const escapeHtml = window.escapeHtml || function(text) {
+                if (!text) return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            };
             list.innerHTML = this.notifications.map(n => `
                 <div class="notification-center-item ${!n.read ? 'unread' : ''}" onclick="NOTIFICATIONS.markAsRead(${n.id})">
                     <div class="notification-center-item-title">${escapeHtml(n.title)}</div>
