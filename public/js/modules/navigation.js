@@ -27,6 +27,16 @@ export function showPage(id, addToHistory = true) {
     const targetPage = document.getElementById(id);
     if (targetPage) {
         targetPage.classList.add('active');
+
+        // LAST PAGE TRACKING: Save current path for F5 redirect
+        try {
+            const currentPath = window.location.pathname;
+            if (currentPath && currentPath !== '/') {
+                sessionStorage.setItem('lastPage', currentPath);
+            }
+        } catch (e) {
+            // Ignore sessionStorage errors
+        }
     }
 }
 

@@ -32,6 +32,9 @@ export const USER = {
                                 profilePhotoUrl: res.profilePhotoUrl || null
                             };
                             window.updateCurrentUserDisplay();
+
+                            // SESSION PERSISTENCE: Save to sessionStorage
+                            if (window.persistSession) window.persistSession();
                             console.log('âœ… Kayıt başarılı! UserId:', res.userId);
 
                             // Profil fotoğrafı varsa yükle
@@ -235,6 +238,9 @@ export const USER = {
                         window.currentUser = null;
                         window.currentTeamId = null;
                         window.isAdmin = false;
+
+                        // SESSION PERSISTENCE: Clear sessionStorage
+                        if (window.persistSession) window.persistSession();
 
                         // Server'a logout isteği gönder (session'ı temizle)
                         window.safeSocketEmit('logout-user', null, function(response) {

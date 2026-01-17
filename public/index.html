@@ -1280,8 +1280,8 @@
         // ========================================
         window.safeSocketEmit = function(eventName, data, callback, timeout = 10000) {
             if (!socket.connected) {
-                window.toast('Bağlantı yok! Lütfen bekleyin...', true);
-                if (callback) callback({ success: false, error: 'No connection' });
+                window.toast('Bağlantı yok! Yeniden bağlanıyor...', true);
+                if (callback) callback({ success: false, error: 'Bağlantı yok' });
                 return;
             }
 
@@ -1290,6 +1290,34 @@
                 if (!callbackCalled) {
                     callbackCalled = true;
                     clearTimeout(timeoutId);
+
+                    // BETTER ERROR HANDLING: Detect authorization errors
+                    if (response && !response.success) {
+                        const errorMsg = response.error || 'Bilinmeyen hata';
+
+                        // Admin authorization lost
+                        if (errorMsg.includes('admin') || errorMsg.includes('yetki') || errorMsg.includes('Yetkisiz')) {
+                            console.warn('⚠️  Admin yetkisi gerekli veya kayboldu:', errorMsg);
+                            window.isAdmin = false;
+                            if (window.persistSession) window.persistSession();
+
+                            // If on admin page, redirect to lobby
+                            if (window.location.pathname.includes('/admin')) {
+                                window.toast('Admin oturumu sona erdi. Lütfen tekrar giriş yapın.', true);
+                                window.router.navigate('/lobby');
+                            }
+                        }
+
+                        // Session expired
+                        if (errorMsg.includes('session') || errorMsg.includes('oturum') || errorMsg.includes('giriş')) {
+                            console.warn('⚠️  Session süresi dolmuş olabilir:', errorMsg);
+                            window.currentUser = null;
+                            window.currentTeamId = null;
+                            window.isAdmin = false;
+                            if (window.persistSession) window.persistSession();
+                        }
+                    }
+
                     if (callback) callback(response);
                 }
             };
@@ -1297,8 +1325,9 @@
             const timeoutId = setTimeout(() => {
                 if (!callbackCalled) {
                     callbackCalled = true;
-                    window.toast('İstek zaman aşımına uğradı!', true);
-                    if (callback) callback({ success: false, error: 'Timeout' });
+                    console.error('⏱️  Socket timeout:', eventName, 'after', timeout, 'ms');
+                    window.toast('İstek zaman aşımına uğradı! Server yanıt vermiyor.', true);
+                    if (callback) callback({ success: false, error: 'Timeout', timedOut: true });
                 }
             }, timeout);
 
@@ -1372,15 +1401,37 @@
 
             var teams = [];
             var users = [];
-            var currentUser = null; // GÜVENLİK: localStorage yerine sadece memory'de tut
+            // SESSION PERSISTENCE: Restore from sessionStorage first (will be validated by server on socket connect)
+            var currentUser = null;
+            var currentTeamId = null;
+            var isAdmin = false;
+
+            try {
+                var storedUser = sessionStorage.getItem('currentUser');
+                var storedAdmin = sessionStorage.getItem('isAdmin');
+                var storedTeamId = sessionStorage.getItem('currentTeamId');
+
+                if (storedUser) {
+                    currentUser = JSON.parse(storedUser);
+                    console.log('🔄 Session restored from storage:', currentUser.nickname);
+                }
+                if (storedAdmin === 'true') {
+                    isAdmin = true;
+                    console.log('🔄 Admin role restored from storage');
+                }
+                if (storedTeamId) {
+                    currentTeamId = storedTeamId;
+                }
+            } catch (e) {
+                console.warn('⚠️  Session restore failed:', e);
+            }
+
             var credits = [
                 { id: 'credit_1', name: 'Furkan', content: 'Oyunun tasarımı ve geliştirmesi' },
                 { id: 'credit_2', name: 'Claude', content: 'Kodlama ve teknik destek' }
             ];
-            var currentTeamId = null; // GÜVENLİK: localStorage yerine server'dan al
             var selectedJoinId = null;
             var isProcessing = false;
-            var isAdmin = false; // Admin panel erişimi için
 
             // Make global variables accessible to modules
             window.currentUser = currentUser;
@@ -1390,6 +1441,25 @@
             window.teams = teams;
             window.users = users;
             window.credits = credits;
+
+            // Helper function to persist session to sessionStorage
+            window.persistSession = function() {
+                try {
+                    if (window.currentUser) {
+                        sessionStorage.setItem('currentUser', JSON.stringify(window.currentUser));
+                    } else {
+                        sessionStorage.removeItem('currentUser');
+                    }
+                    sessionStorage.setItem('isAdmin', window.isAdmin ? 'true' : 'false');
+                    if (window.currentTeamId) {
+                        sessionStorage.setItem('currentTeamId', window.currentTeamId);
+                    } else {
+                        sessionStorage.removeItem('currentTeamId');
+                    }
+                } catch (e) {
+                    console.warn('⚠️  Failed to persist session:', e);
+                }
+            };
 
             // Navigation history - geri butonları için
             var pageHistory = [];
@@ -1570,6 +1640,9 @@
 
                             console.log('✅ Admin session restore edildi - SessionID mevcut');
                         }
+
+                        // SESSION PERSISTENCE: Persist to sessionStorage
+                        window.persistSession();
                     } else {
                         // Session yok veya süresi dolmuş
                         window.currentUser = null;
@@ -1577,14 +1650,23 @@
                         window.isAdmin = false;
                         updateCurrentUserDisplay();
                         console.log('⚠️  Session bulunamadı veya süresi dolmuş - Giriş yapmanız gerekebilir');
+
+                        // SESSION PERSISTENCE: Clear sessionStorage
+                        window.persistSession();
                     }
 
                     // ROUTING: Session restore sonrası, mevcut URL'e göre sayfa göster
                     var currentPath = window.location.pathname;
 
+                    // F5 REDIRECT: Check if there's a saved page to return to
+                    var lastPage = sessionStorage.getItem('lastPage');
+
                     // Ana sayfadaysa ve session varsa, uygun sayfaya yönlendir
                     if ((currentPath === '/' || currentPath === '') && window.currentUser) {
-                        if (window.currentTeamId) {
+                        if (lastPage && lastPage !== '/' && lastPage !== '') {
+                            // F5 sonrası son sayfaya dön
+                            router.navigate(lastPage, false);
+                        } else if (window.currentTeamId) {
                             router.navigate('/team/' + window.currentTeamId, false);
                         } else {
                             router.navigate('/lobby', false);

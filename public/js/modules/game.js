@@ -12,6 +12,9 @@ export const GAME = {
             window.currentTeamId = null;
             window.isAdmin = false;
 
+            // SESSION PERSISTENCE: Clear sessionStorage
+            if (window.persistSession) window.persistSession();
+
             // Server'a logout isteği gönder (session'ı temizle)
             window.safeSocketEmit('logout-user', null, function() {
                 // Ana sayfaya yönlendir (nickname giriş ekranı)
@@ -134,6 +137,10 @@ export const GAME = {
         }, function(response) {
             if (response.success) {
                 window.currentTeamId = response.teamId;
+
+                // SESSION PERSISTENCE: Save to sessionStorage
+                if (window.persistSession) window.persistSession();
+
                 window.toast('Takım oluşturuldu!');
                 // Takım sayfasına yönlendir
                 window.router.navigate('/team/' + response.teamId);
@@ -169,6 +176,10 @@ export const GAME = {
         }, function(response) {
             if (response.success) {
                 window.currentTeamId = window.selectedJoinId;
+
+                // SESSION PERSISTENCE: Save to sessionStorage
+                if (window.persistSession) window.persistSession();
+
                 window.toast('Takıma katıldınız!');
                 // Takım sayfasına yönlendir
                 window.router.navigate('/team/' + window.selectedJoinId);
@@ -207,6 +218,10 @@ export const GAME = {
         window.safeSocketEmit('exit-team', window.currentTeamId, function(response) {
             if (response.success) {
                 window.currentTeamId = null;
+
+                // SESSION PERSISTENCE: Save to sessionStorage
+                if (window.persistSession) window.persistSession();
+
                 window.toast('Takımdan çıkıldı.');
                 // Lobby'ye dön
                 window.router.navigate('/lobby');
@@ -243,6 +258,10 @@ export const GAME = {
         window.safeSocketEmit('admin-login', password, function(response) {
             if (response.success) {
                 window.isAdmin = true;
+
+                // SESSION PERSISTENCE: Save to sessionStorage
+                if (window.persistSession) window.persistSession();
+
                 GAME.hidePassModal();
                 window.toast('Admin girişi başarılı!');
                 window.router.navigate('/admin');
@@ -259,6 +278,10 @@ export const GAME = {
 
         window.safeSocketEmit('admin-logout', null, function(response) {
             window.isAdmin = false;
+
+            // SESSION PERSISTENCE: Save to sessionStorage
+            if (window.persistSession) window.persistSession();
+
             window.toast('Admin çıkışı yapıldı.');
             window.router.navigate('/lobby');
         });
