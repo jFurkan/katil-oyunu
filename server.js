@@ -2710,12 +2710,24 @@ io.on('connection', async (socket) => {
     });
 
     // Board öğesi pozisyonunu güncelle
-    socket.on('update-board-item-position', async (data) => {
-        const teamId = socket.data.teamId;
-
-        if (!teamId) return;
+    socket.on('update-board-item-position', async (data, callback) => {
+        if (typeof callback !== 'function') callback = () => {};
 
         try {
+            const teamId = socket.data.teamId;
+
+            if (!teamId) {
+                callback({ success: false, error: 'Takım bulunamadı!' });
+                return;
+            }
+
+            // INPUT VALIDATION: Check data structure
+            if (!data || typeof data.x !== 'number' || typeof data.y !== 'number' || !data.itemId) {
+                callback({ success: false, error: 'Geçersiz veri!' });
+                console.warn('⚠️  Invalid data in update-board-item-position:', data);
+                return;
+            }
+
             await pool.query(
                 'UPDATE murder_board_items SET x = $1, y = $2 WHERE id = $3 AND team_id = $4',
                 [Math.floor(data.x), Math.floor(data.y), data.itemId, teamId]
@@ -2728,8 +2740,11 @@ io.on('connection', async (socket) => {
                 x: Math.floor(data.x),
                 y: Math.floor(data.y)
             });
+
+            callback({ success: true });
         } catch (err) {
             console.error('Pozisyon güncelleme hatası:', err);
+            callback({ success: false, error: 'Güncelleme başarısız!' });
         }
     });
 

@@ -2551,7 +2551,7 @@
             // Yeni admin mesajı (admin'e gönderilen özel mesaj)
             socket.on('new-admin-message', function(message) {
                 // Bildirim göster
-                if (window.currentUser && window.currentUser.window.isAdmin) {
+                if (window.currentUser && window.isAdmin) {
                     toast(`📩 ${message.team_name} takımından yeni mesaj!`);
                 }
 
@@ -2591,80 +2591,112 @@
 
             // Oyun başlatıldı
             socket.on('game-started', function(data) {
-                gameState.started = true;
-                gameState.countdown = data.countdown;
-                gameState.phaseTitle = data.phaseTitle || '';
+                try {
+                    gameState.started = true;
+                    gameState.countdown = data.countdown;
+                    gameState.phaseTitle = data.phaseTitle || '';
 
-                // Admin paneli güncelle
-                document.getElementById('gameStartSection').style.display = 'none';
-                document.getElementById('gameRunningSection').style.display = 'block';
-                ADMIN.updateCountdownDisplay();
+                    // Admin paneli güncelle
+                    var startSection = document.getElementById('gameStartSection');
+                    var runningSection = document.getElementById('gameRunningSection');
+                    if (startSection) startSection.style.display = 'none';
+                    if (runningSection) runningSection.style.display = 'block';
 
-                // Takım sayfası güncelle
-                renderTeamCountdown();
+                    if (window.ADMIN && typeof ADMIN.updateCountdownDisplay === 'function') {
+                        ADMIN.updateCountdownDisplay();
+                    }
 
-                toast('Oyun başladı!');
+                    // Takım sayfası güncelle
+                    if (typeof renderTeamCountdown === 'function') {
+                        renderTeamCountdown();
+                    }
 
-                // Kalıcı bildirim ekle
-                NOTIFICATIONS.add('🎮 Oyun Başladı', 'Dedektiflik macerası başlıyor! İyi şanslar.', 'game');
+                    toast('Oyun başladı!');
+
+                    // Kalıcı bildirim ekle
+                    if (window.NOTIFICATIONS && typeof NOTIFICATIONS.add === 'function') {
+                        NOTIFICATIONS.add('🎮 Oyun Başladı', 'Dedektiflik macerası başlıyor! İyi şanslar.', 'game');
+                    }
+                } catch (err) {
+                    console.error('❌ game-started handler error:', err);
+                }
             });
 
             // Countdown güncellendi
             socket.on('countdown-update', function(countdown) {
-                gameState.countdown = countdown;
+                try {
+                    gameState.countdown = countdown;
 
-                // Admin countdown güncelle
-                ADMIN.updateCountdownDisplay();
-
-                // Takım countdown güncelle
-                var teamDisplay = document.getElementById('teamCountdown');
-                if (teamDisplay) {
-                    teamDisplay.textContent = formatTime(countdown);
-                    if (countdown < 60) {
-                        teamDisplay.classList.add('warning');
-                    } else {
-                        teamDisplay.classList.remove('warning');
+                    // Admin countdown güncelle
+                    if (window.ADMIN && typeof ADMIN.updateCountdownDisplay === 'function') {
+                        ADMIN.updateCountdownDisplay();
                     }
+
+                    // Takım countdown güncelle
+                    var teamDisplay = document.getElementById('teamCountdown');
+                    if (teamDisplay && typeof formatTime === 'function') {
+                        teamDisplay.textContent = formatTime(countdown);
+                        if (countdown < 60) {
+                            teamDisplay.classList.add('warning');
+                        } else {
+                            teamDisplay.classList.remove('warning');
+                        }
+                    }
+                } catch (err) {
+                    console.error('❌ countdown-update handler error:', err);
                 }
             });
 
             // Oyun bitti (parametresiz - countdown dolduğunda veya manuel bitirme)
             socket.on('game-ended', function(report) {
-                gameState.started = false;
-                gameState.countdown = 0;
-                gameState.phaseTitle = '';
+                try {
+                    gameState.started = false;
+                    gameState.countdown = 0;
+                    gameState.phaseTitle = '';
 
-                // Admin paneli güncelle
-                var startSection = document.getElementById('gameStartSection');
-                var runningSection = document.getElementById('gameRunningSection');
-                if (startSection) startSection.style.display = 'block';
-                if (runningSection) runningSection.style.display = 'none';
+                    // Admin paneli güncelle
+                    var startSection = document.getElementById('gameStartSection');
+                    var runningSection = document.getElementById('gameRunningSection');
+                    if (startSection) startSection.style.display = 'block';
+                    if (runningSection) runningSection.style.display = 'none';
 
-                // Admin countdown display'i temizle
-                var adminCountdown = document.getElementById('adminCountdown');
-                if (adminCountdown) {
-                    adminCountdown.textContent = '--:--';
-                    adminCountdown.classList.remove('warning');
-                }
-
-                // Takım sayfası güncelle
-                renderTeamCountdown();
-
-                // Eğer report varsa (otomatik bitişte), göster
-                if (report && report.teams) {
-                    console.log('Oyun bitti, final raporu alındı:', report);
-                    toast('🏁 Oyun bitti! Rapor gösteriliyor...');
-                    GAME.showFinalReport(report);
-
-                    // Kazanan takımı bildirimde göster
-                    if (report.winner) {
-                        NOTIFICATIONS.add('🏆 Oyun Bitti', report.winner.name + ' takımı kazandı! (' + report.winner.score + ' puan)', 'winner');
-                    } else {
-                        NOTIFICATIONS.add('🏁 Oyun Bitti', 'Oyun sona erdi. Raporu görüntüleyin.', 'game');
+                    // Admin countdown display'i temizle
+                    var adminCountdown = document.getElementById('adminCountdown');
+                    if (adminCountdown) {
+                        adminCountdown.textContent = '--:--';
+                        adminCountdown.classList.remove('warning');
                     }
-                } else {
-                    toast('Oyun bitti!');
-                    NOTIFICATIONS.add('🏁 Oyun Bitti', 'Oyun sona erdi.', 'game');
+
+                    // Takım sayfası güncelle
+                    if (typeof renderTeamCountdown === 'function') {
+                        renderTeamCountdown();
+                    }
+
+                    // Eğer report varsa (otomatik bitişte), göster
+                    if (report && report.teams) {
+                        console.log('Oyun bitti, final raporu alındı:', report);
+                        toast('🏁 Oyun bitti! Rapor gösteriliyor...');
+
+                        if (window.GAME && typeof GAME.showFinalReport === 'function') {
+                            GAME.showFinalReport(report);
+                        }
+
+                        // Kazanan takımı bildirimde göster
+                        if (window.NOTIFICATIONS && typeof NOTIFICATIONS.add === 'function') {
+                            if (report.winner) {
+                                NOTIFICATIONS.add('🏆 Oyun Bitti', report.winner.name + ' takımı kazandı! (' + report.winner.score + ' puan)', 'winner');
+                            } else {
+                                NOTIFICATIONS.add('🏁 Oyun Bitti', 'Oyun sona erdi. Raporu görüntüleyin.', 'game');
+                            }
+                        }
+                    } else {
+                        toast('Oyun bitti!');
+                        if (window.NOTIFICATIONS && typeof NOTIFICATIONS.add === 'function') {
+                            NOTIFICATIONS.add('🏁 Oyun Bitti', 'Oyun sona erdi.', 'game');
+                        }
+                    }
+                } catch (err) {
+                    console.error('❌ game-ended handler error:', err);
                 }
             });
 
