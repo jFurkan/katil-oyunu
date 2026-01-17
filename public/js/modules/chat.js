@@ -91,9 +91,9 @@ export const CHAT = {
                 // Mevcut takÄ±mlarÄ± gÃ¼ncelle
                 updateAvailableTeams: function(teams) {
                     // Kendi takÄ±mÄ±nÄ± hariÃ§ tut
-                    if (currentUser && currentUser.teamId) {
+                    if (window.currentUser && window.currentUser.teamId) {
                         CHAT.availableTeams = teams.filter(function(team) {
-                            return team.id !== currentUser.teamId;
+                            return team.id !== window.currentUser.teamId;
                         });
                     } else {
                         CHAT.availableTeams = teams;
@@ -193,7 +193,7 @@ export const CHAT = {
                     var html = '';
                     sortedMessages.forEach(function(msg) {
                         var time = new Date(msg.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-                        var isOwnMessage = currentUser && msg.user_id === currentUser.userId;
+                        var isOwnMessage = window.currentUser && msg.user_id === window.currentUser.userId;
 
                         // Hedef takÄ±m etiketi
                         var targetLabel = '';
@@ -321,7 +321,7 @@ export const CHAT = {
                         }
 
                         var time = new Date(message.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-                        var isOwnMessage = currentUser && message.user_id === currentUser.userId;
+                        var isOwnMessage = window.currentUser && message.user_id === window.currentUser.userId;
 
                         // Hedef takÄ±m etiketi
                         var targetLabel = '';

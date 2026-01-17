@@ -39,8 +39,8 @@ export const MURDERBOARD = {
                     MURDERBOARD.loadBoard();
 
                     // Takım adını göster (UUID değil, takım adı)
-                    if (currentUser && currentUser.teamId) {
-                        window.safeSocketEmit('get-team', currentUser.teamId, function(response) {
+                    if (window.currentUser && window.currentUser.teamId) {
+                        window.safeSocketEmit('get-team', window.currentUser.teamId, function(response) {
                             if (response && response.success && response.team) {
                                 document.getElementById('mbTeamName').textContent = response.team.name;
                             } else {
@@ -170,7 +170,7 @@ export const MURDERBOARD = {
                 },
 
                 loadBoard: function() {
-                    if (!currentUser || !currentUser.teamId) return;
+                    if (!window.currentUser || !window.currentUser.teamId) return;
 
                     window.safeSocketEmit('get-board-items', null, function(response) {
                         if (response && response.success) {

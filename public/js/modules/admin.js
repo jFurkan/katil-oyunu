@@ -881,8 +881,8 @@ export const ADMIN = {
                 updateCountdownDisplay: function() {
                     var display = document.getElementById('adminCountdown');
                     if (display) {
-                        display.textContent = window.formatTime(gameState.countdown);
-                        if (gameState.countdown < 60) {
+                        display.textContent = window.formatTime(window.gameState.countdown);
+                        if (window.gameState.countdown < 60) {
                             display.classList.add('warning');
                         } else {
                             display.classList.remove('warning');
@@ -890,8 +890,8 @@ export const ADMIN = {
                     }
 
                     var titleDisplay = document.getElementById('adminPhaseTitle');
-                    if (titleDisplay && gameState.phaseTitle) {
-                        titleDisplay.textContent = gameState.phaseTitle;
+                    if (titleDisplay && window.gameState.phaseTitle) {
+                        titleDisplay.textContent = window.gameState.phaseTitle;
                     }
                 },
 

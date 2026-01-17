@@ -41,9 +41,9 @@ export const NOTIFICATIONS = {
         this.updateUI();
 
         // Show notification center button if user is on team page
-        const currentUser = window.currentUser;
+        const window.currentUser = window.window.currentUser;
         const isAdmin = window.isAdmin;
-        if (currentUser && !isAdmin) {
+        if (window.currentUser && !window.isAdmin) {
             const btn = document.getElementById('notificationCenterBtn');
             if (btn) btn.style.display = 'flex';
         }

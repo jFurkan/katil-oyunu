@@ -7,13 +7,13 @@ export const POKE = {
     lastPokeTime: {},
 
     showPokeModal() {
-        const currentUser = window.currentUser;
-        const currentTeamId = window.currentTeamId;
+        const window.currentUser = window.window.currentUser;
+        const window.currentTeamId = window.window.currentTeamId;
         const socket = window.socket;
         const toast = window.toast;
         const htmlEscape = window.htmlEscape;
 
-        if (!currentUser || !currentTeamId) {
+        if (!window.currentUser || !window.currentTeamId) {
             window.toast('Dürtme özelliğini kullanmak için bir takıma giriş yapmalısınız!', true);
             return;
         }
@@ -31,7 +31,7 @@ export const POKE = {
 
             teams.forEach(team => {
                 // Don't show own team
-                if (team.id === currentTeamId) return;
+                if (team.id === window.currentTeamId) return;
 
                 // Rate limiting check
                 const lastPoke = this.lastPokeTime[team.id] || 0;

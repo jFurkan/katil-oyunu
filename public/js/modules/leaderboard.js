@@ -132,11 +132,11 @@ export const LEADERBOARD = {
         }
 
         // Show if user is on team page and game started
-        const currentUser = window.currentUser;
+        const window.currentUser = window.window.currentUser;
         const isAdmin = window.isAdmin;
-        const gameState = window.gameState;
+        const window.gameState = window.window.gameState;
 
-        if (currentUser && !isAdmin && gameState && gameState.started) {
+        if (window.currentUser && !window.isAdmin && window.gameState && window.gameState.started) {
             const board = document.getElementById('liveLeaderboard');
             if (board) {
                 board.classList.remove('hidden');
@@ -164,9 +164,9 @@ export const LEADERBOARD = {
                 }
 
                 // Special notification if user's team became leader
-                const currentUser = window.currentUser;
+                const window.currentUser = window.window.currentUser;
                 const toast = window.toast;
-                if (currentUser && currentUser.team_id === currentLeader.id && toast) {
+                if (window.currentUser && window.currentUser.team_id === currentLeader.id && toast) {
                     toast('🎉 Tebrikler! Takımınız 1. sıraya yükseldi!');
                 }
             }
