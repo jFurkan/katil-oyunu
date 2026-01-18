@@ -156,7 +156,8 @@ export const LEADERBOARD = {
     checkRankChange(teams) {
         // Check for leadership change
         if (teams && teams.length > 0) {
-            const sortedTeams = teams.sort((a, b) => b.score - a.score);
+            // Sort by score (use slice to avoid mutating original array)
+            const sortedTeams = teams.slice().sort((a, b) => b.score - a.score);
             const currentLeader = sortedTeams[0];
 
             if (this.previousLeader && this.previousLeader.id !== currentLeader.id) {

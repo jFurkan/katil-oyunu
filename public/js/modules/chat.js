@@ -108,6 +108,11 @@ export const CHAT = {
                     }
 
                     var input = document.getElementById('inpTeamChat');
+                    // NULL SAFETY: Check if input element exists
+                    if (!input) {
+                        console.error('Chat input element not found');
+                        return;
+                    }
                     var message = input.value.trim();
 
                     if (!message) {

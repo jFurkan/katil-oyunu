@@ -1578,6 +1578,14 @@ io.use((socket, next) => {
     next();
 });
 
+// SECURITY HELPER: Admin auth validation
+function isAdmin(socket) {
+    // Check both socket.data AND session (prevents client-side tampering)
+    return socket.data.isAdmin === true &&
+           socket.request.session &&
+           socket.request.session.isAdmin === true;
+}
+
 // Socket.io bağlantıları
 io.on('connection', async (socket) => {
     const totalClients = io.sockets.sockets.size;
@@ -2324,8 +2332,8 @@ io.on('connection', async (socket) => {
     // Puan değiştir (admin)
     socket.on('change-score', async (data, callback) => {
         if (typeof callback !== 'function') callback = () => {};
-        // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        // GÜVENLİK: Admin kontrolü - socket.data VE session validation
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: change-score -', socket.id);
             return;
@@ -2417,7 +2425,7 @@ io.on('connection', async (socket) => {
     socket.on('delete-team', async (teamId, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: delete-team -', socket.id);
             return;
@@ -2452,7 +2460,7 @@ io.on('connection', async (socket) => {
     socket.on('add-character', async (characterData, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: add-character -', socket.id);
             return;
@@ -2523,7 +2531,7 @@ io.on('connection', async (socket) => {
     socket.on('get-characters', async (callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback([]);
             console.log('⚠️  Yetkisiz admin işlemi: get-characters -', socket.id);
             return;
@@ -2542,7 +2550,7 @@ io.on('connection', async (socket) => {
     socket.on('delete-character', async (characterId, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: delete-character -', socket.id);
             return;
@@ -2569,7 +2577,7 @@ io.on('connection', async (socket) => {
     socket.on('get-uploaded-photos', async (callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: get-uploaded-photos -', socket.id);
             return;
@@ -2623,7 +2631,7 @@ io.on('connection', async (socket) => {
     socket.on('toggle-character-visibility', async (data, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: toggle-character-visibility -', socket.id);
             return;
@@ -2699,7 +2707,7 @@ io.on('connection', async (socket) => {
     socket.on('get-team-board', async (teamId, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ items: [], connections: [] });
             console.log('⚠️  Yetkisiz admin işlemi: get-team-board -', socket.id);
             return;
@@ -2988,7 +2996,7 @@ io.on('connection', async (socket) => {
     socket.on('reset-game', async (callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: reset-game -', socket.id);
             return;
@@ -3086,7 +3094,7 @@ io.on('connection', async (socket) => {
     socket.on('send-general-clue', async (clue, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: send-general-clue -', socket.id);
             return;
@@ -3137,7 +3145,7 @@ io.on('connection', async (socket) => {
     socket.on('delete-general-clue', async (clueId, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: delete-general-clue -', socket.id);
             return;
@@ -3184,7 +3192,7 @@ io.on('connection', async (socket) => {
     socket.on('clear-all-clues', async (callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: clear-all-clues -', socket.id);
             return;
@@ -3216,7 +3224,7 @@ io.on('connection', async (socket) => {
     socket.on('send-announcement', (message, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: send-announcement -', socket.id);
             return;
@@ -3517,7 +3525,7 @@ io.on('connection', async (socket) => {
     socket.on('admin-load-team-chat', async (teamId, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: admin-load-team-chat -', socket.id);
             return;
@@ -3557,7 +3565,7 @@ io.on('connection', async (socket) => {
     socket.on('load-admin-messages', async (callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: load-admin-messages -', socket.id);
             return;
@@ -3588,7 +3596,7 @@ io.on('connection', async (socket) => {
     socket.on('admin-get-teams', async (callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: admin-get-teams -', socket.id);
             return;
@@ -3617,7 +3625,7 @@ io.on('connection', async (socket) => {
     socket.on('admin-send-message', async (data, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: admin-send-message -', socket.id);
             return;
@@ -3679,7 +3687,7 @@ io.on('connection', async (socket) => {
     socket.on('get-statistics', async (callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: get-statistics -', socket.id);
             return;
@@ -3776,7 +3784,7 @@ io.on('connection', async (socket) => {
     socket.on('start-game', (data, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: start-game -', socket.id);
             return;
@@ -3856,7 +3864,7 @@ io.on('connection', async (socket) => {
     socket.on('add-time', (seconds, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: add-time -', socket.id);
             return;
@@ -3893,7 +3901,7 @@ io.on('connection', async (socket) => {
     socket.on('end-game', (callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: end-game -', socket.id);
             return;
@@ -3947,7 +3955,7 @@ io.on('connection', async (socket) => {
     socket.on('add-credit', async (name, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: add-credit -', socket.id);
             return;
@@ -3996,7 +4004,7 @@ io.on('connection', async (socket) => {
     socket.on('remove-credit', async (creditId, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: remove-credit -', socket.id);
             return;
@@ -4028,7 +4036,7 @@ io.on('connection', async (socket) => {
     socket.on('update-credit-content', async (data, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: update-credit-content -', socket.id);
             return;
@@ -4086,7 +4094,7 @@ io.on('connection', async (socket) => {
     socket.on('create-badge', async (data, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: create-badge -', socket.id);
             return;
@@ -4117,7 +4125,7 @@ io.on('connection', async (socket) => {
     socket.on('award-badge', async (data, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: award-badge -', socket.id);
             return;
@@ -4144,7 +4152,7 @@ io.on('connection', async (socket) => {
     socket.on('remove-badge-from-team', async (data, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: remove-badge-from-team -', socket.id);
             return;
@@ -4171,7 +4179,7 @@ io.on('connection', async (socket) => {
     socket.on('delete-badge', async (badgeId, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: delete-badge -', socket.id);
             return;
@@ -4194,7 +4202,7 @@ io.on('connection', async (socket) => {
     socket.on('get-ip-logs', async (callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: get-ip-logs -', socket.id);
             return;
@@ -4225,7 +4233,7 @@ io.on('connection', async (socket) => {
     socket.on('clear-ip-logs', async (data, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: clear-ip-logs -', socket.id);
             return;
@@ -4277,7 +4285,7 @@ io.on('connection', async (socket) => {
     socket.on('get-phases', async (callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: get-phases -', socket.id);
             return;
@@ -4296,7 +4304,7 @@ io.on('connection', async (socket) => {
     socket.on('get-all-users', async (callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: get-all-users -', socket.id);
             return;
@@ -4329,7 +4337,7 @@ io.on('connection', async (socket) => {
     socket.on('delete-user', async (userId, callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: delete-user -', socket.id);
             return;
@@ -4377,7 +4385,7 @@ io.on('connection', async (socket) => {
     socket.on('delete-all-users', async (callback) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
-        if (!socket.data.isAdmin) {
+        if (!isAdmin(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: delete-all-users -', socket.id);
             return;

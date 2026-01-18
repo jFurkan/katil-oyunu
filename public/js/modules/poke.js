@@ -67,8 +67,16 @@ export const POKE = {
                 html = '<div style="text-align: center; padding: 40px; color: #666;"><div style="font-size: 32px; margin-bottom: 10px;">🤷</div><div>Dürtebileceğiniz başka takım yok</div></div>';
             }
 
-            document.getElementById('pokeTeamList').innerHTML = html;
-            document.getElementById('pokeSelectOverlay').classList.add('active');
+            // NULL SAFETY: Check if DOM elements exist
+            const pokeTeamList = document.getElementById('pokeTeamList');
+            const pokeOverlay = document.getElementById('pokeSelectOverlay');
+
+            if (pokeTeamList) {
+                pokeTeamList.innerHTML = html;
+            }
+            if (pokeOverlay) {
+                pokeOverlay.classList.add('active');
+            }
         });
     },
 
