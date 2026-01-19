@@ -1761,31 +1761,26 @@ io.on('connection', async (socket) => {
 
             // GÜVENLİK: Session kontrolü - eğer session varsa kaydet
             if (socket.request.session) {
-                // SECURITY FIX: Regenerate session to prevent session fixation attacks
-                socket.request.session.regenerate((regenerateErr) => {
-                    if (regenerateErr) {
-                        console.error('❌ Session regeneration error:', regenerateErr);
-                        callback({ success: false, error: 'Session initialization failed' });
-                        return;
-                    }
+                // CRITICAL FIX: Socket.io'da regenerate() kullanma - client cookie güncellemiyor!
+                // Direkt mevcut session'a yaz
 
-                    // HTTP-only cookie'ye userId kaydet (güvenli oturum)
-                    socket.request.session.userId = userId;
-                    // CRITICAL FIX: Admin session'dan sonra kullanıcı kaydı yapılırsa
-                    // admin flag'lerini açıkça temizle
-                    socket.request.session.isAdmin = false;
-                    socket.request.session.initialized = true;
+                // HTTP-only cookie'ye userId kaydet (güvenli oturum)
+                socket.request.session.userId = userId;
+                // CRITICAL FIX: Admin session'dan sonra kullanıcı kaydı yapılırsa
+                // admin flag'lerini açıkça temizle
+                socket.request.session.isAdmin = false;
+                socket.request.session.initialized = true;
 
-                    // PRODUCTION DEBUG: Session değerlerini log
-                    console.log('💾 Session BEFORE save:', {
-                        sessionID: socket.request.sessionID,
-                        userId: socket.request.session.userId,
-                        isAdmin: socket.request.session.isAdmin,
-                        initialized: socket.request.session.initialized,
-                        sessionKeys: Object.keys(socket.request.session)
-                    });
+                // PRODUCTION DEBUG: Session değerlerini log
+                console.log('💾 Session BEFORE save:', {
+                    sessionID: socket.request.sessionID,
+                    userId: socket.request.session.userId,
+                    isAdmin: socket.request.session.isAdmin,
+                    initialized: socket.request.session.initialized,
+                    sessionKeys: Object.keys(socket.request.session)
+                });
 
-                    socket.request.session.save((saveErr) => {
+                socket.request.session.save((saveErr) => {
                         if (saveErr) {
                             console.error('❌ Session save error:', saveErr);
                             callback({ success: false, error: 'Session kaydetme hatası!' });
@@ -1820,8 +1815,7 @@ io.on('connection', async (socket) => {
                                 console.error('❌ Profile photo query error:', err);
                                 callback({ success: true, userId: userId, nickname: trimmedNick, profilePhotoUrl: null });
                             });
-                    }); // Close session.save callback
-                }); // Close session.regenerate callback
+                }); // Close session.save callback
             } else {
                 // Profil fotoğrafını al
                 const photoResult = await pool.query('SELECT profile_photo_url FROM users WHERE id = $1', [userId]);
