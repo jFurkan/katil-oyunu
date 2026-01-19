@@ -572,6 +572,24 @@ app.get('/api/admin/users-with-photos', async (req, res) => {
 });
 
 // ========================================
+// HEALTH CHECK & MONITORING
+// ========================================
+
+// Health check endpoint (Railway, monitoring tools için)
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        uptime: Math.floor(process.uptime()),
+        timestamp: new Date().toISOString(),
+        memory: {
+            used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
+            total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB'
+        },
+        connections: io.engine.clientsCount || 0
+    });
+});
+
+// ========================================
 // SPA CLIENT-SIDE ROUTING
 // ========================================
 
