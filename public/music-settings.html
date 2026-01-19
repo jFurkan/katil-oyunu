@@ -262,7 +262,7 @@
             </div>
         </div>
 
-        <button class="btn btn-primary" onclick="saveSettings()">💾 Ayarları Kaydet</button>
+        <button class="btn btn-primary" onclick="saveSettings(event)">💾 Ayarları Kaydet</button>
         <button class="btn btn-secondary" onclick="goBack()">← Geri Dön</button>
 
         <div class="preview-info">
@@ -331,7 +331,7 @@
         }
 
         // Ayarları kaydet
-        function saveSettings() {
+        function saveSettings(event) {
             localStorage.setItem('musicEnabled', isMusicEnabled);
             localStorage.setItem('musicVolume', volumeSlider.value);
 

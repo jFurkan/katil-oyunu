@@ -2842,9 +2842,9 @@
 
             // Init
             window.onload = function() {
-                // UX İYİLEŞTİRME: Her zaman temiz bir başlangıç
-                window.currentUser = null;
-                window.currentTeamId = null;
+                // SESSION FIX: Don't clear session state on page reload
+                // Session clearing should only happen during logout/reset flows
+                // window.currentUser and window.currentTeamId preserved for socket reconnection
                 pageHistory = [];
 
                 NOTIF.updateBadge(); // Bildirim badge'ini güncelle

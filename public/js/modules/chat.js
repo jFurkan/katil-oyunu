@@ -39,32 +39,32 @@ export const CHAT = {
 
                     var html = '';
 
-                    // "TÃ¼m TakÄ±mlar" seÃ§eneÄŸi
+                    // "Tüm Takımlar" seçeneği
                     html += `
-                        <div onclick="CHAT.selectTeam(null, 'TÃ¼m TakÄ±mlar')" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #1a4d4d; color: ${!CHAT.selectedTargetTeamId ? '#4dd4d4' : '#999'}; font-weight: ${!CHAT.selectedTargetTeamId ? '700' : '400'}; transition: background 0.2s;" onmouseover="this.style.background='#1a4d4d'" onmouseout="this.style.background='transparent'">
-                            ğŸ“¢ TÃ¼m TakÄ±mlar
+                        <div onclick="CHAT.selectTeam(null, 'Tüm Takımlar')" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #1a4d4d; color: ${!CHAT.selectedTargetTeamId ? '#4dd4d4' : '#999'}; font-weight: ${!CHAT.selectedTargetTeamId ? '700' : '400'}; transition: background 0.2s;" onmouseover="this.style.background='#1a4d4d'" onmouseout="this.style.background='transparent'">
+                            📢 Tüm Takımlar
                         </div>`;
 
-                    // Admin seÃ§eneÄŸi
+                    // Admin seçeneği
                     var isAdminSelected = CHAT.selectedTargetTeamId === 'admin';
                     html += `
                         <div onclick="CHAT.selectTeam('admin', 'Admin')" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #1a4d4d; color: ${isAdminSelected ? '#fbbf24' : '#f59e0b'}; font-weight: ${isAdminSelected ? '700' : '600'}; transition: background 0.2s;" onmouseover="this.style.background='#1a4d4d'" onmouseout="this.style.background='transparent'">
-                            ğŸ‘‘ Admin (Ã–zel Mesaj)
+                            👑 Admin (Özel Mesaj)
                         </div>`;
 
-                    // DiÄŸer takÄ±mlar
+                    // Diğer takımlar
                     CHAT.availableTeams.forEach(function(team) {
                         var isSelected = CHAT.selectedTargetTeamId === team.id;
                         html += `
                             <div onclick="CHAT.selectTeam('${team.id}', '${htmlEscape(team.name)}')" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #1a4d4d; color: ${isSelected ? '#4dd4d4' : '#ccc'}; font-weight: ${isSelected ? '700' : '400'}; transition: background 0.2s;" onmouseover="this.style.background='#1a4d4d'" onmouseout="this.style.background='transparent'">
-                                ğŸ”’ ${htmlEscape(team.name)}
+                                🔒 ${htmlEscape(team.name)}
                             </div>`;
                     });
 
                     dropdown.innerHTML = html;
                 },
 
-                // TakÄ±m seÃ§
+                // Takım seç
                 selectTeam: function(teamId, teamName) {
                     CHAT.selectedTargetTeamId = teamId;
                     CHAT.selectedTargetTeamName = teamName;
@@ -72,25 +72,25 @@ export const CHAT = {
                     var textEl = document.getElementById('selectedTeamText');
                     if (textEl) {
                         if (teamId === 'admin') {
-                            textEl.textContent = 'ğŸ‘‘ ' + teamName;
+                            textEl.textContent = '👑 ' + teamName;
                         } else if (teamId) {
-                            textEl.textContent = 'ğŸ”’ ' + teamName;
+                            textEl.textContent = '🔒 ' + teamName;
                         } else {
-                            textEl.textContent = 'ğŸ“¢ TÃ¼m TakÄ±mlar';
+                            textEl.textContent = '📢 Tüm Takımlar';
                         }
                     }
 
-                    // Dropdown'Ä± kapat
+                    // Dropdown'ı kapat
                     var dropdown = document.getElementById('teamDropdown');
                     if (dropdown) dropdown.style.display = 'none';
 
-                    // MesajlarÄ± filtrele ve yeniden yÃ¼kle
+                    // Mesajları filtrele ve yeniden yükle
                     CHAT.loadMessages(1);
                 },
 
-                // Mevcut takÄ±mlarÄ± gÃ¼ncelle
+                // Mevcut takımları güncelle
                 updateAvailableTeams: function(teams) {
-                    // Kendi takÄ±mÄ±nÄ± hariÃ§ tut
+                    // Kendi takımını hariç tut
                     if (window.currentUser && window.currentUser.teamId) {
                         CHAT.availableTeams = teams.filter(function(team) {
                             return team.id !== window.currentUser.teamId;
@@ -100,10 +100,10 @@ export const CHAT = {
                     }
                 },
 
-                // Mesaj gÃ¶nder
+                // Mesaj gönder
                 sendMessage: function() {
                     if (!window.socketConnected) {
-                        window.toast('BaÄŸlantÄ± kuruluyor, lÃ¼tfen bekleyin...', true);
+                        window.toast('Bağlantı kuruluyor, lütfen bekleyin...', true);
                         return;
                     }
 
@@ -135,7 +135,7 @@ export const CHAT = {
                     });
                 },
 
-                // MesajlarÄ± yÃ¼kle
+                // Mesajları yükle
                 loadMessages: function(page) {
                     if (CHAT.isLoading) return;
                     CHAT.isLoading = true;
@@ -156,7 +156,7 @@ export const CHAT = {
                     });
                 },
 
-                // Ã–nceki sayfa
+                // Önceki sayfa
                 loadPreviousPage: function() {
                     if (CHAT.currentPage > 1) {
                         CHAT.loadMessages(CHAT.currentPage - 1);
@@ -177,7 +177,7 @@ export const CHAT = {
 
                     if (!container) return;
 
-                    // SayacÄ± gÃ¼ncelle
+                    // Sayacı güncelle
                     if (countEl) {
                         countEl.textContent = messages.length;
                     }
@@ -185,14 +185,14 @@ export const CHAT = {
                     if (messages.length === 0) {
                         container.innerHTML = `
                             <div style="text-align: center; padding: 60px 20px; color: #555;">
-                                <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">ğŸ’¬</div>
-                                <div style="font-size: 14px;">HenÃ¼z mesaj yok</div>
-                                <div style="font-size: 12px; color: #444; margin-top: 5px;">Ä°lk mesajÄ± sen gÃ¶nder!</div>
+                                <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">💬</div>
+                                <div style="font-size: 14px;">Henüz mesaj yok</div>
+                                <div style="font-size: 12px; color: #444; margin-top: 5px;">İlk mesajı sen gönder!</div>
                             </div>`;
                         return;
                     }
 
-                    // MesajlarÄ± WhatsApp sÄ±ralamasÄ±na gÃ¶re dÃ¼zenle (eski â†’ yeni)
+                    // Mesajları WhatsApp sıralamasına göre düzenle (eski → yeni)
                     var sortedMessages = messages.slice().reverse();
 
                     var html = '';
@@ -203,11 +203,11 @@ export const CHAT = {
                         // Hedef takÄ±m etiketi
                         var targetLabel = '';
                         if (msg.target_team_id === 'admin') {
-                            targetLabel = `<span style="color: #fbbf24; font-size: 10px; background: rgba(251,191,36,0.2); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(251,191,36,0.4);">ğŸ‘‘ â†’ Admin (Ã–zel)</span>`;
+                            targetLabel = `<span style="color: #fbbf24; font-size: 10px; background: rgba(251,191,36,0.2); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(251,191,36,0.4);">👑 → Admin (Özel)</span>`;
                         } else if (msg.target_team_name) {
-                            targetLabel = `<span style="color: #d4af37; font-size: 10px; background: rgba(212,175,55,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(212,175,55,0.3);">ğŸ”’ â†’ ${htmlEscape(msg.target_team_name)}</span>`;
+                            targetLabel = `<span style="color: #d4af37; font-size: 10px; background: rgba(212,175,55,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(212,175,55,0.3);">🔒 → ${htmlEscape(msg.target_team_name)}</span>`;
                         } else {
-                            targetLabel = `<span style="color: #4dd4d4; font-size: 10px; background: rgba(77,212,212,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(77,212,212,0.3);">ğŸ“¢ TÃ¼m TakÄ±mlar</span>`;
+                            targetLabel = `<span style="color: #4dd4d4; font-size: 10px; background: rgba(77,212,212,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(77,212,212,0.3);">📢 Tüm Takımlar</span>`;
                         }
 
                         // TakÄ±m rengi badge
@@ -217,9 +217,9 @@ export const CHAT = {
                         // Profil fotoÄŸrafÄ± avatar
                         var avatar = msg.profile_photo_url ?
                             `<img src="${msg.profile_photo_url}" alt="${htmlEscape(msg.nickname)}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid ${isOwnMessage ? '#4dd4d4' : '#ffa500'};">` :
-                            `<div style="width: 32px; height: 32px; border-radius: 50%; background: ${isOwnMessage ? '#0a4040' : '#333'}; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid ${isOwnMessage ? '#4dd4d4' : '#ffa500'};">ğŸ‘¤</div>`;
+                            `<div style="width: 32px; height: 32px; border-radius: 50%; background: ${isOwnMessage ? '#0a4040' : '#333'}; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid ${isOwnMessage ? '#4dd4d4' : '#ffa500'};">💤</div>`;
 
-                        // WhatsApp tarzÄ± gÃ¶rÃ¼nÃ¼m
+                        // WhatsApp tarzı görünüm
                         if (isOwnMessage) {
                             // Kendi mesajÄ±m - SAÄDA
                             html += `
@@ -263,7 +263,7 @@ export const CHAT = {
                     container.scrollTop = container.scrollHeight;
                 },
 
-                // Pagination kontrollerini gÃ¼ncelle
+                // Pagination kontrollerini güncelle
                 updatePagination: function(pagination) {
                     var paginationDiv = document.getElementById('teamChatPagination');
                     var prevBtn = document.getElementById('btnChatPrevPage');
@@ -274,20 +274,20 @@ export const CHAT = {
 
                     if (!paginationDiv) return;
 
-                    // Toplam mesaj sayÄ±sÄ±nÄ± gÃ¼ncelle
+                    // Toplam mesaj sayısını güncelle
                     if (totalMessagesEl) {
                         totalMessagesEl.textContent = pagination.totalMessages;
                         document.getElementById('teamChatCount').textContent = pagination.totalMessages;
                     }
 
-                    // Pagination varsa gÃ¶ster
+                    // Pagination varsa göster
                     if (pagination.totalPages > 1) {
                         paginationDiv.style.display = 'block';
 
                         if (currentPageEl) currentPageEl.textContent = pagination.currentPage;
                         if (totalPagesEl) totalPagesEl.textContent = pagination.totalPages;
 
-                        // Ã–nceki buton
+                        // Önceki buton
                         if (prevBtn) {
                             if (pagination.currentPage > 1) {
                                 prevBtn.disabled = false;
@@ -321,7 +321,7 @@ export const CHAT = {
                         if (!container) return;
 
                         // BoÅŸ mesaj varsa temizle
-                        if (container.querySelector('[style*="HenÃ¼z mesaj yok"]')) {
+                        if (container.querySelector('[style*="Henüz mesaj yok"]')) {
                             container.innerHTML = '';
                         }
 
@@ -333,7 +333,7 @@ export const CHAT = {
                         if (message.target_team_name) {
                             targetLabel = `<span style="color: #d4af37; font-size: 10px; background: rgba(212,175,55,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(212,175,55,0.3);">ğŸ”’ â†’ ${htmlEscape(message.target_team_name)}</span>`;
                         } else {
-                            targetLabel = `<span style="color: #4dd4d4; font-size: 10px; background: rgba(77,212,212,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(77,212,212,0.3);">ğŸ“¢ TÃ¼m TakÄ±mlar</span>`;
+                            targetLabel = `<span style="color: #4dd4d4; font-size: 10px; background: rgba(77,212,212,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(77,212,212,0.3);">📢 Tüm Takımlar</span>`;
                         }
 
                         // TakÄ±m badge
@@ -343,7 +343,7 @@ export const CHAT = {
                         // Profil fotoÄŸrafÄ± avatar
                         var avatar = message.profile_photo_url ?
                             `<img src="${message.profile_photo_url}" alt="${htmlEscape(message.nickname)}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid ${isOwnMessage ? '#4dd4d4' : '#ffa500'};">` :
-                            `<div style="width: 32px; height: 32px; border-radius: 50%; background: ${isOwnMessage ? '#0a4040' : '#333'}; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid ${isOwnMessage ? '#4dd4d4' : '#ffa500'};">ğŸ‘¤</div>`;
+                            `<div style="width: 32px; height: 32px; border-radius: 50%; background: ${isOwnMessage ? '#0a4040' : '#333'}; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid ${isOwnMessage ? '#4dd4d4' : '#ffa500'};">💤</div>`;
 
                         var html = '';
                         if (isOwnMessage) {
@@ -383,7 +383,7 @@ export const CHAT = {
                         container.insertAdjacentHTML('beforeend', html);
                         container.scrollTop = container.scrollHeight;
 
-                        // SayacÄ± gÃ¼ncelle
+                        // Sayacı güncelle
                         var countEl = document.getElementById('teamChatCount');
                         if (countEl) {
                             var currentCount = parseInt(countEl.textContent) || 0;
@@ -392,7 +392,7 @@ export const CHAT = {
                     }
                 },
 
-                // FINAL RAPORU GÃ–STER
+                // FINAL RAPORU GÖSTER
                 showFinalReport: function(report) {
                     var modal = document.getElementById('finalReportModal');
                     var content = document.getElementById('finalReportContent');
@@ -401,7 +401,7 @@ export const CHAT = {
 
                     // Ä°statistikler
                     html += '<div style="background:#111; padding:20px; border-radius:8px; margin-bottom:20px; text-align:center;">';
-                    html += '<h3 style="color:var(--gold); margin-bottom:15px;">ğŸ“Š Oyun Ä°statistikleri</h3>';
+                    html += '<h3 style="color:var(--gold); margin-bottom:15px;">📊 Oyun İstatistikleri</h3>';
                     html += '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:15px;">';
                     html += '<div><div style="font-size:32px; color:var(--gold);">' + report.stats.durationMinutes + '</div><div style="color:#888; font-size:13px;">Dakika</div></div>';
                     html += '<div><div style="font-size:32px; color:#4CAF50;">' + report.stats.totalTeams + '</div><div style="color:#888; font-size:13px;">TakÄ±m</div></div>';
@@ -413,7 +413,7 @@ export const CHAT = {
                     html += '<div style="background:#111; padding:20px; border-radius:8px; margin-bottom:20px;">';
                     html += '<h3 style="color:var(--gold); margin-bottom:15px;">ğŸ… TakÄ±m SÄ±ralamasÄ±</h3>';
                     report.teams.forEach(function(team, index) {
-                        var medal = index === 0 ? 'ğŸ¥‡' : (index === 1 ? 'ğŸ¥ˆ' : (index === 2 ? 'ğŸ¥‰' : ''));
+                        var medal = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : ''));
                         html += '<div style="background:#0a0a0a; padding:15px; margin-bottom:10px; border-radius:6px; display:flex; align-items:center; gap:15px; border-left:4px solid ' + team.color + ';">';
                         html += '<div style="font-size:32px;">' + medal + '</div>';
                         html += '<div style="flex:1;">';

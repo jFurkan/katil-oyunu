@@ -12,7 +12,7 @@ export const CUSTOMIZE = {
             selectColor: function(color) {
                 this.selectedColor = color;
 
-                // TÃ¼m renk seÃ§eneklerini gÃ¼ncelle
+                // Tüm renk seçeneklerini güncelle
                 var options = document.querySelectorAll('.color-option');
                 options.forEach(function(opt) {
                     opt.classList.remove('selected');

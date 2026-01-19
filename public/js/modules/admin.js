@@ -139,7 +139,7 @@ export const ADMIN = {
                     if (characters.length === 0) {
                         container.innerHTML = `
                             <div style="text-align: center; padding: 40px 20px; color: #555;">
-                                <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.3;">ğŸ‘¤</div>
+                                <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.3;">💤</div>
                                 <div style="font-size: 14px;">Henüz karakter eklenmemiş</div>
                             </div>
                         `;
@@ -154,7 +154,7 @@ export const ADMIN = {
                                 ${char.photo_url ? `
                                     <img src="${char.photo_url}" alt="${char.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 2px solid #444;">
                                 ` : `
-                                    <div style="width: 50px; height: 50px; background: #222; border-radius: 6px; border: 2px solid #444; display: flex; align-items: center; justify-content: center; font-size: 24px;">ğŸ‘¤</div>
+                                    <div style="width: 50px; height: 50px; background: #222; border-radius: 6px; border: 2px solid #444; display: flex; align-items: center; justify-content: center; font-size: 24px;">💤</div>
                                 `}
 
                                 <div style="flex: 1; min-width: 0;">
@@ -208,7 +208,7 @@ export const ADMIN = {
                     }, function(response) {
                         console.log('Toggle response:', response);
                         if (response.success) {
-                            window.toast(visible ? 'ğŸ‘ï¸ Karakter açıldı - Takımlar görebilir' : 'ğŸ”’ Karakter kapatıldı');
+                            window.toast(visible ? 'ğŸ‘ï¸ Karakter açıldı - Takımlar görebilir' : '🔓 Karakter kapatıldı');
                         } else {
                             // Hata varsa toggle'ı geri al
                             checkboxElement.checked = !visible;
@@ -277,7 +277,7 @@ export const ADMIN = {
                             <div style="padding: 15px; background: ${isActive ? '#0d2818' : '#0a0a0a'}; border: 1px solid ${isActive ? '#1a5d1a' : '#333'}; border-radius: 8px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                     <div style="font-weight: 600; color: ${isActive ? '#4dd44d' : '#4dd4d4'}; font-size: 14px;">
-                                        ${isActive ? 'ğŸŸ¢ ' : ''}${window.escapeHtml(phase.title)}
+                                        ${isActive ? '🟢 ' : ''}${window.escapeHtml(phase.title)}
                                     </div>
                                     <div style="font-size: 11px; color: #666;">
                                         ${phase.durationMinutes} dakika
@@ -491,13 +491,13 @@ export const ADMIN = {
                     if (teamMessages.length === 0) {
                         container.innerHTML = `
                             <div style="text-align: center; padding: 80px 20px; color: #555;">
-                                <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">ğŸ“­</div>
+                                <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">🔭</div>
                                 <div style="font-size: 14px;">Bu takımdan mesaj yok</div>
                             </div>`;
                         return;
                     }
 
-                    // Mesajları WhatsApp sıralamasına göre düzenle (eski â†’ yeni)
+                    // Mesajları WhatsApp sıralamasına göre düzenle (eski → yeni)
                     var sortedMessages = teamMessages.slice().reverse();
 
                     var html = '';
@@ -517,8 +517,8 @@ export const ADMIN = {
                             <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
                                 <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-end;">
                                     <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; justify-content: flex-end;">
-                                        <span style="color: #666; font-size: 11px;">ğŸ• ${date} ${time}</span>
-                                        <span style="background: #fbbf24; color: #000; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">ğŸ‘‘ Admin</span>
+                                        <span style="color: #666; font-size: 11px;">🕒 ${date} ${time}</span>
+                                        <span style="background: #fbbf24; color: #000; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">👑 Admin</span>
                                     </div>
                                     <div style="background: linear-gradient(135deg, #0d5858, #0a4040); border: 1px solid #1a7070; border-radius: 12px 12px 2px 12px; padding: 12px 16px; color: #fff; font-size: 14px; line-height: 1.6; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
                                         ${htmlEscape(msg.message)}
@@ -531,9 +531,9 @@ export const ADMIN = {
                             <div style="display: flex; justify-content: flex-start; margin-bottom: 12px;">
                                 <div style="max-width: 75%; display: flex; flex-direction: column; align-items: flex-start;">
                                     <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
-                                        <span style="color: #fbbf24; font-weight: 600; font-size: 13px;">ğŸ‘¤ ${htmlEscape(msg.nickname)}</span>
+                                        <span style="color: #fbbf24; font-weight: 600; font-size: 13px;">💤 ${htmlEscape(msg.nickname)}</span>
                                         ${teamBadge}
-                                        <span style="color: #666; font-size: 11px;">ğŸ• ${date} ${time}</span>
+                                        <span style="color: #666; font-size: 11px;">🕒 ${date} ${time}</span>
                                     </div>
                                     <div style="background: linear-gradient(135deg, rgba(251,191,36,0.12), rgba(251,191,36,0.05)); border: 1px solid rgba(251,191,36,0.4); border-radius: 12px 12px 12px 2px; padding: 12px 16px; color: #fff; font-size: 14px; line-height: 1.6; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
                                         ${htmlEscape(msg.message)}
@@ -639,7 +639,7 @@ export const ADMIN = {
                                 <div class="admin-notif-message">${htmlEscape(clue.text)}</div>
                                 <div class="admin-notif-time">${clue.created_at ? new Date(clue.created_at).toLocaleString('tr-TR') : ''}</div>
                             </div>
-                            <button class="admin-notif-delete" onclick="ADMIN.deleteClue(${clue.id})">ğŸ—‘ï¸ Sil</button>
+                            <button class="admin-notif-delete" onclick="ADMIN.deleteClue(${clue.id})">🗑️ Sil</button>
                         </div>`;
                     });
                     container.innerHTML = html;
@@ -731,13 +731,13 @@ export const ADMIN = {
                     if (filteredMessages.length === 0) {
                         container.innerHTML = `
                             <div style="text-align: center; padding: 60px 20px; color: #555;">
-                                <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">ğŸ’¬</div>
+                                <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">💬</div>
                                 <div style="font-size: 14px;">Henüz mesaj yok</div>
                             </div>`;
                         return;
                     }
 
-                    // Mesajları WhatsApp sıralamasına göre düzenle (eski â†’ yeni)
+                    // Mesajları WhatsApp sıralamasına göre düzenle (eski → yeni)
                     var sortedMessages = filteredMessages.slice().reverse();
 
                     var html = '';
@@ -753,9 +753,9 @@ export const ADMIN = {
                         // Hedef takım etiketi
                         var targetLabel = '';
                         if (msg.target_team_name) {
-                            targetLabel = `<span style="color: #d4af37; font-size: 10px; background: rgba(212,175,55,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(212,175,55,0.3);">ğŸ”’ â†’ ${htmlEscape(msg.target_team_name)}</span>`;
+                            targetLabel = `<span style="color: #d4af37; font-size: 10px; background: rgba(212,175,55,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(212,175,55,0.3);">🔓 → ${htmlEscape(msg.target_team_name)}</span>`;
                         } else {
-                            targetLabel = `<span style="color: #4dd4d4; font-size: 10px; background: rgba(77,212,212,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(77,212,212,0.3);">ğŸ“¢ Tüm Takımlar</span>`;
+                            targetLabel = `<span style="color: #4dd4d4; font-size: 10px; background: rgba(77,212,212,0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(77,212,212,0.3);">📢 Tüm Takımlar</span>`;
                         }
 
                         // WhatsApp tarzı görünüm
@@ -768,7 +768,7 @@ export const ADMIN = {
                                         <span style="color: #444; font-size: 10px;">${time}</span>
                                         ${targetLabel}
                                         ${teamBadge}
-                                        <span style="color: #fbbf24; font-weight: 700; font-size: 13px;">ğŸ‘‘ ${htmlEscape(msg.nickname)}</span>
+                                        <span style="color: #fbbf24; font-weight: 700; font-size: 13px;">👑 ${htmlEscape(msg.nickname)}</span>
                                     </div>
                                     <div style="background: linear-gradient(135deg, #4a3800, #2d2200); border: 2px solid #fbbf24; border-radius: 12px 12px 2px 12px; padding: 10px 14px; color: #fbbf24; font-size: 14px; font-weight: 600; word-wrap: break-word; box-shadow: 0 2px 8px rgba(251,191,36,0.3);">
                                         ${htmlEscape(msg.message)}
@@ -1044,9 +1044,9 @@ export const ADMIN = {
                     var html = '';
                     users.mostActive.forEach(function(user, index) {
                         var medal = '';
-                        if (index === 0) medal = 'ğŸ¥‡';
-                        else if (index === 1) medal = 'ğŸ¥ˆ';
-                        else if (index === 2) medal = 'ğŸ¥‰';
+                        if (index === 0) medal = '🥇';
+                        else if (index === 1) medal = '🥈';
+                        else if (index === 2) medal = '🥉';
 
                         html += `
                         <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 15px; background:#0a0a0a; border-radius:8px; margin-bottom:8px;">
@@ -1073,9 +1073,9 @@ export const ADMIN = {
                     var html = '';
                     scoring.forEach(function(team, index) {
                         var medal = '';
-                        if (index === 0) medal = 'ğŸ¥‡';
-                        else if (index === 1) medal = 'ğŸ¥ˆ';
-                        else if (index === 2) medal = 'ğŸ¥‰';
+                        if (index === 0) medal = '🥇';
+                        else if (index === 1) medal = '🥈';
+                        else if (index === 2) medal = '🥉';
 
                         var rank = index + 1;
 
