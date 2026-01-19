@@ -1732,6 +1732,8 @@ io.on('connection', async (socket) => {
 
             // GÜVENLİK: Socket session'a userId kaydet
             socket.data.userId = userId;
+            // CRITICAL FIX: Admin flag'ini temizle (normal kullanıcı)
+            socket.data.isAdmin = false;
 
             console.log('🔍 REGISTER DEBUG:', {
                 hasSession: !!socket.request.session,
@@ -1751,12 +1753,17 @@ io.on('connection', async (socket) => {
 
                     // HTTP-only cookie'ye userId kaydet (güvenli oturum)
                     socket.request.session.userId = userId;
+                    // CRITICAL FIX: Admin session'dan sonra kullanıcı kaydı yapılırsa
+                    // admin flag'lerini açıkça temizle
+                    socket.request.session.isAdmin = false;
+                    socket.request.session.initialized = true;
 
                     if (process.env.NODE_ENV !== 'production') {
                         console.log('💾 Session regenerated and userId saved:', {
                             sessionID: socket.request.sessionID,
                             userId: userId,
-                            nickname: trimmedNick
+                            nickname: trimmedNick,
+                            isAdmin: false
                         });
                     }
 
