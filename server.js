@@ -1657,9 +1657,9 @@ io.on('connection', async (socket) => {
             return;
         }
 
-        // Bot farm koruması: IP bazlı limit (24 saatte max 10 kullanıcı)
+        // Bot farm koruması: IP bazlı limit (24 saatte max 100 kullanıcı - test için artırıldı)
         const clientIP = botProtection.getClientIP(socket);
-        const ipAllowed = await botProtection.checkLimit(clientIP, 'register-user', 10, 24);
+        const ipAllowed = await botProtection.checkLimit(clientIP, 'register-user', 100, 24);
 
         if (!ipAllowed) {
             callback({ success: false, error: 'Bu IP adresinden çok fazla kayıt yapıldı. Lütfen daha sonra tekrar deneyin.' });
@@ -1969,9 +1969,9 @@ io.on('connection', async (socket) => {
             return;
         }
 
-        // Bot farm koruması: IP bazlı limit (24 saatte max 2 takım)
+        // Bot farm koruması: IP bazlı limit (24 saatte max 50 takım - test için artırıldı)
         const clientIP = botProtection.getClientIP(socket);
-        const ipAllowed = await botProtection.checkLimit(clientIP, 'create-team', 2, 24);
+        const ipAllowed = await botProtection.checkLimit(clientIP, 'create-team', 50, 24);
 
         if (!ipAllowed) {
             callback({ success: false, error: 'Bu IP adresinden çok fazla takım oluşturuldu. Lütfen daha sonra tekrar deneyin.' });
