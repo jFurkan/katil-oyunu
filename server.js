@@ -1846,13 +1846,16 @@ io.on('connection', async (socket) => {
     socket.on('reconnect-user', async (callback) => {
         if (typeof callback !== 'function') callback = () => {};
         try {
-            // DEBUG: Session durumu
+            // PRODUCTION DEBUG: Session durumu DETAYLI
             console.log('🔄 Reconnect talebi:', {
+                socketId: socket.id,
                 hasSession: !!socket.request.session,
                 sessionID: socket.request.sessionID,
                 userId: socket.request.session?.userId,
                 isAdmin: socket.request.session?.isAdmin,
-                cookie: socket.handshake.headers.cookie ? 'var' : 'yok'
+                sessionKeys: socket.request.session ? Object.keys(socket.request.session) : 'NO SESSION',
+                cookie: socket.handshake.headers.cookie ? 'var' : 'yok',
+                cookieHeader: socket.handshake.headers.cookie?.substring(0, 50) || 'none'
             });
 
             // GÜVENLİK: Sadece session'dan userId oku (HTTP-only cookie)
@@ -1879,7 +1882,12 @@ io.on('connection', async (socket) => {
                 }
 
                 // Session yok - kullanıcı henüz login olmamış (normal durum)
-                console.log('ℹ️  Reconnect: Session userId yok (kullanıcı giriş yapmamış)');
+                console.log('ℹ️  Reconnect: Session userId yok (kullanıcı giriş yapmamış)', {
+                    socketId: socket.id,
+                    sessionID: socket.request.sessionID,
+                    sessionKeys: socket.request.session ? Object.keys(socket.request.session) : [],
+                    hasCookie: !!socket.handshake.headers.cookie
+                });
                 callback({ success: false, requireLogin: true });
                 return;
             }
