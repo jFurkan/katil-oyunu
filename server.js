@@ -221,7 +221,7 @@ const sessionMiddleware = session({
     }),
     secret: process.env.SESSION_SECRET,  // Artık zorunlu (validation yukarıda)
     resave: false,
-    saveUninitialized: false,  // FIX: Sadece gerçek veri yazıldığında session oluştur (boş session'ları engelle)
+    saveUninitialized: true,  // CRITICAL FIX: Socket bağlantısında session oluştur (register için gerekli)
     cookie: {
         httpOnly: true,        // XSS koruması: JavaScript erişimi yok
         secure: process.env.NODE_ENV === 'production',  // Railway'de HTTPS için gerekli
