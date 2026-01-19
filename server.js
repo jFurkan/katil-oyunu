@@ -1758,47 +1758,50 @@ io.on('connection', async (socket) => {
                     socket.request.session.isAdmin = false;
                     socket.request.session.initialized = true;
 
-                    if (process.env.NODE_ENV !== 'production') {
-                        console.log('💾 Session regenerated and userId saved:', {
-                            sessionID: socket.request.sessionID,
-                            userId: userId,
-                            nickname: trimmedNick,
-                            isAdmin: false
-                        });
-                    }
-
-                    socket.request.session.save(async (saveErr) => {
-                        if (saveErr) {
-                            console.error('❌ Session save error:', saveErr);
-                        } else {
-                            if (process.env.NODE_ENV !== 'production') {
-                                console.log('✅ Session kaydedildi:', socket.request.sessionID);
-                            }
-
-                    // Profil fotoğrafını al
-                    const photoResult = await pool.query('SELECT profile_photo_url FROM users WHERE id = $1', [userId]);
-                    const profilePhotoUrl = photoResult.rows[0]?.profile_photo_url || null;
-
-                    // GÜVENLİK FIX: Callback'i session save SONRASINDA çağır
-                    callback({ success: true, userId: userId, nickname: trimmedNick, profilePhotoUrl: profilePhotoUrl });
-
-                    // Tüm kullanıcılara güncel listeyi gönder
-                    getUsersByTeam().then(users => {
-                        io.emit('users-update', users);
+                    // PRODUCTION DEBUG: Session değerlerini log
+                    console.log('💾 Session BEFORE save:', {
+                        sessionID: socket.request.sessionID,
+                        userId: socket.request.session.userId,
+                        isAdmin: socket.request.session.isAdmin,
+                        initialized: socket.request.session.initialized,
+                        sessionKeys: Object.keys(socket.request.session)
                     });
 
-                    // Log mesajı - yeni kayıt mı yoksa reconnect mi?
-                    if (process.env.NODE_ENV !== 'production') {
-                        if (isReconnect) {
-                            console.log('✓ Kullanıcı yeniden bağlandı:', trimmedNick, '- IP:', clientIP, '- userId:', userId);
-                        } else {
-                            console.log('✓ Yeni kullanıcı kaydedildi:', trimmedNick, '- IP:', clientIP, '- userId:', userId);
+                    socket.request.session.save((saveErr) => {
+                        if (saveErr) {
+                            console.error('❌ Session save error:', saveErr);
+                            callback({ success: false, error: 'Session kaydetme hatası!' });
+                            return;
                         }
-                    } else {
-                        // PRODUCTION: Log without sensitive data
-                        console.log(isReconnect ? '✓ Kullanıcı yeniden bağlandı' : '✓ Yeni kullanıcı kaydedildi:', trimmedNick);
-                    }
-                        } // Close else block
+
+                        // PRODUCTION DEBUG: Session kaydedildikten SONRA kontrol
+                        console.log('✅ Session AFTER save:', {
+                            sessionID: socket.request.sessionID,
+                            userId: socket.request.session.userId,
+                            isAdmin: socket.request.session.isAdmin,
+                            sessionKeys: Object.keys(socket.request.session)
+                        });
+
+                        // Profil fotoğrafını al (session save tamamlandıktan SONRA)
+                        pool.query('SELECT profile_photo_url FROM users WHERE id = $1', [userId])
+                            .then(photoResult => {
+                                const profilePhotoUrl = photoResult.rows[0]?.profile_photo_url || null;
+
+                                // GÜVENLİK FIX: Callback'i session save SONRASINDA çağır
+                                callback({ success: true, userId: userId, nickname: trimmedNick, profilePhotoUrl: profilePhotoUrl });
+
+                                // Tüm kullanıcılara güncel listeyi gönder
+                                getUsersByTeam().then(users => {
+                                    io.emit('users-update', users);
+                                });
+
+                                // Log mesajı - yeni kayıt mı yoksa reconnect mi?
+                                console.log(isReconnect ? '✓ Kullanıcı yeniden bağlandı' : '✓ Yeni kullanıcı kaydedildi:', trimmedNick);
+                            })
+                            .catch(err => {
+                                console.error('❌ Profile photo query error:', err);
+                                callback({ success: true, userId: userId, nickname: trimmedNick, profilePhotoUrl: null });
+                            });
                     }); // Close session.save callback
                 }); // Close session.regenerate callback
             } else {
