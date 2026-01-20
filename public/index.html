@@ -1609,8 +1609,15 @@
                 console.log('ℹ️  NOT: httpOnly cookie\'ler (session) JavaScript\'ten görülmez - bu normal ve güvenlik için iyidir.');
                 console.log('   Session cookie\'leri görmek için: Browser DevTools → Application → Cookies');
 
-                // SESSION RESTORE: Server'dan session kontrolü yap
-                safeSocketEmit('reconnect-user', null, function(response) {
+                // TIMING FIX: Eğer kullanıcı zaten var (register yeni bitti), reconnect'i atla
+                if (window.currentUser && window.currentUser.userId) {
+                    console.log('✅ User already logged in, skipping reconnect-user:', window.currentUser.userId);
+                    return;
+                }
+
+                // SESSION RESTORE: Server'dan session kontrolü yap (küçük delay ile - session save tamamlansın)
+                setTimeout(function() {
+                    safeSocketEmit('reconnect-user', null, function(response) {
                     console.log('🔄 Session restore yanıtı:', response);
 
                     if (response && response.success) {
@@ -1677,6 +1684,8 @@
                         router.handleRoute(currentPath);
                     }
                 });
+                }); // Close safeSocketEmit callback
+            }, 500); // TIMING FIX: 500ms delay - session.save() tamamlansın diye
             });
 
             socket.on('disconnect', function() {
