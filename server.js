@@ -1647,6 +1647,8 @@ io.on('connection', async (socket) => {
 
     // Kullanıcı kaydı (nickname al)
     socket.on('register-user', async (nickname, callback) => {
+        console.log('🎯 [REGISTER-START] Handler çağrıldı:', { socketId: socket.id, nickname: nickname });
+
         // GUARD: Callback yoksa boş fonksiyon ata (crash önleme)
         if (typeof callback !== 'function') callback = () => {};
 
@@ -1667,12 +1669,15 @@ io.on('connection', async (socket) => {
             return;
         }
 
+        console.log('✅ [REGISTER-PASS] Rate limit ve bot protection geçildi, IP:', clientIP);
+
         // GÜVENLİK: Database transaction ile race condition önleme
         let client;
 
         try {
             client = await pool.connect();
             await client.query('BEGIN');
+            console.log('🗄️  [REGISTER-DB] Transaction başlatıldı');
 
             // GÜVENLİK: Input validation & XSS koruması
             const nickValidation = InputValidator.validateNickname(nickname);
@@ -1738,6 +1743,7 @@ io.on('connection', async (socket) => {
                     'INSERT INTO users (id, nickname, socket_id, online, ip_address, last_activity) VALUES ($1, $2, $3, TRUE, $4, NOW())',
                     [userId, trimmedNick, socket.id, clientIP]
                 );
+                console.log('➕ [REGISTER-INSERT] Yeni kullanıcı INSERT edildi:', { userId, nickname: trimmedNick });
             }
 
             // IP aktivitesini kaydet (sadece yeni kayıtlar için)
@@ -1747,6 +1753,7 @@ io.on('connection', async (socket) => {
 
             // Transaction commit
             await client.query('COMMIT');
+            console.log('✅ [REGISTER-COMMIT] Transaction commit edildi, userId:', userId);
 
             // GÜVENLİK: Socket session'a userId kaydet
             socket.data.userId = userId;
@@ -1782,7 +1789,7 @@ io.on('connection', async (socket) => {
 
                 socket.request.session.save((saveErr) => {
                         if (saveErr) {
-                            console.error('❌ Session save error:', saveErr);
+                            console.error('❌ [REGISTER-ERROR] Session save error:', saveErr);
                             callback({ success: false, error: 'Session kaydetme hatası!' });
                             return;
                         }
@@ -1796,12 +1803,15 @@ io.on('connection', async (socket) => {
                         });
 
                         // Profil fotoğrafını al (session save tamamlandıktan SONRA)
+                        console.log('📸 [REGISTER-PHOTO] Profil fotoğrafı sorgulanıyor...');
                         pool.query('SELECT profile_photo_url FROM users WHERE id = $1', [userId])
                             .then(photoResult => {
                                 const profilePhotoUrl = photoResult.rows[0]?.profile_photo_url || null;
 
+                                console.log('🎉 [REGISTER-CALLBACK] Callback çağrılıyor:', { userId, nickname: trimmedNick });
                                 // GÜVENLİK FIX: Callback'i session save SONRASINDA çağır
                                 callback({ success: true, userId: userId, nickname: trimmedNick, profilePhotoUrl: profilePhotoUrl });
+                                console.log('✅ [REGISTER-DONE] Callback başarıyla tamamlandı!');
 
                                 // Tüm kullanıcılara güncel listeyi gönder
                                 getUsersByTeam().then(users => {
@@ -1838,14 +1848,16 @@ io.on('connection', async (socket) => {
             }
 
         } catch (err) {
+            console.error('❌ [REGISTER-EXCEPTION] HATA:', err);
             if (client) {
                 try {
                     await client.query('ROLLBACK');
+                    console.log('🔄 [REGISTER-ROLLBACK] Transaction rollback edildi');
                 } catch (rollbackErr) {
-                    console.error('ROLLBACK hatası:', rollbackErr);
+                    console.error('❌ [REGISTER-ROLLBACK-ERROR] Rollback hatası:', rollbackErr);
                 }
             }
-            console.error('Kullanıcı kayıt hatası:', err);
+            console.error('❌ [REGISTER-FAIL] Kullanıcı kayıt hatası:', err);
             callback({ success: false, error: 'Kayıt oluşturulamadı!' });
         } finally {
             if (client) {
