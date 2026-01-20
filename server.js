@@ -1703,15 +1703,7 @@ io.on('connection', async (socket) => {
                 // UX İYİLEŞTİRME: Online ama farklı socket_id ise (sayfa yenileme/timeout)
                 const isDifferentSocket = existingUser.socket_id !== socket.id;
 
-                if (existingUser.online && !isDifferentSocket) {
-                    // Kullanıcı gerçekten online ve aynı socket - kullanılamaz
-                    await client.query('ROLLBACK');
-                    callback({ success: false, error: 'Bu nick kullanımda!' });
-                    return;
-                }
-
-                // Kullanıcı offline VEYA farklı socket (timeout/yenileme)
-                // GÜVENLİK: Aynı IP'den mi kontrol et
+                // GÜVENLİK: Önce IP kontrolü yap
                 const ipCheckResult = await client.query(
                     'SELECT COUNT(*) FROM ip_activity WHERE ip_address = $1 AND action = $2 AND created_at > NOW() - INTERVAL \'24 hours\'',
                     [clientIP, 'register-user']
@@ -1719,6 +1711,7 @@ io.on('connection', async (socket) => {
 
                 const sameIPRegistration = parseInt(ipCheckResult.rows[0].count, 10) > 0;
 
+                // AYNΙ IP'DEN geliyorsa direkt izin ver (kullanıcı yeniden giriş yapıyor)
                 if (sameIPRegistration) {
                     // Aynı IP'den 24 saat içinde kayıt var - bu muhtemelen aynı kişi
                     // YENİ: Mevcut kaydı güncelle, silme
