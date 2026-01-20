@@ -1868,6 +1868,7 @@ io.on('connection', async (socket) => {
 
     // Kullanıcı reconnect (sayfa yenilendiğinde) - Session'dan otomatik oku
     socket.on('reconnect-user', async (callback) => {
+        console.log('🔄 [RECONNECT-START] Handler çağrıldı, socketId:', socket.id);
         if (typeof callback !== 'function') callback = () => {};
         try {
             // PRODUCTION DEBUG: Session durumu DETAYLI
@@ -1889,6 +1890,7 @@ io.on('connection', async (socket) => {
             if (!sessionUserId) {
                 // userId yok ama admin session varsa admin restore et
                 if (sessionIsAdmin) {
+                    console.log('👑 [RECONNECT-ADMIN] Admin session restore ediliyor...');
                     socket.data.userId = null;
                     socket.data.isAdmin = true;
 
@@ -1901,18 +1903,20 @@ io.on('connection', async (socket) => {
                         isAdmin: true
                     });
 
-                    console.log('✅ Reconnect: Admin session restore edildi (userId yok)');
+                    console.log('✅ [RECONNECT-ADMIN-DONE] Admin session restore edildi (userId yok)');
                     return;
                 }
 
                 // Session yok - kullanıcı henüz login olmamış (normal durum)
-                console.log('ℹ️  Reconnect: Session userId yok (kullanıcı giriş yapmamış)', {
+                console.log('⚠️  [RECONNECT-NO-USER] Session userId yok (kullanıcı giriş yapmamış)', {
                     socketId: socket.id,
                     sessionID: socket.request.sessionID,
                     sessionKeys: socket.request.session ? Object.keys(socket.request.session) : [],
                     hasCookie: !!socket.handshake.headers.cookie
                 });
+                console.log('🔙 [RECONNECT-REQUIRE-LOGIN] requireLogin callback çağrılıyor');
                 callback({ success: false, requireLogin: true });
+                console.log('✅ [RECONNECT-REQUIRE-LOGIN-DONE] Callback tamamlandı');
                 return;
             }
 
@@ -1944,6 +1948,7 @@ io.on('connection', async (socket) => {
             // Son aktivite zamanını güncelle
             await userCleanup.updateActivity(sessionUserId);
 
+            console.log('✅ [RECONNECT-SUCCESS] Kullanıcı bulundu, callback çağrılıyor:', { userId: user.id, nickname: user.nickname });
             // Kullanıcı bilgilerini döndür (nickname dahil)
             callback({
                 success: true,
@@ -1953,6 +1958,7 @@ io.on('connection', async (socket) => {
                 isCaptain: user.is_captain,
                 isAdmin: socket.request.session?.isAdmin || false
             });
+            console.log('🎉 [RECONNECT-DONE] Callback tamamlandı!');
 
             // Kullanıcı listesini güncelle
             const users = await getUsersByTeam();
@@ -1960,7 +1966,7 @@ io.on('connection', async (socket) => {
 
             console.log('Kullanıcı reconnect edildi:', user.nickname, '- Yeni socket:', socket.id);
         } catch (err) {
-            console.error('Kullanıcı reconnect hatası:', err);
+            console.error('❌ [RECONNECT-ERROR] Kullanıcı reconnect hatası:', err);
             callback({ success: false, error: 'Reconnect başarısız!' });
         }
     });
