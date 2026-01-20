@@ -2310,41 +2310,39 @@ io.on('connection', async (socket) => {
 
             // GÜVENLİK: Session kontrolü - eğer session varsa kaydet
             if (socket.request.session) {
-                // SECURITY FIX: Regenerate session to prevent session fixation attacks
-                socket.request.session.regenerate((regenerateErr) => {
-                    if (regenerateErr) {
-                        console.error('❌ Admin session regeneration error:', regenerateErr);
-                        callback({ success: false, error: 'Session initialization failed' });
+                // CRITICAL FIX: Socket.io'da regenerate() kullanma - client cookie güncellemiyor!
+                // Direkt mevcut session'a yaz (aynı register-user fix'i gibi)
+
+                // HTTP-only session'a admin bilgisini kaydet
+                socket.request.session.isAdmin = true;
+
+                // Eğer userId varsa onu da session'a kaydet
+                if (socket.data.userId) {
+                    socket.request.session.userId = socket.data.userId;
+                }
+
+                // team_id'yi session'dan temizle
+                delete socket.request.session.teamId;
+
+                socket.request.session.save((saveErr) => {
+                    if (saveErr) {
+                        console.error('❌ Admin session save error:', saveErr);
+                        callback({ success: false, error: 'Session kaydetme hatası' });
                         return;
                     }
 
-                    // HTTP-only session'a admin bilgisini kaydet
-                    socket.request.session.isAdmin = true;
-
-                    // Eğer userId varsa onu da session'a kaydet
-                    if (socket.data.userId) {
-                        socket.request.session.userId = socket.data.userId;
+                    if (process.env.NODE_ENV !== 'production') {
+                        console.log('✅ Admin session saved. isAdmin=', socket.request.session.isAdmin, 'sessionID=', socket.request.sessionID);
                     }
 
-                    // team_id'yi session'dan temizle
-                    delete socket.request.session.teamId;
+                    callback({ success: true });
 
-                    socket.request.session.save((saveErr) => {
-                        if (saveErr) {
-                            console.error('❌ Admin session save error:', saveErr);
-                        } else {
-                            if (process.env.NODE_ENV !== 'production') {
-                                console.log('✅ Admin session saved. isAdmin=', socket.request.session.isAdmin, 'sessionID=', socket.request.sessionID);
-                            }
-                        }
-                        callback({ success: true });
-                        // PRODUCTION: Don't log IP in production
-                        if (process.env.NODE_ENV !== 'production') {
-                            console.log('✓ Admin girişi yapıldı:', socket.id, '- IP:', clientIP);
-                        } else {
-                            console.log('✓ Admin girişi yapıldı:', socket.id);
-                        }
-                    });
+                    // PRODUCTION: Don't log IP in production
+                    if (process.env.NODE_ENV !== 'production') {
+                        console.log('✓ Admin girişi yapıldı:', socket.id, '- IP:', clientIP);
+                    } else {
+                        console.log('✓ Admin girişi yapıldı:', socket.id);
+                    }
                 }); // Close regenerate callback
             } else {
                 // Session yoksa direkt callback
