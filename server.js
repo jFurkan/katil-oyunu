@@ -662,6 +662,9 @@ function startCountdown() {
                 });
 
                 // Faz kaydını kapat (eğer aktif faz varsa)
+                // RACE CONDITION FIX: Stop countdown immediately to prevent duplicate emissions
+                stopCountdown();
+
                 if (currentPhaseId) {
                     endPhaseTracking().catch(err => {
                         console.error('Faz kaydı kapatılamadı:', err);
@@ -1445,11 +1448,13 @@ class UserCleanup {
     // İnaktif kullanıcıları temizle
     async cleanup() {
         try {
+            // SQL INJECTION FIX: Use parameterized query with make_interval
             const result = await pool.query(
                 `DELETE FROM users
                  WHERE last_activity IS NULL
-                    OR last_activity < NOW() - INTERVAL '${this.inactiveDays} days'
-                 RETURNING id, nickname`
+                    OR last_activity < NOW() - make_interval(days => $1)
+                 RETURNING id, nickname`,
+                [this.inactiveDays]
             );
 
             if (result.rows.length > 0) {
@@ -1618,32 +1623,39 @@ io.on('connection', async (socket) => {
         console.log('✓ Admin oturumu devam ediyor:', socket.id);
     }
 
-    // Takım listesini gönder
-    const teams = await getAllTeams();
-    socket.emit('teams-update', teams);
+    // CRITICAL FIX: Wrap all async initial data fetching in try-catch
+    try {
+        // Takım listesini gönder
+        const teams = await getAllTeams();
+        socket.emit('teams-update', teams);
 
-    // Oyun durumunu gönder
-    socket.emit('game-state-update', {
-        started: gameState.started,
-        countdown: gameState.countdown,
-        phaseTitle: gameState.phaseTitle
-    });
+        // Oyun durumunu gönder
+        socket.emit('game-state-update', {
+            started: gameState.started,
+            countdown: gameState.countdown,
+            phaseTitle: gameState.phaseTitle
+        });
 
-    // Emeği geçenleri gönder
-    const credits = await getAllCredits();
-    socket.emit('credits-update', credits);
+        // Emeği geçenleri gönder
+        const credits = await getAllCredits();
+        socket.emit('credits-update', credits);
 
-    // Yönetici ipuçlarını gönder
-    const generalClues = await getAllGeneralClues();
-    socket.emit('general-clues-update', generalClues);
+        // Yönetici ipuçlarını gönder
+        const generalClues = await getAllGeneralClues();
+        socket.emit('general-clues-update', generalClues);
 
-    // Rozetleri gönder
-    const badges = await getAllBadges();
-    socket.emit('badges-update', badges);
+        // Rozetleri gönder
+        const badges = await getAllBadges();
+        socket.emit('badges-update', badges);
 
-    // Kullanıcıları gönder
-    const users = await getUsersByTeam();
-    socket.emit('users-update', users);
+        // Kullanıcıları gönder
+        const users = await getUsersByTeam();
+        socket.emit('users-update', users);
+    } catch (initErr) {
+        console.error('❌ Connection initialization error for socket', socket.id, ':', initErr);
+        // Don't disconnect - let socket stay connected, but initial data may be incomplete
+        socket.emit('error', { message: 'Başlangıç verileri yüklenemedi' });
+    }
 
     // Kullanıcı kaydı (nickname al)
     socket.on('register-user', async (nickname, callback) => {
@@ -1780,7 +1792,7 @@ io.on('connection', async (socket) => {
                     sessionKeys: Object.keys(socket.request.session)
                 });
 
-                socket.request.session.save((saveErr) => {
+                socket.request.session.save(async (saveErr) => {
                         if (saveErr) {
                             console.error('❌ [REGISTER-ERROR] Session save error:', saveErr);
                             callback({ success: false, error: 'Session kaydetme hatası!' });
@@ -1795,29 +1807,32 @@ io.on('connection', async (socket) => {
                             sessionKeys: Object.keys(socket.request.session)
                         });
 
-                        // Profil fotoğrafını al (session save tamamlandıktan SONRA)
-                        console.log('📸 [REGISTER-PHOTO] Profil fotoğrafı sorgulanıyor...');
-                        pool.query('SELECT profile_photo_url FROM users WHERE id = $1', [userId])
-                            .then(photoResult => {
-                                const profilePhotoUrl = photoResult.rows[0]?.profile_photo_url || null;
+                        // RACE CONDITION FIX: Use try-catch to ensure callback only called once
+                        let profilePhotoUrl = null;
+                        try {
+                            // Profil fotoğrafını al (session save tamamlandıktan SONRA)
+                            console.log('📸 [REGISTER-PHOTO] Profil fotoğrafı sorgulanıyor...');
+                            const photoResult = await pool.query('SELECT profile_photo_url FROM users WHERE id = $1', [userId]);
+                            profilePhotoUrl = photoResult.rows[0]?.profile_photo_url || null;
+                        } catch (photoErr) {
+                            console.error('❌ Profile photo query error:', photoErr);
+                            // Continue with null photo - not critical
+                        }
 
-                                console.log('🎉 [REGISTER-CALLBACK] Callback çağrılıyor:', { userId, nickname: trimmedNick });
-                                // GÜVENLİK FIX: Callback'i session save SONRASINDA çağır
-                                callback({ success: true, userId: userId, nickname: trimmedNick, profilePhotoUrl: profilePhotoUrl });
-                                console.log('✅ [REGISTER-DONE] Callback başarıyla tamamlandı!');
+                        console.log('🎉 [REGISTER-CALLBACK] Callback çağrılıyor:', { userId, nickname: trimmedNick });
+                        // GÜVENLİK FIX: Callback'i session save SONRASINDA çağır (only once!)
+                        callback({ success: true, userId: userId, nickname: trimmedNick, profilePhotoUrl: profilePhotoUrl });
+                        console.log('✅ [REGISTER-DONE] Callback başarıyla tamamlandı!');
 
-                                // Tüm kullanıcılara güncel listeyi gönder
-                                getUsersByTeam().then(users => {
-                                    io.emit('users-update', users);
-                                });
+                        // Tüm kullanıcılara güncel listeyi gönder (async, don't wait)
+                        getUsersByTeam().then(users => {
+                            io.emit('users-update', users);
+                        }).catch(err => {
+                            console.error('❌ users-update broadcast failed:', err);
+                        });
 
-                                // Log mesajı - yeni kayıt mı yoksa reconnect mi?
-                                console.log(isReconnect ? '✓ Kullanıcı yeniden bağlandı' : '✓ Yeni kullanıcı kaydedildi:', trimmedNick);
-                            })
-                            .catch(err => {
-                                console.error('❌ Profile photo query error:', err);
-                                callback({ success: true, userId: userId, nickname: trimmedNick, profilePhotoUrl: null });
-                            });
+                        // Log mesajı - yeni kayıt mı yoksa reconnect mi?
+                        console.log(isReconnect ? '✓ Kullanıcı yeniden bağlandı' : '✓ Yeni kullanıcı kaydedildi:', trimmedNick);
                 }); // Close session.save callback
             } else {
                 // Profil fotoğrafını al
@@ -3041,75 +3056,90 @@ io.on('connection', async (socket) => {
             return;
         }
 
+        // CRITICAL FIX: Wrap all deletes in transaction to prevent data corruption
+        let client;
         try {
             console.log('🔄 OYUN SIFIRLANIYOR - TÜM VERİLER SİLİNİYOR...');
+
+            // Start transaction
+            client = await pool.connect();
+            await client.query('BEGIN');
+            console.log('  🗄️  Transaction başlatıldı');
 
             // Sırayla tüm tabloları sıfırla (foreign key constraints nedeniyle sıra önemli)
 
             // 1. Murder board connections (önce bağlantılar)
-            await pool.query('DELETE FROM murder_board_connections');
+            await client.query('DELETE FROM murder_board_connections');
             console.log('  ✓ Murder board bağlantıları silindi');
 
             // 2. Murder board items
-            await pool.query('DELETE FROM murder_board_items');
+            await client.query('DELETE FROM murder_board_items');
             console.log('  ✓ Murder board kartları silindi');
 
             // 3. Team messages
-            await pool.query('DELETE FROM team_messages');
+            await client.query('DELETE FROM team_messages');
             console.log('  ✓ Takım mesajları silindi');
 
             // 4. Team badges
-            await pool.query('DELETE FROM team_badges');
+            await client.query('DELETE FROM team_badges');
             console.log('  ✓ Takım rozetleri silindi');
 
             // 5. Badges
-            await pool.query('DELETE FROM badges');
+            await client.query('DELETE FROM badges');
             console.log('  ✓ Rozetler silindi');
 
             // 6. Clues (takım ipuçları)
-            await pool.query('DELETE FROM clues');
+            await client.query('DELETE FROM clues');
             console.log('  ✓ Takım ipuçları silindi');
 
             // 7. General clues
-            await pool.query('DELETE FROM general_clues');
+            await client.query('DELETE FROM general_clues');
             console.log('  ✓ Genel ipuçları silindi');
 
             // 8. Users (kullanıcılar)
-            await pool.query('DELETE FROM users');
+            await client.query('DELETE FROM users');
             console.log('  ✓ Kullanıcılar silindi');
 
             // 9. Teams (takımlar - cascade silme otomatik olacak ama yine de)
-            const teamsResult = await pool.query('DELETE FROM teams RETURNING *');
+            const teamsResult = await client.query('DELETE FROM teams RETURNING *');
             console.log('  ✓ Takımlar silindi:', teamsResult.rowCount);
 
             // 10. Characters (karakterler)
-            await pool.query('DELETE FROM characters');
+            await client.query('DELETE FROM characters');
             console.log('  ✓ Karakterler silindi');
 
             // 11. IP Activity (IP logları)
-            await pool.query('DELETE FROM ip_activity');
+            await client.query('DELETE FROM ip_activity');
             console.log('  ✓ IP logları silindi');
 
             // 12. Credits (emeği geçenler)
-            await pool.query('DELETE FROM credits');
+            await client.query('DELETE FROM credits');
             console.log('  ✓ Credits silindi');
 
             // 13. Game events (oyun olayları)
-            await pool.query('DELETE FROM game_events');
+            await client.query('DELETE FROM game_events');
             console.log('  ✓ Oyun olayları silindi');
 
             // 14. Phases (fazlar)
-            await pool.query('DELETE FROM phases');
+            await client.query('DELETE FROM phases');
             console.log('  ✓ Fazlar silindi');
 
             // 15. Game sessions (oyun oturumları)
-            await pool.query('DELETE FROM game_sessions');
+            await client.query('DELETE FROM game_sessions');
             console.log('  ✓ Oyun oturumları silindi');
+
+            // Commit transaction
+            await client.query('COMMIT');
+            console.log('  ✅ Transaction commit edildi');
 
             // Session ve faz değişkenlerini temizle
             currentSessionId = null;
             currentPhaseId = null;
             phaseStartStats = null;
+
+            // Release client before async operations
+            client.release();
+            client = null; // Prevent double release in finally
 
             callback({ success: true });
 
@@ -3121,8 +3151,22 @@ io.on('connection', async (socket) => {
 
             console.log('✅ OYUN TAMAMEN SIFIRLANDI! Tüm veriler temizlendi.');
         } catch (err) {
+            // CRITICAL FIX: Rollback transaction on error
+            if (client) {
+                try {
+                    await client.query('ROLLBACK');
+                    console.log('  ⚠️  Transaction rollback yapıldı');
+                } catch (rollbackErr) {
+                    console.error('❌ Rollback hatası:', rollbackErr);
+                }
+            }
             console.error('❌ Oyun sıfırlama hatası:', err);
             callback({ success: false, error: 'Oyun sıfırlanamadı! Hata: ' + err.message });
+        } finally {
+            // Always release the client
+            if (client) {
+                client.release();
+            }
         }
     });
 
@@ -4537,10 +4581,13 @@ async function startServer() {
 
             // Otomatik kullanıcı temizleme cron job'u (her 24 saatte bir)
             const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // 24 saat
-            setInterval(async () => {
+            const userCleanupInterval = setInterval(async () => {
                 console.log('🕐 Otomatik kullanıcı temizliği başlatılıyor...');
                 await userCleanup.cleanup();
             }, CLEANUP_INTERVAL);
+
+            // Make it accessible for graceful shutdown
+            global.userCleanupInterval = userCleanupInterval;
 
             // İlk temizliği hemen çalıştır
             console.log('🧹 İlk kullanıcı temizliği başlatılıyor...');
@@ -4592,6 +4639,12 @@ async function gracefulShutdown(signal) {
     if (gameState.countdownInterval) {
         clearInterval(gameState.countdownInterval);
         console.log('✓ Oyun countdown\'ı durduruldu');
+    }
+
+    // MEMORY LEAK FIX: Clear user cleanup interval
+    if (global.userCleanupInterval) {
+        clearInterval(global.userCleanupInterval);
+        console.log('✓ User cleanup interval temizlendi');
     }
 
     // Rate limiter cleanup interval'larını temizle
