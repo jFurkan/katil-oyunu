@@ -1615,7 +1615,24 @@
                     return;
                 }
 
+                // CRITICAL FIX: İlk kez gelen kullanıcılar için reconnect-user'ı skip et
+                // Sadece sessionStorage'da session varsa reconnect dene
+                var hasStoredSession = false;
+                try {
+                    var storedUser = sessionStorage.getItem('currentUser');
+                    var storedAdmin = sessionStorage.getItem('isAdmin');
+                    hasStoredSession = (storedUser && storedUser !== 'null') || (storedAdmin === 'true');
+                } catch (e) {
+                    console.warn('⚠️  SessionStorage kontrolü başarısız:', e);
+                }
+
+                if (!hasStoredSession) {
+                    console.log('ℹ️  İlk ziyaret - reconnect-user atlanıyor (kullanıcı register yapacak)');
+                    return;
+                }
+
                 // SESSION RESTORE: Server'dan session kontrolü yap (küçük delay ile - session save tamamlansın)
+                console.log('🔄 Session restore başlatılıyor...');
                 setTimeout(function() {
                     safeSocketEmit('reconnect-user', null, function(response) {
                     console.log('🔄 Session restore yanıtı:', response);
@@ -2328,12 +2345,16 @@
                 var oldLen = teams.length;
                 teams = newTeams;
 
-                // Chat dropdown için takım listesini güncelle
-                CHAT.updateAvailableTeams(teams);
+                // Chat dropdown için takım listesini güncelle (module yüklendiğinde)
+                if (window.CHAT && window.CHAT.updateAvailableTeams) {
+                    CHAT.updateAvailableTeams(teams);
+                }
 
                 // Canlı lider tablosunu güncelle
-                LEADERBOARD.update(newTeams);
-                LEADERBOARD.checkRankChange(newTeams);
+                if (window.LEADERBOARD && window.LEADERBOARD.update) {
+                    LEADERBOARD.update(newTeams);
+                    LEADERBOARD.checkRankChange(newTeams);
+                }
 
                 if (document.getElementById('pgAdmin').classList.contains('active')) {
                     // Takım sayısı değiştiyse full render, değişmediyse sadece skor güncelle (titremeyi önlemek için)
