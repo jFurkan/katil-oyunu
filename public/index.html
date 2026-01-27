@@ -1632,14 +1632,11 @@
                 console.log('ℹ️  NOT: httpOnly cookie\'ler (session) JavaScript\'ten görülmez - bu normal ve güvenlik için iyidir.');
                 console.log('   Session cookie\'leri görmek için: Browser DevTools → Application → Cookies');
 
-                // TIMING FIX: Eğer kullanıcı zaten var (register yeni bitti), reconnect'i atla
-                if (window.currentUser && window.currentUser.userId) {
-                    console.log('✅ User already logged in, skipping reconnect-user:', window.currentUser.userId);
-                    return;
-                }
-
-                // CRITICAL FIX: İlk kez gelen kullanıcılar için reconnect-user'ı skip et
+                // F5 FIX: İlk kez gelen kullanıcılar için reconnect-user'ı skip et
                 // Sadece sessionStorage'da session varsa reconnect dene
+                // CRITICAL: window.currentUser varsa bile reconnect yapmalıyız çünkü:
+                // 1. sessionStorage data güvenilmez, server-side validation gerekli
+                // 2. F5 sonrası routing için reconnect callback içinde routing yapılıyor
                 var hasStoredSession = false;
                 try {
                     var storedUser = sessionStorage.getItem('currentUser');
@@ -1651,6 +1648,12 @@
 
                 if (!hasStoredSession) {
                     console.log('ℹ️  İlk ziyaret - reconnect-user atlanıyor (kullanıcı register yapacak)');
+                    // F5 FIX: Session yoksa ve mevcut URL root değilse, root'a yönlendir
+                    var currentPath = window.location.pathname;
+                    if (currentPath && currentPath !== '/') {
+                        console.log('⚠️  Session yok ama URL root değil, root\'a yönlendiriliyor:', currentPath);
+                        router.navigate('/', false);
+                    }
                     return;
                 }
 
@@ -1663,6 +1666,7 @@
                     if (response && response.success) {
                         // Admin yetkisini önce set et (routing için gerekli)
                         window.isAdmin = response.isAdmin || false;
+                        isAdmin = window.isAdmin; // LOCAL SYNC
 
                         if (response.userId) {
                             // Normal kullanıcı restore et
@@ -1671,11 +1675,13 @@
                                 nickname: response.nickname,
                                 teamId: response.teamId || null
                             };
+                            currentUser = window.currentUser; // LOCAL SYNC
                             updateCurrentUserDisplay();
 
                             // Takım ID'sini restore et
                             if (response.teamId) {
                                 window.currentTeamId = response.teamId;
+                                currentTeamId = window.currentTeamId; // LOCAL SYNC
                             }
 
                             console.log('✅ Session restore edildi:', response.nickname, '- Admin:', window.isAdmin, '- SessionID mevcut');
@@ -1683,6 +1689,8 @@
                             // Admin-only session (userId yok)
                             window.currentUser = null;
                             window.currentTeamId = null;
+                            currentUser = null; // LOCAL SYNC
+                            currentTeamId = null; // LOCAL SYNC
                             updateCurrentUserDisplay();
 
                             console.log('✅ Admin session restore edildi - SessionID mevcut');
@@ -1695,6 +1703,9 @@
                         window.currentUser = null;
                         window.currentTeamId = null;
                         window.isAdmin = false;
+                        currentUser = null; // LOCAL SYNC
+                        currentTeamId = null; // LOCAL SYNC
+                        isAdmin = false; // LOCAL SYNC
                         updateCurrentUserDisplay();
                         console.log('⚠️  Session bulunamadı veya süresi dolmuş - Giriş yapmanız gerekebilir');
 
