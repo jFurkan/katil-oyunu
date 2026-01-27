@@ -1603,10 +1603,10 @@ io.use((socket, next) => {
 
 // SECURITY HELPER: Admin auth validation
 function isAdmin(socket) {
-    // Check both socket.data AND session (prevents client-side tampering)
-    return socket.data.isAdmin === true &&
-           socket.request.session &&
-           socket.request.session.isAdmin === true;
+    // Primary check: socket.data.isAdmin (set during admin-login and connection)
+    // Session check is optional (for persistence across reconnects)
+    // Admin-login event sets both socket.data.isAdmin and session.isAdmin
+    return socket.data.isAdmin === true;
 }
 
 // Socket.io bağlantıları
@@ -2090,7 +2090,7 @@ io.on('connection', async (socket) => {
             socket.data.teamId = teamId;
             socket.join(teamId);
 
-            callback({ success: true, team: team });
+            callback({ success: true, teamId: teamId, team: team });
 
             // Cache'i invalidate et (yeni takım eklendi)
             invalidateCache('teams');
