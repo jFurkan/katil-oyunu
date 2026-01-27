@@ -1474,6 +1474,11 @@
                     } else {
                         sessionStorage.removeItem('currentTeamId');
                     }
+                    // F5 RESTORE: Mevcut sayfayı kaydet
+                    var currentPath = window.location.pathname;
+                    if (currentPath && currentPath !== '/') {
+                        sessionStorage.setItem('lastPage', currentPath);
+                    }
                 } catch (e) {
                     console.warn('⚠️  Failed to persist session:', e);
                 }
@@ -1700,22 +1705,35 @@
                     // ROUTING: Session restore sonrası, mevcut URL'e göre sayfa göster
                     var currentPath = window.location.pathname;
 
-                    // F5 REDIRECT: Check if there's a saved page to return to
-                    var lastPage = sessionStorage.getItem('lastPage');
+                    console.log('🔄 Session restore routing:', {
+                        currentPath: currentPath,
+                        hasUser: !!window.currentUser,
+                        isAdmin: window.isAdmin,
+                        teamId: window.currentTeamId
+                    });
 
-                    // Ana sayfadaysa ve session varsa, uygun sayfaya yönlendir
-                    if ((currentPath === '/' || currentPath === '') && window.currentUser) {
-                        if (lastPage && lastPage !== '/' && lastPage !== '') {
-                            // F5 sonrası son sayfaya dön
-                            router.navigate(lastPage, false);
-                        } else if (window.currentTeamId) {
+                    // F5 FIX: Eğer kullanıcı login olmuşsa ve mevcut URL zaten bir sayfa ise,
+                    // O sayfayı handle et (kaldığı yerde kalsın)
+                    if (currentPath && currentPath !== '/' && (window.currentUser || window.isAdmin)) {
+                        // Mevcut URL'i handle et - F5 sonrası kaldığı yerde kalacak
+                        console.log('✅ F5 restore: Mevcut sayfada kalınıyor:', currentPath);
+                        router.handleRoute(currentPath);
+                    } else if ((currentPath === '/' || currentPath === '') && window.currentUser) {
+                        // Ana sayfadaysa ama login varsa, uygun sayfaya yönlendir
+                        if (window.currentTeamId) {
+                            console.log('✅ Login var, takım sayfasına yönlendiriliyor');
                             router.navigate('/team/' + window.currentTeamId, false);
                         } else {
+                            console.log('✅ Login var, lobby\'ye yönlendiriliyor');
                             router.navigate('/lobby', false);
                         }
+                    } else if ((currentPath === '/' || currentPath === '') && window.isAdmin) {
+                        // Ana sayfadaysa ama admin ise, admin panele yönlendir
+                        console.log('✅ Admin login var, admin panele yönlendiriliyor');
+                        router.navigate('/admin', false);
                     } else {
-                        // Mevcut URL'i handle et (route handler'lar auth check yapacak)
-                        // ÖNEMLİ: window.isAdmin zaten yukarıda set edildi, router artık bunu görecek
+                        // Session yok, mevcut URL'i handle et (auth check fail edecek, / a yönlendirecek)
+                        console.log('ℹ️  Session yok, mevcut URL handle ediliyor');
                         router.handleRoute(currentPath);
                     }
                 }); // Close safeSocketEmit callback

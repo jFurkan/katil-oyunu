@@ -46,6 +46,11 @@ class Router {
             history.pushState(null, null, path);
         }
         this.handleRoute(path);
+
+        // F5 RESTORE: Sayfa değiştiğinde persistSession çağır (varsa)
+        if (typeof window.persistSession === 'function') {
+            window.persistSession();
+        }
     }
 
     /**
