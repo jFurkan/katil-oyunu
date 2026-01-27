@@ -4539,6 +4539,33 @@ io.on('connection', async (socket) => {
         }
     });
 
+    // Admin logout (admin panelinden çıkış)
+    socket.on('admin-logout', async (callback) => {
+        if (typeof callback !== 'function') callback = () => {};
+        try {
+            // GÜVENLİK: Admin flag'ini temizle
+            socket.data.isAdmin = false;
+
+            // HTTP-only session'dan admin flag'ini temizle
+            if (socket.request.session) {
+                socket.request.session.isAdmin = false;
+                socket.request.session.save((saveErr) => {
+                    if (saveErr) {
+                        console.error('❌ Admin logout session save error:', saveErr);
+                    }
+                    console.log('✓ Admin çıkışı yapıldı:', socket.id);
+                    callback({ success: true });
+                });
+            } else {
+                console.log('✓ Admin çıkışı yapıldı (session yok):', socket.id);
+                callback({ success: true });
+            }
+        } catch (err) {
+            console.error('Admin logout error:', err);
+            callback({ success: false, error: 'Admin çıkışı yapılamadı!' });
+        }
+    });
+
     // Bağlantı koptu
     socket.on('disconnect', async () => {
         // Disconnect olduğunda socket.io zaten bağlantıyı kesmişti, o yüzden mevcut sayı doğru

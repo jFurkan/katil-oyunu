@@ -116,7 +116,7 @@ export const ADMIN = {
                         return;
                     }
 
-                    window.safeSocketEmit('get-characters', null, function(response) {
+                    window.safeSocketEmit('get-characters', function(response) {
                         if (response && response.success) {
                             console.log('Karakterler yüklendi:', response.characters);
                             ADMIN.renderGameCharacters(response.characters || []);

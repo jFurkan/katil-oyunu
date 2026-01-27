@@ -1278,7 +1278,20 @@
         // ========================================
         // SAFE SOCKET EMIT - Timeout & Error Handling
         // ========================================
-        window.safeSocketEmit = function(eventName, data, callback, timeout = 10000) {
+        window.safeSocketEmit = function(eventName, data, callback, timeout) {
+            // FLEXIBLE PARAMETERS: Support both (eventName, callback) and (eventName, data, callback)
+            // If data is a function, treat it as callback
+            if (typeof data === 'function') {
+                timeout = callback;
+                callback = data;
+                data = undefined;
+            }
+
+            // Default timeout
+            if (typeof timeout !== 'number') {
+                timeout = 10000;
+            }
+
             if (!socket.connected) {
                 window.toast('Bağlantı yok! Yeniden bağlanıyor...', true);
                 if (callback) callback({ success: false, error: 'Bağlantı yok' });
@@ -1331,7 +1344,12 @@
                 }
             }, timeout);
 
-            socket.emit(eventName, data, wrappedCallback);
+            // Emit with or without data
+            if (data !== undefined) {
+                socket.emit(eventName, data, wrappedCallback);
+            } else {
+                socket.emit(eventName, wrappedCallback);
+            }
         };
 
         console.log('✅ Socket and safeSocketEmit initialized');
