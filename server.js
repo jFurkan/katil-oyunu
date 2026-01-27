@@ -2196,6 +2196,43 @@ io.on('connection', async (socket) => {
         }
     });
 
+    // Takımdan çık
+    socket.on('exit-team', async (teamId, callback) => {
+        if (typeof callback !== 'function') callback = () => {};
+        try {
+            // GÜVENLİK: Kullanıcı kontrolü
+            if (!socket.data.userId) {
+                callback({ success: false, error: 'Önce giriş yapmalısınız!' });
+                return;
+            }
+
+            // Kullanıcıyı takımdan çıkar
+            await pool.query(
+                'UPDATE users SET team_id = NULL, is_captain = FALSE WHERE id = $1',
+                [socket.data.userId]
+            );
+
+            // Socket room'dan ayrıl
+            if (teamId) {
+                socket.leave(teamId);
+            }
+
+            // Socket data'dan teamId'yi temizle
+            socket.data.teamId = null;
+
+            callback({ success: true });
+
+            // Kullanıcı listesini güncelle
+            const users = await getUsersByTeam();
+            io.emit('users-update', users);
+
+            console.log('✓ Kullanıcı takımdan çıktı:', socket.data.userId);
+        } catch (err) {
+            console.error('Takımdan çıkış hatası:', err);
+            callback({ success: false, error: 'Takımdan çıkılamadı!' });
+        }
+    });
+
     // Takım bilgisi al
     socket.on('get-team', async (teamId, callback) => {
         if (typeof callback !== 'function') callback = () => {};
