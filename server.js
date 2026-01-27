@@ -2211,10 +2211,14 @@ io.on('connection', async (socket) => {
                 WHERE t.id = $1
             `, [teamId]);
 
-            callback(result.rows[0] || null);
+            if (result.rows[0]) {
+                callback({ success: true, team: result.rows[0] });
+            } else {
+                callback({ success: false, error: 'Takım bulunamadı!' });
+            }
         } catch (err) {
             console.error('Takım bilgisi alma hatası:', err);
-            callback(null);
+            callback({ success: false, error: 'Takım bilgisi alınamadı!' });
         }
     });
 
@@ -2586,17 +2590,17 @@ io.on('connection', async (socket) => {
         if (typeof callback !== 'function') callback = () => {};
         // GÜVENLİK: Admin kontrolü
         if (!isAdmin(socket)) {
-            callback([]);
+            callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: get-characters -', socket.id);
             return;
         }
 
         try {
             const result = await pool.query('SELECT * FROM characters ORDER BY created_at DESC');
-            callback(result.rows);
+            callback({ success: true, characters: result.rows });
         } catch (err) {
             console.error('Karakter listesi getirme hatası:', err);
-            callback([]);
+            callback({ success: false, error: 'Karakterler yüklenemedi!' });
         }
     });
 
@@ -2719,10 +2723,10 @@ io.on('connection', async (socket) => {
             const result = await pool.query(
                 'SELECT id, name, photo_url FROM characters WHERE visible_to_teams = true ORDER BY name'
             );
-            callback(result.rows);
+            callback({ success: true, characters: result.rows });
         } catch (err) {
             console.error('Karakter listesi getirme hatası:', err);
-            callback([]);
+            callback({ success: false, error: 'Karakterler yüklenemedi!' });
         }
     });
 
@@ -4357,10 +4361,10 @@ io.on('connection', async (socket) => {
         if (typeof callback !== 'function') callback = () => {};
         try {
             const users = await getUsersByTeam();
-            callback(users);
+            callback({ success: true, users: users });
         } catch (err) {
             console.error('Kullanıcılar getirme hatası:', err);
-            callback([]);
+            callback({ success: false, error: 'Kullanıcılar yüklenemedi!' });
         }
     });
 
