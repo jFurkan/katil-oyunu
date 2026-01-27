@@ -70,7 +70,7 @@ export const ADMIN = {
                     if (section === 'users') {
                         // Manuel olarak kullanıcıları server'dan çek
                         if (window.socketConnected) {
-                            window.safeSocketEmit('get-users-by-team', null, function(response) {
+                            window.safeSocketEmit('get-users-by-team', function(response) {
                                 if (response && response.success) {
                                     window.users = response.users || [];
                                 } else {
@@ -237,7 +237,7 @@ export const ADMIN = {
                         return;
                     }
 
-                    window.safeSocketEmit('get-phases', null, function(response) {
+                    window.safeSocketEmit('get-phases', function(response) {
                         if (response && response.success) {
                             console.log('Fazlar yüklendi:', response.phases);
                             ADMIN.renderPhases(response.phases || []);
@@ -414,7 +414,7 @@ export const ADMIN = {
                     }
 
                     // Tüm takımları yükle ve dropdown'ı doldur
-                    window.safeSocketEmit('admin-get-teams', null, function(res) {
+                    window.safeSocketEmit('admin-get-teams', function(res) {
                         if (res && res.success) {
                             var selector = document.getElementById('adminMessagesTeamSelector');
                             if (!selector) return;
@@ -447,7 +447,7 @@ export const ADMIN = {
                     }
 
                     // Takım bilgisini al
-                    window.safeSocketEmit('admin-get-teams', null, function(res) {
+                    window.safeSocketEmit('admin-get-teams', function(res) {
                         if (res && res.success) {
                             var team = res.teams.find(function(t) { return t.id === teamId; });
                             if (team) {
@@ -457,7 +457,7 @@ export const ADMIN = {
                     });
 
                     // Admin mesajlarını yükle (bu takımla olan mesajlar)
-                    window.safeSocketEmit('load-admin-messages', null, function(res) {
+                    window.safeSocketEmit('load-admin-messages', function(res) {
                         if (res && res.success) {
                             // Seçili takımın mesajlarını filtrele
                             var teamMessages = res.messages.filter(function(msg) {
@@ -590,7 +590,7 @@ export const ADMIN = {
                     }
 
                     if (confirm('TÜM ipuçlarını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
-                        window.safeSocketEmit('clear-all-clues', null, function(res) {
+                        window.safeSocketEmit('clear-all-clues', function(res) {
                             if (res && res.success) {
                                 window.toast('Tüm ipuçları silindi');
                             } else {
@@ -658,7 +658,7 @@ export const ADMIN = {
                     var selectedValue = selector.value;
 
                     // Takımları server'dan çek
-                    window.safeSocketEmit('admin-get-teams', null, function(res) {
+                    window.safeSocketEmit('admin-get-teams', function(res) {
                         if (res && res.success) {
                             var html = '<option value="">Takım seçin...</option>';
                             res.teams.forEach(function(team) {
@@ -866,7 +866,7 @@ export const ADMIN = {
                         if (isProcessing) return;
                         isProcessing = true;
 
-                        window.safeSocketEmit('end-game', null, function(res) {
+                        window.safeSocketEmit('end-game', function(res) {
                             isProcessing = false;
                             if (res.success) {
                                 window.toast('Oyun bitirildi!');
@@ -951,7 +951,7 @@ export const ADMIN = {
                         return;
                     }
 
-                    window.safeSocketEmit('get-statistics', null, function(res) {
+                    window.safeSocketEmit('get-statistics', function(res) {
                         if (res && res.success) {
                             ADMIN.renderStatsOverview(res.stats.overview);
                             ADMIN.renderStatsMessaging(res.stats.messaging);
@@ -1166,7 +1166,7 @@ export const ADMIN = {
                         return;
                     }
 
-                    window.safeSocketEmit('start-game-session', null, function(res) {
+                    window.safeSocketEmit('start-game-session', function(res) {
                         if (res.success) {
                             window.toast('âœ… Oyun oturumu başlatıldı!');
                             console.log('Oyun oturumu ID:', res.sessionId);
@@ -1182,7 +1182,7 @@ export const ADMIN = {
                         return;
                     }
 
-                    window.safeSocketEmit('end-game-session', null, function(res) {
+                    window.safeSocketEmit('end-game-session', function(res) {
                         if (res.success) {
                             window.toast('âœ… Oyun bitti! Rapor gösteriliyor...');
                             GAME.showFinalReport(res.report);

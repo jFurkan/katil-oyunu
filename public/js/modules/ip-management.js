@@ -47,7 +47,7 @@ export const IP_LOGS = {
             return;
         }
 
-        window.safeSocketEmit('get-ip-logs', null, function(res) {
+        window.safeSocketEmit('get-ip-logs', function(res) {
             if (res && res.success) {
                 IP_LOGS.logs = res.logs;
                 IP_LOGS.render();
@@ -185,7 +185,7 @@ export const IP_USERS = {
             return;
         }
 
-        window.safeSocketEmit('get-all-users', null, function(res) {
+        window.safeSocketEmit('get-all-users', function(res) {
             if (res && res.success) {
                 IP_USERS.users = res.users;
                 IP_USERS.render();
@@ -300,7 +300,7 @@ export const IP_USERS = {
             return;
         }
 
-        window.safeSocketEmit('delete-all-users', null, function(res) {
+        window.safeSocketEmit('delete-all-users', function(res) {
             if (res && res.success) {
                 window.toast('Tüm kullanıcılar silindi: ' + res.deletedCount + ' kayıt');
                 IP_USERS.users = [];

@@ -1652,7 +1652,7 @@
                 // SESSION RESTORE: Server'dan session kontrolü yap (küçük delay ile - session save tamamlansın)
                 console.log('🔄 Session restore başlatılıyor...');
                 setTimeout(function() {
-                    safeSocketEmit('reconnect-user', null, function(response) {
+                    safeSocketEmit('reconnect-user', function(response) {
                     console.log('🔄 Session restore yanıtı:', response);
 
                     if (response && response.success) {

@@ -18,7 +18,7 @@ export const MURDERBOARD = {
 
                 loadAvailableCharacters: function() {
                     // Karakter listesini yükle
-                    window.safeSocketEmit('get-characters-for-board', null, function(response) {
+                    window.safeSocketEmit('get-characters-for-board', function(response) {
                         if (response && response.success) {
                             console.log('Karakterler yüklendi (Murder Board):', response.characters);
                             MURDERBOARD.allCharacters = response.characters || [];
@@ -172,7 +172,7 @@ export const MURDERBOARD = {
                 loadBoard: function() {
                     if (!window.currentUser || !window.currentUser.teamId) return;
 
-                    window.safeSocketEmit('get-board-items', null, function(response) {
+                    window.safeSocketEmit('get-board-items', function(response) {
                         if (response && response.success) {
                             MURDERBOARD.boardItems = response.items || [];
                             MURDERBOARD.connections = response.connections || [];
@@ -774,7 +774,7 @@ export const MURDERBOARD = {
                 clearBoard: function() {
                     if (!confirm('Tüm murder board\'u temizlemek istediğinizden emin misiniz?')) return;
 
-                    window.safeSocketEmit('clear-board', null, function(response) {
+                    window.safeSocketEmit('clear-board', function(response) {
                         if (response && response.success) {
                             window.toast('🗑️ Murder board temizlendi');
                             MURDERBOARD.loadBoard();

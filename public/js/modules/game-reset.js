@@ -40,7 +40,7 @@ export const GAME_RESET = {
         // Confirmation geçti, server'a istek gönder
         window.toast('Oyun sıfırlanıyor, lütfen bekleyin...');
 
-        window.safeSocketEmit('reset-game', null, function(response) {
+        window.safeSocketEmit('reset-game', function(response) {
             if (response && response.success) {
                 GAME_RESET.hideConfirmModal();
                 window.toast('✅ Oyun başarıyla sıfırlandı! Sayfa yenileniyor...');

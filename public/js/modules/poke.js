@@ -19,7 +19,7 @@ export const POKE = {
         }
 
         // Load team list
-        window.safeSocketEmit('get-teams', null, (response) => {
+        window.safeSocketEmit('get-teams', (response) => {
             if (!response || !response.success) {
                 window.toast('Takımlar yüklenemedi!', true);
                 return;

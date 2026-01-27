@@ -16,7 +16,7 @@ export const ADMIN_BOARD = {
 
     loadTeams: function() {
         const self = this;
-        window.safeSocketEmit('admin-get-teams', null, function(res) {
+        window.safeSocketEmit('admin-get-teams', function(res) {
             const select = document.getElementById('adminBoardTeamSelect');
             if (!select) {
                 console.error('adminBoardTeamSelect bulunamadı!');
@@ -58,7 +58,7 @@ export const ADMIN_BOARD = {
         document.getElementById('adminBoardEmptyStateMain').style.display = 'none';
 
         // Seçili takımın bilgilerini göster
-        window.safeSocketEmit('admin-get-teams', null, function(res) {
+        window.safeSocketEmit('admin-get-teams', function(res) {
             if (!res || !res.success) return;
             const team = res.teams.find(function(t) { return t.id === teamId; });
             if (team) {

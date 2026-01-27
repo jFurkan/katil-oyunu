@@ -16,7 +16,7 @@ export const GAME = {
             if (window.persistSession) window.persistSession();
 
             // Server'a logout isteği gönder (session'ı temizle)
-            window.safeSocketEmit('logout-user', null, function() {
+            window.safeSocketEmit('logout-user', function() {
                 // Ana sayfaya yönlendir (nickname giriş ekranı)
                 window.router.navigate('/');
                 window.updateCurrentUserDisplay();
@@ -61,7 +61,7 @@ export const GAME = {
         document.getElementById('joinTeamList').style.display = 'block';
         document.getElementById('joinPasswordSection').style.display = 'none';
         // Takım listesini yükle
-        window.safeSocketEmit('get-teams', null, function(response) {
+        window.safeSocketEmit('get-teams', function(response) {
             if (response && response.success) {
                 window.teams = response.teams || [];
                 window.renderJoinList();
@@ -276,7 +276,7 @@ export const GAME = {
             return;
         }
 
-        window.safeSocketEmit('admin-logout', null, function(response) {
+        window.safeSocketEmit('admin-logout', function(response) {
             window.isAdmin = false;
 
             // SESSION PERSISTENCE: Save to sessionStorage
@@ -309,7 +309,7 @@ export const GAME = {
 
     resetGame: function() {
         if (confirm('TÜM veriler silinecek. Emin misiniz?')) {
-            window.safeSocketEmit('reset-game', null, function(res) {
+            window.safeSocketEmit('reset-game', function(res) {
                 if (res.success) {
                     window.toast('Oyun sıfırlandı');
                 } else {

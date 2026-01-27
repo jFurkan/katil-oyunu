@@ -53,7 +53,7 @@ export const CHARACTER = {
     },
 
     loadCharacters() {
-        window.safeSocketEmit('get-characters', null, (response) => {
+        window.safeSocketEmit('get-characters', (response) => {
             if (response && response.success) {
                 this.renderCharacters(response.characters || []);
             } else {
@@ -162,7 +162,7 @@ export const CHARACTER = {
         }
 
         // Get uploaded photos
-        window.safeSocketEmit('get-uploaded-photos', null, (response) => {
+        window.safeSocketEmit('get-uploaded-photos', (response) => {
             const gallery = document.getElementById('photoGallery');
             if (!gallery) return;
 

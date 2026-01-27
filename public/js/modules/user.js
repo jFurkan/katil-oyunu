@@ -250,7 +250,7 @@ export const USER = {
                         if (window.persistSession) window.persistSession();
 
                         // Server'a logout isteği gönder (session'ı temizle)
-                        window.safeSocketEmit('logout-user', null, function(response) {
+                        window.safeSocketEmit('logout-user', function(response) {
                             // Nick giriş sayfasına yönlendir
                             window.router.navigate('/');
                             window.updateCurrentUserDisplay();
