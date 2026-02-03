@@ -233,6 +233,11 @@ const sessionMiddleware = session({
 
 app.use(sessionMiddleware);
 
+// In-memory admin session tracker: Socket.io üzerinden set edilen isAdmin
+// bazen HTTP request'lerde req.session.isAdmin yansımaz (WebSocket/HTTP session
+// desync). Bu Set ile admin-login'deki sessionID'yi ayrıca tutuyoruz.
+const adminSessionIds = new Set();
+
 // Session ayarlarını logla
 console.log('🍪 Session Cookie Ayarları:', {
     httpOnly: sessionMiddleware.cookie?.httpOnly !== false,
@@ -327,8 +332,8 @@ app.get('/api/health', async (req, res) => {
 // Admin korumalı kullanıcı temizleme endpoint'i
 app.post('/api/cleanup-users', async (req, res) => {
     try {
-        // GÜVENLİK: Session-based admin kontrolü
-        if (!req.session || !req.session.isAdmin) {
+        // GÜVENLİK: Session-based admin kontrolü (+ in-memory fallback)
+        if ((!req.session || !req.session.isAdmin) && !adminSessionIds.has(req.sessionID)) {
             return res.status(403).json({
                 success: false,
                 error: 'Yetkisiz erişim - Admin girişi gerekli'
@@ -418,8 +423,8 @@ app.post('/api/upload-profile-photo', upload.single('photo'), async (req, res) =
 // Admin: Kullanıcı fotoğrafını güncelle/sil
 app.post('/api/admin/update-user-photo', upload.single('photo'), async (req, res) => {
     try {
-        // Admin kontrolü
-        if (!req.session || !req.session.isAdmin) {
+        // Admin kontrolü (+ in-memory fallback)
+        if ((!req.session || !req.session.isAdmin) && !adminSessionIds.has(req.sessionID)) {
             return res.status(403).json({
                 success: false,
                 error: 'Yetkisiz erişim - Admin girişi gerekli'
@@ -535,8 +540,8 @@ app.post('/api/admin/update-user-photo', upload.single('photo'), async (req, res
 // Admin: Tüm kullanıcıları fotoğraflarıyla listele
 app.get('/api/admin/users-with-photos', async (req, res) => {
     try {
-        // Admin kontrolü
-        if (!req.session || !req.session.isAdmin) {
+        // Admin kontrolü (+ in-memory fallback)
+        if ((!req.session || !req.session.isAdmin) && !adminSessionIds.has(req.sessionID)) {
             return res.status(403).json({
                 success: false,
                 error: 'Yetkisiz erişim - Admin girişi gerekli'
@@ -2390,6 +2395,9 @@ io.on('connection', async (socket) => {
                     if (process.env.NODE_ENV !== 'production') {
                         console.log('✅ Admin session saved. isAdmin=', socket.request.session.isAdmin, 'sessionID=', socket.request.sessionID);
                     }
+
+                    // HTTP rotalarında da admin kontrolü çalışsın
+                    adminSessionIds.add(socket.request.sessionID);
 
                     callback({ success: true });
 
@@ -4550,6 +4558,7 @@ io.on('connection', async (socket) => {
 
             // GÜVENLİK: Session'ı temizle (HTTP-only cookie)
             if (socket.request.session) {
+                adminSessionIds.delete(socket.request.sessionID);
                 socket.request.session.destroy((err) => {
                     if (err) {
                         console.error('Session destroy error:', err);
@@ -4582,6 +4591,7 @@ io.on('connection', async (socket) => {
         try {
             // GÜVENLİK: Admin flag'ini temizle
             socket.data.isAdmin = false;
+            adminSessionIds.delete(socket.request.sessionID);
 
             // HTTP-only session'dan admin flag'ini temizle
             if (socket.request.session) {
