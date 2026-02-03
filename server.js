@@ -2794,6 +2794,51 @@ io.on('connection', async (socket) => {
         }
     });
 
+    // Karakter fotoğrafını güncelleme (admin)
+    socket.on('update-character-photo', async (data, callback) => {
+        if (typeof callback !== 'function') callback = () => { };
+        if (!isAdmin(socket)) {
+            callback({ success: false, error: 'Yetkisiz işlem!' });
+            return;
+        }
+
+        try {
+            const { characterId, photoUrl } = data || {};
+            if (!characterId) {
+                callback({ success: false, error: 'Karakter ID zorunlu!' });
+                return;
+            }
+
+            let safePhotoUrl = null;
+            if (photoUrl && photoUrl.trim().length > 0) {
+                const trimmed = photoUrl.trim();
+                const isLocalPath = trimmed.startsWith('/');
+                const isValidUrl = validator.isURL(trimmed, { protocols: ['http', 'https'], require_protocol: true });
+                if (!isLocalPath && !isValidUrl) {
+                    callback({ success: false, error: 'Geçersiz fotoğraf URL\'si!' });
+                    return;
+                }
+                safePhotoUrl = trimmed;
+            }
+
+            const result = await pool.query(
+                'UPDATE characters SET photo_url = $1, updated_at = NOW() WHERE id = $2 RETURNING name',
+                [safePhotoUrl, characterId]
+            );
+
+            if (result.rowCount === 0) {
+                callback({ success: false, error: 'Karakter bulunamadı!' });
+                return;
+            }
+
+            callback({ success: true });
+            console.log('✓ Karakter fotoğraf güncellendi:', result.rows[0].name);
+        } catch (err) {
+            console.error('Karakter fotoğraf güncelleme hatası:', err);
+            callback({ success: false, error: 'Fotoğraf güncellenemedi!' });
+        }
+    });
+
     // Yüklenmiş karakter fotoğraflarını listele (admin)
     socket.on('get-uploaded-photos', async (callback) => {
         if (typeof callback !== 'function') callback = () => { };
@@ -2821,7 +2866,7 @@ io.on('connection', async (socket) => {
                     const ext = path.extname(file).toLowerCase();
                     return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
                 });
-                const photoUrls = imageFiles.map(file => '/uploads/characters/' + file);
+                const photoUrls = imageFiles.map(file => '/uploads/characters/' + encodeURIComponent(file));
                 allPhotoUrls.push(...photoUrls);
             } catch {
                 await fs.mkdir(charactersDir, { recursive: true });
@@ -2835,7 +2880,7 @@ io.on('connection', async (socket) => {
                     const ext = path.extname(file).toLowerCase();
                     return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
                 });
-                const photoUrls = imageFiles.map(file => '/uploads/profiles/' + file);
+                const photoUrls = imageFiles.map(file => '/uploads/profiles/' + encodeURIComponent(file));
                 allPhotoUrls.push(...photoUrls);
             } catch {
                 await fs.mkdir(profilesDir, { recursive: true });

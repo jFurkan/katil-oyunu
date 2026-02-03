@@ -102,7 +102,10 @@ export const CHARACTER = {
                                         </span>
                                     </div>
                                 </div>
-                                <button onclick="CHARACTER.deleteCharacter('${char.id}')" style="background: #500; border: 1px solid #800; color: #faa; padding: 4px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#700'" onmouseout="this.style.background='#500'">🗑️ Sil</button>
+                                <div style="display: flex; gap: 6px;">
+                                    <button onclick="CHARACTER.openPhotoSelectorForChar('${char.id}')" style="background: #1a3a4a; border: 1px solid #2a6a7a; color: #6dd4e4; padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#1f4f60'" onmouseout="this.style.background='#1a3a4a'">📸 Fotoğraf</button>
+                                    <button onclick="CHARACTER.deleteCharacter('${char.id}')" style="background: #500; border: 1px solid #800; color: #faa; padding: 4px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#700'" onmouseout="this.style.background='#500'">🗑️ Sil</button>
+                                </div>
                             </div>
 
                             ${char.age || char.occupation ? `
@@ -155,7 +158,17 @@ export const CHARACTER = {
         });
     },
 
+    openPhotoSelectorForChar(characterId) {
+        this._editingCharacterId = characterId;
+        this._loadPhotoSelector();
+    },
+
     openPhotoSelector() {
+        this._editingCharacterId = null;
+        this._loadPhotoSelector();
+    },
+
+    _loadPhotoSelector() {
         const modal = document.getElementById('photoSelectorModal');
         if (modal) {
             modal.style.display = 'flex';
@@ -199,17 +212,33 @@ export const CHARACTER = {
     },
 
     selectPhoto(photoUrl) {
+        this.closePhotoSelector();
+
+        // Mevcut karakter düzenleme modunda
+        if (this._editingCharacterId) {
+            const charId = this._editingCharacterId;
+            this._editingCharacterId = null;
+
+            window.safeSocketEmit('update-character-photo', {
+                characterId: charId,
+                photoUrl: photoUrl
+            }, (response) => {
+                if (response && response.success) {
+                    window.toast('✅ Karakter fotoğrafı güncellendi');
+                    this.loadCharacters();
+                } else {
+                    window.toast((response && response.error) || 'Fotoğraf güncellenemedi!', true);
+                }
+            });
+            return;
+        }
+
+        // Yeni karakter ekleme modunda — sadece input'a doldur
         const input = document.getElementById('charPhotoUrl');
         if (input) {
             input.value = photoUrl;
         }
-
-        const toast = window.toast;
-        if (toast) {
-            window.toast('✅ Fotoğraf seçildi');
-        }
-
-        this.closePhotoSelector();
+        window.toast('✅ Fotoğraf seçildi');
     }
 };
 
