@@ -49,7 +49,7 @@ function timingSafeCompare(a, b) {
     const bufB = Buffer.from(String(b));
     if (bufA.length !== bufB.length) {
         // Still compare to prevent length-based timing attacks
-        crypto.timingSafeEqual(bufA, bufA);
+        crypto.timingSafeEqual(bufA, Buffer.alloc(bufA.length));
         return false;
     }
     return crypto.timingSafeEqual(bufA, bufB);
@@ -339,13 +339,10 @@ const upload = multer({
     }
 });
 
-// Health Check Endpoint (Railway, monitoring tools için)
+// Health Check Endpoint (SECURITY: No sensitive data disclosure)
 app.get('/health', (_req, res) => {
     res.status(200).json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || 'development'
+        status: 'ok'
     });
 });
 
@@ -396,26 +393,20 @@ app.get('/api/csrf-token', (req, res) => {
     }
 });
 
-// Keep alive - Railway health check
-app.get('/health', (req, res) => res.status(200).send('OK'));
-
-// Veritabanı test endpoint'i
+// Veritabanı test endpoint'i (SECURITY: No sensitive data disclosure)
 app.get('/api/health', async (req, res) => {
     try {
-        const result = await pool.query('SELECT NOW() as time, COUNT(*) as team_count FROM teams');
+        // Just verify DB connection, don't return sensitive info
+        await pool.query('SELECT 1');
         res.json({
-            status: 'OK',
-            database: 'Connected',
-            serverTime: result.rows[0].time,
-            teamCount: result.rows[0].team_count
+            status: 'OK'
         });
     } catch (err) {
         // GÜVENLİK: Database error detaylarını logla ama kullanıcıya verme
         console.error('Health check database error:', err);
         res.status(500).json({
             status: 'ERROR',
-            database: 'Disconnected',
-            error: 'Internal server error'
+            error: 'Service unavailable'
         });
     }
 });
@@ -604,22 +595,6 @@ app.post('/api/admin/update-user-photo', upload.single('photo'), async (req, res
         // Klasör yoksa oluştur
         await fs.mkdir(uploadsDir, { recursive: true });
 
-        // Eski fotoğrafı sil
-        const userResult = await pool.query(
-            'SELECT profile_photo_url FROM users WHERE id = $1',
-            [userId]
-        );
-
-        if (userResult.rows.length > 0 && userResult.rows[0].profile_photo_url) {
-            const oldPhotoPath = path.join(__dirname, 'public', userResult.rows[0].profile_photo_url);
-
-            try {
-                await fs.unlink(oldPhotoPath);
-            } catch (unlinkErr) {
-                console.warn('Eski fotoğraf silinemedi:', unlinkErr.message);
-            }
-        }
-
         // Yeni resmi işle ve kaydet
         await sharp(req.file.buffer)
             .resize(200, 200, {
@@ -632,12 +607,28 @@ app.post('/api/admin/update-user-photo', upload.single('photo'), async (req, res
             })
             .toFile(outputPath);
 
-        // Veritabanını güncelle
+        // Veritabanını güncelle ve eski fotoğraf URL'sini al (atomic operation with CTE)
         const photoUrl = `/uploads/profiles/${filename}`;
-        await pool.query(
-            'UPDATE users SET profile_photo_url = $1 WHERE id = $2',
+        const updateResult = await pool.query(
+            `WITH old_data AS (
+                SELECT profile_photo_url FROM users WHERE id = $2
+            )
+            UPDATE users SET profile_photo_url = $1
+            WHERE id = $2
+            RETURNING (SELECT profile_photo_url FROM old_data) as old_photo_url`,
             [photoUrl, userId]
         );
+
+        // Eski fotoğrafı sil (atomic update'ten sonra)
+        const oldPhotoUrl = updateResult.rows[0]?.old_photo_url;
+        if (oldPhotoUrl && oldPhotoUrl !== photoUrl) {
+            const oldPhotoPath = path.join(__dirname, 'public', oldPhotoUrl);
+            try {
+                await fs.unlink(oldPhotoPath);
+            } catch (unlinkErr) {
+                console.warn('Eski fotoğraf silinemedi:', unlinkErr.message);
+            }
+        }
 
         console.log(`✓ Admin tarafından fotoğraf güncellendi: ${userId} -> ${filename}`);
 
@@ -700,15 +691,9 @@ app.get('/api/admin/users-with-photos', async (req, res) => {
 
 // Health check endpoint (Railway, monitoring tools için)
 app.get('/health', (req, res) => {
+    // SECURITY: Don't expose internal metrics (memory, connections, uptime)
     res.status(200).json({
-        status: 'ok',
-        uptime: Math.floor(process.uptime()),
-        timestamp: new Date().toISOString(),
-        memory: {
-            used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
-            total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB'
-        },
-        connections: io.engine.clientsCount || 0
+        status: 'ok'
     });
 });
 
@@ -1549,14 +1534,25 @@ class IPBotProtection {
         return socket.handshake.address || 'unknown';
     }
 
-    // IP adresi validasyonu (basit format kontrolü)
+    // IP adresi validasyonu (SECURITY: Strict validation)
     isValidIP(ip) {
         if (!ip || typeof ip !== 'string') return false;
-        // IPv4 formatı: 0-255.0-255.0-255.0-255
-        const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
-        // IPv6 formatı (basitleştirilmiş)
-        const ipv6Regex = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/;
-        return ipv4Regex.test(ip) || ipv6Regex.test(ip);
+
+        // IPv4 validation: each octet must be 0-255
+        const ipv4Regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+        const ipv4Match = ip.match(ipv4Regex);
+        if (ipv4Match) {
+            // Verify each octet is in valid range 0-255
+            for (let i = 1; i <= 4; i++) {
+                const octet = parseInt(ipv4Match[i], 10);
+                if (octet < 0 || octet > 255) return false;
+            }
+            return true;
+        }
+
+        // IPv6 validation (strict: proper format, no multiple ::)
+        const ipv6Regex = /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:))$/;
+        return ipv6Regex.test(ip);
     }
 }
 
@@ -1726,10 +1722,22 @@ io.use((socket, next) => {
 
 // SECURITY HELPER: Admin auth validation
 function isAdmin(socket) {
-    // Primary check: socket.data.isAdmin (set during admin-login and connection)
-    // Session check is optional (for persistence across reconnects)
-    // Admin-login event sets both socket.data.isAdmin and session.isAdmin
-    return socket.data.isAdmin === true;
+    // SECURITY FIX: Verify BOTH socket.data AND session to prevent bypass
+    // Check in-memory adminSessionIds set (fallback for HTTP/Socket desync)
+    const hasAdminSession = adminSessionIds.has(socket.request.sessionID);
+    // Check socket data (set during connection)
+    const hasAdminSocketData = socket.data.isAdmin === true;
+    // Check session object (persistent)
+    const hasAdminInSession = socket.request.session?.isAdmin === true;
+
+    // Require at least session OR (socket.data AND adminSessionIds)
+    return hasAdminInSession || (hasAdminSocketData && hasAdminSession);
+}
+
+// SECURITY HELPER: Strict admin check for critical operations (requires session)
+function isAdminStrict(socket) {
+    // CRITICAL operations must have valid session, not just socket.data
+    return socket.request.session?.isAdmin === true && adminSessionIds.has(socket.request.sessionID);
 }
 
 // Socket.io bağlantıları
@@ -1968,6 +1976,8 @@ io.on('connection', async (socket) => {
                 // Tüm kullanıcılara güncel listeyi gönder
                 getUsersByTeam().then(users => {
                     io.emit('users-update', users);
+                }).catch(err => {
+                    console.error('❌ users-update broadcast failed:', err);
                 });
 
                 // Log mesajı
@@ -2553,8 +2563,8 @@ io.on('connection', async (socket) => {
     // Puan değiştir (admin)
     socket.on('change-score', async (data, callback) => {
         if (typeof callback !== 'function') callback = () => { };
-        // GÜVENLİK: Admin kontrolü - socket.data VE session validation
-        if (!isAdmin(socket)) {
+        // GÜVENLİK: Strict admin kontrolü (critical operation)
+        if (!isAdminStrict(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: change-score -', socket.id);
             return;
@@ -2770,8 +2780,8 @@ io.on('connection', async (socket) => {
     // Karakter sil (admin)
     socket.on('delete-character', async (characterId, callback) => {
         if (typeof callback !== 'function') callback = () => { };
-        // GÜVENLİK: Admin kontrolü
-        if (!isAdmin(socket)) {
+        // GÜVENLİK: Strict admin kontrolü (critical operation)
+        if (!isAdminStrict(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: delete-character -', socket.id);
             return;
@@ -3287,8 +3297,8 @@ io.on('connection', async (socket) => {
     // Oyunu sıfırla (admin)
     socket.on('reset-game', async (callback) => {
         if (typeof callback !== 'function') callback = () => { };
-        // GÜVENLİK: Admin kontrolü
-        if (!isAdmin(socket)) {
+        // GÜVENLİK: Strict admin kontrolü (critical operation)
+        if (!isAdminStrict(socket)) {
             callback({ success: false, error: 'Yetkisiz işlem!' });
             console.log('⚠️  Yetkisiz admin işlemi: reset-game -', socket.id);
             return;

@@ -426,7 +426,7 @@ export const CHAT = {
             html += '<div style="background:#0a0a0a; padding:15px; margin-bottom:10px; border-radius:6px; display:flex; align-items:center; gap:15px; border-left:4px solid ' + team.color + ';">';
             html += '<div style="font-size:32px;">' + medal + '</div>';
             html += '<div style="flex:1;">';
-            html += '<div style="font-size:18px; color:#fff; font-weight:600;">' + team.name + '</div>';
+            html += '<div style="font-size:18px; color:#fff; font-weight:600;">' + htmlEscape(team.name) + '</div>';
             html += '<div style="color:#888; font-size:13px;">' + team.clueCount + ' ipucu â€¢ ' + team.messageCount + ' mesaj</div>';
             html += '</div>';
             html += '<div style="font-size:24px; color:var(--gold); font-weight:700;">' + team.score + ' puan</div>';
@@ -443,7 +443,7 @@ export const CHAT = {
                 html += '<div style="font-size:28px;">' + badge.badge.split(' ')[0] + '</div>';
                 html += '<div style="flex:1;">';
                 html += '<div style="font-size:16px; color:#fff; font-weight:600;">' + badge.badge + '</div>';
-                html += '<div style="color:#888; font-size:13px;">' + badge.teamName + ' - ' + badge.reason + '</div>';
+                html += '<div style="color:#888; font-size:13px;">' + htmlEscape(badge.teamName) + ' - ' + htmlEscape(badge.reason) + '</div>';
                 html += '</div>';
                 html += '</div>';
             });
