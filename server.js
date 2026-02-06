@@ -155,29 +155,12 @@ if (missingEnvVars.length > 0) {
     process.exit(1);
 }
 
-// GÜVENLİK: Admin şifre kontrolü (ENHANCED: Complexity requirements)
+// GÜVENLİK: Admin şifre kontrolü
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 if (!ADMIN_PASSWORD || ADMIN_PASSWORD.length < 12) {
     console.error('❌ HATA: ADMIN_PASSWORD çok kısa veya eksik!');
     console.error('   En az 12 karakter gerekli. Lütfen .env dosyanızı veya Railway environment variables\'ı kontrol edin.');
     console.error('   Örnek: ADMIN_PASSWORD=Super_Guclu_Sifre_2026');
-    process.exit(1);
-}
-
-// SECURITY: Password complexity requirements
-const hasUppercase = /[A-Z]/.test(ADMIN_PASSWORD);
-const hasLowercase = /[a-z]/.test(ADMIN_PASSWORD);
-const hasNumber = /[0-9]/.test(ADMIN_PASSWORD);
-const hasSpecial = /[^A-Za-z0-9]/.test(ADMIN_PASSWORD);
-
-if (!hasUppercase || !hasLowercase || !hasNumber || !hasSpecial) {
-    console.error('❌ HATA: ADMIN_PASSWORD yeterince güçlü değil!');
-    console.error('   Şifre en az şunları içermelidir:');
-    console.error('   - 1 büyük harf (A-Z)');
-    console.error('   - 1 küçük harf (a-z)');
-    console.error('   - 1 rakam (0-9)');
-    console.error('   - 1 özel karakter (!@#$%^&* vb.)');
-    console.error('   Örnek: Super_Guclu_Sifre_2026!');
     process.exit(1);
 }
 
