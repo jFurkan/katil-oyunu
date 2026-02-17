@@ -2034,6 +2034,7 @@ io.on('connection', async (socket) => {
                     console.log('👑 [RECONNECT-ADMIN] Admin session restore ediliyor...');
                     socket.data.userId = null;
                     socket.data.isAdmin = true;
+                    adminSessionIds.add(socket.request.sessionID); // F5 FIX: repopulate after server restart
 
                     callback({
                         success: true,
@@ -2079,6 +2080,12 @@ io.on('connection', async (socket) => {
 
             // GÜVENLİK: Socket session'a userId kaydet
             socket.data.userId = sessionUserId;
+
+            // F5 FIX: Admin session varsa adminSessionIds'e ekle (server restart sonrası için)
+            if (sessionIsAdmin) {
+                socket.data.isAdmin = true;
+                adminSessionIds.add(socket.request.sessionID);
+            }
 
             // Eğer kullanıcının takımı varsa socket.data.teamId kaydet
             if (user.team_id) {

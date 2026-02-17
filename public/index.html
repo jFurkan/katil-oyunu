@@ -1699,18 +1699,26 @@
                         // SESSION PERSISTENCE: Persist to sessionStorage
                         window.persistSession();
                     } else {
-                        // Session yok veya süresi dolmuş
-                        window.currentUser = null;
-                        window.currentTeamId = null;
-                        window.isAdmin = false;
-                        currentUser = null; // LOCAL SYNC
-                        currentTeamId = null; // LOCAL SYNC
-                        isAdmin = false; // LOCAL SYNC
-                        updateCurrentUserDisplay();
-                        console.log('⚠️  Session bulunamadı veya süresi dolmuş - Giriş yapmanız gerekebilir');
+                        // F5 FIX: Sadece server açıkça requireLogin dönerse oturumu temizle
+                        // Ağ hatası / timeout / bağlantı yok → mevcut admin oturumunu koru
+                        if (response && response.requireLogin) {
+                            // Server explicitly says session is gone → clear everything
+                            window.currentUser = null;
+                            window.currentTeamId = null;
+                            window.isAdmin = false;
+                            currentUser = null; // LOCAL SYNC
+                            currentTeamId = null; // LOCAL SYNC
+                            isAdmin = false; // LOCAL SYNC
+                            updateCurrentUserDisplay();
+                            console.log('⚠️  Session bulunamadı veya süresi dolmuş - Giriş yapmanız gerekebilir');
 
-                        // SESSION PERSISTENCE: Clear sessionStorage
-                        window.persistSession();
+                            // SESSION PERSISTENCE: Clear sessionStorage
+                            window.persistSession();
+                        } else {
+                            // Network error / timeout / no connection → preserve existing session
+                            console.log('⚠️  Reconnect başarısız (ağ/timeout hatası) - Mevcut oturum korunuyor. Hata:', response && response.error);
+                            // Don't clear isAdmin — socket will reconnect and retry automatically
+                        }
                     }
 
                     // ROUTING: Session restore sonrası, mevcut URL'e göre sayfa göster
