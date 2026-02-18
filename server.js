@@ -758,9 +758,9 @@ function startCountdown() {
             if (gameState.countdown === 0) {
                 clearInterval(gameState.countdownInterval);
                 gameState.started = false;
-                gameState.phaseTitle = '';
 
                 const endedPhaseTitle = gameState.phaseTitle || 'OYUN';
+                gameState.phaseTitle = '';
 
                 // Süre doldu bildirimi gönder
                 io.emit('notification', {
