@@ -1846,17 +1846,17 @@ io.on('connection', async (socket) => {
                 // UX İYİLEŞTİRME: Online ama farklı socket_id ise (sayfa yenileme/timeout)
                 const isDifferentSocket = existingUser.socket_id !== socket.id;
 
-                // GÜVENLİK: Önce IP kontrolü yap
-                const ipCheckResult = await client.query(
-                    'SELECT COUNT(*) FROM ip_activity WHERE ip_address = $1 AND action = $2 AND created_at > NOW() - INTERVAL \'24 hours\'',
-                    [clientIP, 'register-user']
+                // GÜVENLİK: Kullanıcının kayıtlı IP'sini kontrol et (users tablosundan)
+                const existingUserIP = await client.query(
+                    'SELECT ip_address FROM users WHERE id = $1',
+                    [existingUser.id]
                 );
 
-                const sameIPRegistration = parseInt(ipCheckResult.rows[0].count, 10) > 0;
+                const registeredIP = existingUserIP.rows[0]?.ip_address;
 
                 // AYNΙ IP'DEN geliyorsa direkt izin ver (kullanıcı yeniden giriş yapıyor)
-                if (sameIPRegistration) {
-                    // Aynı IP'den 24 saat içinde kayıt var - bu muhtemelen aynı kişi
+                if (registeredIP === clientIP) {
+                    // Aynı IP'den giriş yapıyor - bu muhtemelen aynı kişi
                     // YENİ: Mevcut kaydı güncelle, silme
                     userId = existingUser.id;
                     await client.query(
@@ -1869,6 +1869,7 @@ io.on('connection', async (socket) => {
                     // Farklı IP'den biri bu nickname'i kullanmaya çalışıyor
                     await client.query('ROLLBACK');
                     callback({ success: false, error: 'Bu nick başka bir IP adresinden kullanıldı!' });
+                    console.log('⚠️  IP uyumsuzluğu:', { nickname: trimmedNick, registeredIP, currentIP: clientIP });
                     return;
                 }
             } else {
