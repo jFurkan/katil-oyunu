@@ -1843,34 +1843,56 @@ io.on('connection', async (socket) => {
             if (userCheckResult.rows.length > 0) {
                 const existingUser = userCheckResult.rows[0];
 
-                // UX İYİLEŞTİRME: Online ama farklı socket_id ise (sayfa yenileme/timeout)
-                const isDifferentSocket = existingUser.socket_id !== socket.id;
+                // 1. ÖNCELİK: Session'dan userId kontrol et (en güvenilir yöntem)
+                const sessionUserId = socket.request.session?.userId;
 
-                // GÜVENLİK: Kullanıcının kayıtlı IP'sini kontrol et (users tablosundan)
-                const existingUserIP = await client.query(
-                    'SELECT ip_address FROM users WHERE id = $1',
-                    [existingUser.id]
-                );
-
-                const registeredIP = existingUserIP.rows[0]?.ip_address;
-
-                // AYNΙ IP'DEN geliyorsa direkt izin ver (kullanıcı yeniden giriş yapıyor)
-                if (registeredIP === clientIP) {
-                    // Aynı IP'den giriş yapıyor - bu muhtemelen aynı kişi
-                    // YENİ: Mevcut kaydı güncelle, silme
+                // 2. Session userId eşleşiyor mu kontrol et
+                if (sessionUserId && sessionUserId === existingUser.id) {
+                    // Session'daki kullanıcı ile DB'deki kullanıcı aynı → Güvenle izin ver
                     userId = existingUser.id;
                     await client.query(
                         'UPDATE users SET socket_id = $1, online = TRUE, last_activity = NOW() WHERE id = $2',
                         [socket.id, userId]
                     );
                     isReconnect = true;
-                    console.log('✓ Kullanıcı tekrar bağlandı:', trimmedNick, '- IP:', clientIP, '- Sebep:', existingUser.online ? 'timeout/yenileme' : 'offline');
+                    console.log('✓ Kullanıcı session ile tekrar bağlandı:', trimmedNick, '- userId:', userId);
                 } else {
-                    // Farklı IP'den biri bu nickname'i kullanmaya çalışıyor
-                    await client.query('ROLLBACK');
-                    callback({ success: false, error: 'Bu nick başka bir IP adresinden kullanıldı!' });
-                    console.log('⚠️  IP uyumsuzluğu:', { nickname: trimmedNick, registeredIP, currentIP: clientIP });
-                    return;
+                    // 3. Session userId yok veya eşleşmiyor → IP kontrolüne geç
+                    const existingUserIP = await client.query(
+                        'SELECT ip_address FROM users WHERE id = $1',
+                        [existingUser.id]
+                    );
+
+                    const registeredIP = existingUserIP.rows[0]?.ip_address;
+
+                    if (registeredIP === clientIP) {
+                        // Aynı IP → İzin ver
+                        userId = existingUser.id;
+                        await client.query(
+                            'UPDATE users SET socket_id = $1, online = TRUE, last_activity = NOW() WHERE id = $2',
+                            [socket.id, userId]
+                        );
+                        isReconnect = true;
+                        console.log('✓ Kullanıcı aynı IP ile tekrar bağlandı:', trimmedNick, '- IP:', clientIP);
+                    } else {
+                        // Farklı IP ve farklı/yok session → Online kontrolü
+                        if (existingUser.online) {
+                            // Online ve farklı IP → REDDET (nickname çalınması önlenir)
+                            await client.query('ROLLBACK');
+                            callback({ success: false, error: 'Bu nickname şu anda başka bir cihazda kullanılıyor!' });
+                            console.log('⚠️  Nick kullanımda (online):', { nickname: trimmedNick, registeredIP, currentIP: clientIP });
+                            return;
+                        } else {
+                            // Offline → IP değişikliğine izin ver (kullanıcı farklı yerden bağlanmış olabilir)
+                            userId = existingUser.id;
+                            await client.query(
+                                'UPDATE users SET socket_id = $1, online = TRUE, ip_address = $3, last_activity = NOW() WHERE id = $2',
+                                [socket.id, userId, clientIP]
+                            );
+                            isReconnect = true;
+                            console.log('⚠️  IP değişikliği (offline→online):', { nickname: trimmedNick, oldIP: registeredIP, newIP: clientIP });
+                        }
+                    }
                 }
             } else {
                 // Yeni kullanıcı - UUID üret ve kayıt oluştur
